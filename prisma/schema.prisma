@@ -1,0 +1,63 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Player {
+  id            String   @id @default(uuid())
+  name          String
+  gameId        String   @default("")
+  vipType       String   // "END_LIVE" | "PER_MATCH"
+  status        String   // "PLAYING" | "PENDING" | "QUEUE"
+  matchesPlayed Int      @default(0)
+  matchesTotal  Int      @default(0)
+  queueOrder    Int      @default(0)
+  notes         String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model SystemSetting {
+  id            String   @id @default("settings")
+  isLive        Boolean  @default(false)
+  streamTitle   String   @default("Mabar VIP Stream!")
+  streamUrl     String   @default("")
+  sociabuzz     String   @default("")
+  announcement  String   @default("Welcome to the stream! Join VIP to play next.")
+  updatedAt     DateTime @updatedAt
+}
+
+model LinktreeProfile {
+  id               String         @id @default("profile")
+  name             String         @default("Jessica Jones")
+  bio              String         @default("Seasoned Senior Marketing Manager, excels in strategic marketing.")
+  avatarUrl        String         @default("https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80")
+  theme            String         @default("ocean") // ocean, dark, neon, sunset, glass
+  socialHeaderTitle String        @default("Social Media Handles")
+  showLiveBanner   Boolean        @default(true)
+  liveBannerTitle  String         @default("Contact Me / Join Mabar VIP")
+  liveBannerSub    String         @default("Join our exclusive gaming stream & VIP queue")
+  liveBannerUrl    String         @default("/mabarvip")
+  liveBannerImage  String         @default("https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80")
+  links            LinktreeLink[]
+  updatedAt        DateTime       @updatedAt
+}
+
+model LinktreeLink {
+  id          String          @id @default(uuid())
+  title       String
+  url         String
+  icon        String          @default("globe") // facebook, instagram, linkedin, youtube, tiktok, twitter, github, globe, message
+  category    String          @default("social") // "social" | "custom"
+  isEnabled   Boolean         @default(true)
+  orderIndex  Int             @default(0)
+  profileId   String          @default("profile")
+  profile     LinktreeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
