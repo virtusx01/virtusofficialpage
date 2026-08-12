@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-// Default links to populate if empty
+const isUUID = (str: any) =>
+  typeof str === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
 const DEFAULT_LINKS = [
   { title: 'Facebook', url: 'https://facebook.com', icon: 'facebook', category: 'social', orderIndex: 0 },
   { title: 'Instagram', url: 'https://instagram.com', icon: 'instagram', category: 'social', orderIndex: 1 },
@@ -47,9 +50,9 @@ export async function GET() {
     }
 
     return NextResponse.json(profile);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching linktree profile:', error);
-    return NextResponse.json({ error: 'Failed to fetch linktree profile' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to fetch linktree profile' }, { status: 500 });
   }
 }
 
@@ -102,7 +105,7 @@ export async function PUT(request: Request) {
 
     // Sync links if provided
     if (Array.isArray(links)) {
-      // Delete existing links and recreate (or update) to maintain clean ordering
+      // Delete existing links and recreate with clean UUIDs
       await prisma.linktreeLink.deleteMany({
         where: { profileId: 'profile' },
       });
@@ -110,7 +113,7 @@ export async function PUT(request: Request) {
       if (links.length > 0) {
         await prisma.linktreeLink.createMany({
           data: links.map((link: any, idx: number) => ({
-            id: link.id && typeof link.id === 'string' && link.id.length > 10 ? link.id : undefined,
+            id: isUUID(link.id) ? link.id : undefined,
             title: link.title || 'Link',
             url: link.url || '#',
             icon: link.icon || 'globe',
@@ -133,8 +136,8 @@ export async function PUT(request: Request) {
     });
 
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating linktree profile:', error);
-    return NextResponse.json({ error: 'Failed to update linktree profile' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to update linktree profile' }, { status: 500 });
   }
 }

@@ -115,15 +115,16 @@ export default function EditLinktreePage() {
         body: formData,
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+
+      if (res.ok && data.url) {
         setProfile((prev) => ({ ...prev, [field]: data.url }));
       } else {
-        alert("Gagal mengunggah gambar");
+        alert(`Gagal mengunggah gambar: ${data.error || "Server error"}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Upload error:", err);
-      alert("Terjadi kesalahan saat mengunggah gambar.");
+      alert(`Terjadi kesalahan saat mengunggah gambar: ${err?.message || err}`);
     } finally {
       setUploadingField(null);
     }
