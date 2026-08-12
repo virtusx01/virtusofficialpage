@@ -18,15 +18,23 @@ export async function POST(request: Request) {
     const ext = path.extname(file.name) || '.jpg';
     const filename = `upload-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
     
-    // Directory path
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadDir, { recursive: true });
+    try {
+      // Directory path
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+      await mkdir(uploadDir, { recursive: true });
 
-    const filePath = path.join(uploadDir, filename);
-    await writeFile(filePath, buffer);
+      const filePath = path.join(uploadDir, filename);
+      await writeFile(filePath, buffer);
 
-    const publicUrl = `/uploads/${filename}`;
-    return NextResponse.json({ url: publicUrl });
+      const publicUrl = `/uploads/${filename}`;
+      return NextResponse.json({ url: publicUrl });
+    } catch (fsError) {
+      // Serverless environment fallback to Data URI
+      const base64 = buffer.toString('base64');
+      const mimeType = file.type || 'image/jpeg';
+      const dataUri = `data:${mimeType};base64,${base64}`;
+      return NextResponse.json({ url: dataUri });
+    }
   } catch (error) {
     console.error('Error uploading file:', error);
     return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });

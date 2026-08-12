@@ -1,18 +1,23 @@
 import prisma from '@/lib/prisma';
 import LinktreeView, { LinktreeProfileData } from '@/components/LinktreeView';
 
-// Revalidate on demand or every 5s
 export const revalidate = 0;
 
 export default async function HomePage() {
-  let profile = await prisma.linktreeProfile.findUnique({
-    where: { id: 'profile' },
-    include: {
-      links: {
-        orderBy: { orderIndex: 'asc' },
+  let profile = null;
+
+  try {
+    profile = await prisma.linktreeProfile.findUnique({
+      where: { id: 'profile' },
+      include: {
+        links: {
+          orderBy: { orderIndex: 'asc' },
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error('Error fetching profile from Prisma, using fallback:', err);
+  }
 
   if (!profile) {
     // Return fallback profile until initialized via GET route or admin
