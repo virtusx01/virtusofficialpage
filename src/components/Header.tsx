@@ -1,16 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Shield, LogOut, LayoutDashboard, Sparkles, Menu, X, Radio, Home, Users, Type } from "lucide-react";
+import { LogOut, LayoutDashboard, Sparkles, Menu, X, Home, Users } from "lucide-react";
 
 export default function Header() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isAdmin = session?.user && (session.user as any).role === "admin";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLive, setIsLive] = useState<boolean>(false);
+
+  // Auto-detect live status from system settings
+  useEffect(() => {
+    const checkLiveStatus = async () => {
+      try {
+        const res = await fetch("/api/settings");
+        if (res.ok) {
+          const data = await res.json();
+          setIsLive(!!data.isLive);
+        }
+      } catch (err) {
+        console.error("Failed to check live status:", err);
+      }
+    };
+
+    checkLiveStatus();
+    const interval = setInterval(checkLiveStatus, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isActive = (path: string) => {
     if (path === "/" && pathname === "/") return true;
@@ -20,8 +40,13 @@ export default function Header() {
 
   const navLinks = [
     { href: "/", label: "Halaman Utama", icon: Home },
-    { href: "/mabarvip", label: "Live Queue", icon: Users, badge: "LIVE" },
-    { href: "/textberjalan", label: "Teks Berjalan", icon: Type },
+    {
+      href: "/mabarvip",
+      label: "Mabar VIP",
+      icon: Users,
+      badge: isLive ? "LIVE" : "QUEUE",
+      isLive,
+    },
   ];
 
   return (
@@ -62,8 +87,18 @@ export default function Header() {
                 <Icon className="w-3.5 h-3.5" />
                 <span>{link.label}</span>
                 {link.badge && (
-                  <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                  <span
+                    className={`flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
+                      link.isLive
+                        ? "bg-red-500/20 text-red-400 border-red-500/30 shadow-sm shadow-red-500/20"
+                        : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        link.isLive ? "bg-red-500 animate-pulse" : "bg-emerald-400"
+                      }`}
+                    />
                     {link.badge}
                   </span>
                 )}
@@ -72,9 +107,9 @@ export default function Header() {
           })}
         </nav>
 
-        {/* Desktop Admin Portal & Actions */}
+        {/* Desktop Admin Controls (Shown ONLY if logged in as Admin) */}
         <div className="hidden md:flex items-center gap-3">
-          {isAdmin ? (
+          {isAdmin && (
             <div className="flex items-center gap-2">
               <Link
                 href="/admin/dashboard"
@@ -82,7 +117,7 @@ export default function Header() {
                 className="flex items-center gap-1.5 text-xs font-bold text-slate-100 bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-850 transition-all px-3 py-1.5 rounded-xl"
               >
                 <LayoutDashboard className="h-4 w-4 text-violet-400" />
-                <span>Dashboard</span>
+                <span>Dashboard Admin</span>
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
@@ -93,14 +128,6 @@ export default function Header() {
                 <span>Logout</span>
               </button>
             </div>
-          ) : (
-            <Link
-              href="/admin"
-              className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3.5 py-1.5 rounded-xl transition-colors"
-            >
-              <Shield className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Admin Login</span>
-            </Link>
           )}
         </div>
 
@@ -137,7 +164,13 @@ export default function Header() {
                     <span>{link.label}</span>
                   </div>
                   {link.badge && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        link.isLive
+                          ? "bg-red-500/20 text-red-400 border-red-500/30"
+                          : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                      }`}
+                    >
                       {link.badge}
                     </span>
                   )}
@@ -146,39 +179,28 @@ export default function Header() {
             })}
           </div>
 
-          <div className="pt-3 border-t border-slate-900 flex flex-col gap-2">
-            {isAdmin ? (
-              <>
-                <Link
-                  href="/admin/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-slate-200 font-semibold text-sm border border-slate-800"
-                >
-                  <LayoutDashboard className="w-4 h-4 text-violet-400" />
-                  <span>Dashboard Admin</span>
-                </Link>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    signOut({ callbackUrl: "/" });
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-950/40 text-red-300 font-semibold text-sm border border-red-900/50 text-left"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
-                </button>
-              </>
-            ) : (
+          {isAdmin && (
+            <div className="pt-3 border-t border-slate-900 flex flex-col gap-2">
               <Link
-                href="/admin"
+                href="/admin/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-slate-200 font-semibold text-sm border border-slate-800"
               >
-                <Shield className="w-4 h-4 text-indigo-400" />
-                <span>Admin Login</span>
+                <LayoutDashboard className="w-4 h-4 text-violet-400" />
+                <span>Dashboard Admin</span>
               </Link>
-            )}
-          </div>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  signOut({ callbackUrl: "/" });
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-950/40 text-red-300 font-semibold text-sm border border-red-900/50 text-left"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </header>

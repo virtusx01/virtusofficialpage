@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkles, Radio, Shield, Heart, ArrowUpRight } from "lucide-react";
+import { Sparkles, Heart, ArrowUpRight } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -44,19 +44,8 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/mabarvip" className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <span>Live VIP Queue</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-violet-500/20 text-violet-300">LIVE</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/textberjalan" className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <span>Display Teks Berjalan</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Portal Admin</span>
+                  <span>Mabar VIP</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-violet-500/20 text-violet-300">QUEUE</span>
                 </Link>
               </li>
             </ul>
