@@ -40,7 +40,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET || "mabarvip_secret_key_default_987654321_secure_token",
+  secret: process.env.NEXTAUTH_SECRET || "virtus-official-mabarvip-secret-key-2026-supersecret",
 };
 
 export async function isAdmin() {

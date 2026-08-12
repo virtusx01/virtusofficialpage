@@ -3,7 +3,10 @@
   publish = ".next"
 
 [build.environment]
-  DATABASE_URL = "file:./dev.db"
+  DATABASE_URL = "postgresql://postgres:%40Readydeath0@db.xkslvfdguwvrhxetbmyw.supabase.co:5432/postgres"
+  DIRECT_URL = "postgresql://postgres:%40Readydeath0@db.xkslvfdguwvrhxetbmyw.supabase.co:5432/postgres"
+  NEXTAUTH_SECRET = "37d2f9eaef982c7a40b3cb15bfb91d29bf705c48ba6d3bbd"
+  NEXTAUTH_URL = "https://virtus-official.netlify.app"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
