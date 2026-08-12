@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import path from 'path';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xkslvfdguwvrhxetbmyw.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const defaultKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhrc2x2ZmRndXd2cmh4ZXRibXl3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjUwODQ0NCwiZXhwIjoyMTAyMDg0NDQ0fQ.qbrIXts6YYgMQ7hQ90-TOCORsY9d7-gOZQQd6fm1tW8';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || defaultKey;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 

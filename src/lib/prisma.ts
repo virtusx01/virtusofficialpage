@@ -1,7 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 
+const DEFAULT_DB_URL = "postgresql://postgres:%40Readydeath0@db.xkslvfdguwvrhxetbmyw.supabase.co:5432/postgres";
+
 const prismaClientSingleton = () => {
-  return new PrismaClient();
+  const connectionString = process.env.DATABASE_URL || DEFAULT_DB_URL;
+  return new PrismaClient({
+    datasources: {
+      db: {
+        url: connectionString,
+      },
+    },
+  });
 };
 
 declare global {
