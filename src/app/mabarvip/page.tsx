@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import {
   Tv,
   Search,
@@ -514,18 +515,7 @@ export default function MabarVipPage() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 mt-12 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} Mabar VIP By Virtus.
-          </p>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span>Last sync: {lastUpdated.toLocaleTimeString()}</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Footer from "@/components/Footer";
 import {
   ArrowLeft,
   Save,
@@ -649,6 +650,7 @@ export default function EditLinktreePage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

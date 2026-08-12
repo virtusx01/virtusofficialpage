@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import {
   Globe,
   MessageCircle,
@@ -185,179 +187,183 @@ export default function LinktreeView({ profile }: { profile: LinktreeProfileData
   };
 
   return (
-    <main className={`min-h-screen w-full flex items-center justify-center p-3 sm:p-6 ${currentTheme.bg} font-sans relative overflow-hidden`}>
-      {/* Background Animated Blobs / Glow */}
-      <motion.div
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3],
-          rotate: [0, 90, 0],
-        }}
-        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' as const }}
-        className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
-      />
-      <motion.div
-        animate={{
-          scale: [1, 1.3, 1],
-          opacity: [0.2, 0.4, 0.2],
-          rotate: [0, -90, 0],
-        }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' as const }}
-        className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"
-      />
-
-      {/* Main Container Card */}
-      <div className="w-full max-w-md my-auto relative z-10">
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className={`flex-1 w-full flex items-center justify-center p-3 sm:p-6 ${currentTheme.bg} font-sans relative overflow-hidden`}>
+        {/* Background Animated Blobs / Glow */}
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          className="flex flex-col items-center text-center space-y-6"
-        >
-          {/* Top Bar / Actions */}
-          <motion.div variants={itemVariants} className="w-full flex items-center justify-between px-2 pt-2">
-            <a
-              href="/mabarvip"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-md border border-white/15 transition-all duration-200"
-            >
-              <Gamepad2 className="w-4 h-4 text-emerald-400" />
-              <span>Mabar VIP</span>
-            </a>
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+            rotate: [0, 90, 0],
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' as const }}
+          className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+        />
+        <motion.div
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.2, 0.4, 0.2],
+            rotate: [0, -90, 0],
+          }}
+          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' as const }}
+          className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"
+        />
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({ title: profile.name, url: window.location.href });
-                  } else {
-                    navigator.clipboard.writeText(window.location.href);
-                    alert('Link copied to clipboard!');
-                  }
-                }}
-                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md border border-white/15 transition-all duration-200"
-                title="Share Profile"
+        {/* Main Container Card */}
+        <div className="w-full max-w-md my-auto relative z-10 py-6">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            className="flex flex-col items-center text-center space-y-6"
+          >
+            {/* Top Bar / Actions */}
+            <motion.div variants={itemVariants} className="w-full flex items-center justify-between px-2 pt-2">
+              <a
+                href="/mabarvip"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-md border border-white/15 transition-all duration-200"
               >
-                <Share2 className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
+                <Gamepad2 className="w-4 h-4 text-emerald-400" />
+                <span>Mabar VIP</span>
+              </a>
 
-          {/* Profile Avatar */}
-          <motion.div variants={itemVariants} className="relative group">
-            <motion.div
-              whileHover={{ scale: 1.05, rotate: 2 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-              className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500 shadow-2xl"
-            >
-              <img
-                src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
-                alt={profile.name}
-                className="w-full h-full object-cover rounded-full bg-slate-800"
-              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({ title: profile.name, url: window.location.href });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      alert('Link copied to clipboard!');
+                    }
+                  }}
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md border border-white/15 transition-all duration-200"
+                  title="Share Profile"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </div>
             </motion.div>
-            <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-md">
-              <span className="w-2 h-2 bg-white rounded-full animate-ping" />
-            </span>
-          </motion.div>
 
-          {/* Title & Bio */}
-          <motion.div variants={itemVariants} className="space-y-2 px-4">
-            <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${currentTheme.textColor}`}>
-              {profile.name}
-            </h1>
-            <p className={`text-sm leading-relaxed max-w-xs mx-auto font-medium ${currentTheme.subColor}`}>
-              {profile.bio}
-            </p>
-          </motion.div>
-
-          {/* Section Header */}
-          {profile.socialHeaderTitle && (
-            <motion.div variants={itemVariants} className="pt-2">
-              <span className={`text-xs uppercase font-bold tracking-widest px-3 py-1 rounded-full bg-white/10 ${currentTheme.subColor} border border-white/10`}>
-                {profile.socialHeaderTitle}
+            {/* Profile Avatar */}
+            <motion.div variants={itemVariants} className="relative group">
+              <motion.div
+                whileHover={{ scale: 1.05, rotate: 2 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500 shadow-2xl"
+              >
+                <img
+                  src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
+                  alt={profile.name}
+                  className="w-full h-full object-cover rounded-full bg-slate-800"
+                />
+              </motion.div>
+              <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-md">
+                <span className="w-2 h-2 bg-white rounded-full animate-ping" />
               </span>
             </motion.div>
-          )}
 
-          {/* Links List */}
-          <motion.div variants={containerVariants} className="w-full space-y-3.5 px-1">
-            {enabledLinks.map((link) => (
-              <motion.a
-                key={link.id}
-                href={link.url}
-                target={link.url.startsWith('http') ? '_blank' : '_self'}
-                rel="noopener noreferrer"
-                variants={itemVariants}
-                whileHover={{ scale: 1.025, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                className={`w-full py-4 px-6 rounded-full flex items-center justify-between transition-all duration-300 font-semibold text-base ${currentTheme.cardBg}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner">
-                    {getIconComponent(link.icon)}
-                  </div>
-                  <span className="tracking-wide">{link.title}</span>
-                </div>
-                <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
-              </motion.a>
-            ))}
-          </motion.div>
-
-          {/* Live / Custom Banner Card */}
-          {profile.showLiveBanner && (
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full pt-2"
-            >
-              <a
-                href={profile.liveBannerUrl || '/mabarvip'}
-                className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20"
-              >
-                {/* Background Image */}
-                <img
-                  src={
-                    profile.liveBannerImage ||
-                    'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80'
-                  }
-                  alt={profile.liveBannerTitle}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-slate-950 animate-pulse">
-                      LIVE / QUEUE
-                    </span>
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
-                    {profile.liveBannerTitle}
-                  </h3>
-                  <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
-                    {profile.liveBannerSub}
-                  </p>
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
-                    <span>Enter Portal</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              </a>
+            {/* Title & Bio */}
+            <motion.div variants={itemVariants} className="space-y-2 px-4">
+              <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${currentTheme.textColor}`}>
+                {profile.name}
+              </h1>
+              <p className={`text-sm leading-relaxed max-w-xs mx-auto font-medium ${currentTheme.subColor}`}>
+                {profile.bio}
+              </p>
             </motion.div>
-          )}
 
-          {/* Footer Branding */}
-          <motion.div variants={itemVariants} className="pt-4 pb-2 text-center text-xs opacity-60 text-white">
-            <p className="flex items-center justify-center gap-1 font-medium">
-              <span>Powered by</span>
-              <a href="/mabarvip" className="underline hover:text-cyan-300 transition-colors">
-                MabarVIP
-              </a>
-            </p>
+            {/* Section Header */}
+            {profile.socialHeaderTitle && (
+              <motion.div variants={itemVariants} className="pt-2">
+                <span className={`text-xs uppercase font-bold tracking-widest px-3 py-1 rounded-full bg-white/10 ${currentTheme.subColor} border border-white/10`}>
+                  {profile.socialHeaderTitle}
+                </span>
+              </motion.div>
+            )}
+
+            {/* Links List */}
+            <motion.div variants={containerVariants} className="w-full space-y-3.5 px-1">
+              {enabledLinks.map((link) => (
+                <motion.a
+                  key={link.id}
+                  href={link.url}
+                  target={link.url.startsWith('http') ? '_blank' : '_self'}
+                  rel="noopener noreferrer"
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.025, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`w-full py-4 px-6 rounded-full flex items-center justify-between transition-all duration-300 font-semibold text-base ${currentTheme.cardBg}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner">
+                      {getIconComponent(link.icon)}
+                    </div>
+                    <span className="tracking-wide">{link.title}</span>
+                  </div>
+                  <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                </motion.a>
+              ))}
+            </motion.div>
+
+            {/* Live / Custom Banner Card */}
+            {profile.showLiveBanner && (
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full pt-2"
+              >
+                <a
+                  href={profile.liveBannerUrl || '/mabarvip'}
+                  className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20"
+                >
+                  {/* Background Image */}
+                  <img
+                    src={
+                      profile.liveBannerImage ||
+                      'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80'
+                    }
+                    alt={profile.liveBannerTitle}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-slate-950 animate-pulse">
+                        LIVE / QUEUE
+                      </span>
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
+                      {profile.liveBannerTitle}
+                    </h3>
+                    <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
+                      {profile.liveBannerSub}
+                    </p>
+                    <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
+                      <span>Enter Portal</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </a>
+              </motion.div>
+            )}
+
+            {/* Branding badge */}
+            <motion.div variants={itemVariants} className="pt-2 text-center text-xs opacity-60 text-white">
+              <p className="flex items-center justify-center gap-1 font-medium">
+                <span>Powered by</span>
+                <a href="/mabarvip" className="underline hover:text-cyan-300 transition-colors">
+                  MabarVIP By Virtus
+                </a>
+              </p>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      </div>
-    </main>
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 }
