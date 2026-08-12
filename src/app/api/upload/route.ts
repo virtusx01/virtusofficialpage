@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
+import { createClient } from '@supabase/supabase-js';
 import path from 'path';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xkslvfdguwvrhxetbmyw.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(request: Request) {
   try {
@@ -14,29 +19,31 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create unique filename
     const ext = path.extname(file.name) || '.jpg';
     const filename = `upload-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
-    
-    try {
-      // Directory path
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadDir, { recursive: true });
+    const contentType = file.type || 'image/jpeg';
 
-      const filePath = path.join(uploadDir, filename);
-      await writeFile(filePath, buffer);
+    // Upload file directly to Supabase Storage bucket 'assets'
+    const { data, error } = await supabase.storage
+      .from('assets')
+      .upload(filename, buffer, {
+        contentType,
+        upsert: true,
+      });
 
-      const publicUrl = `/uploads/${filename}`;
-      return NextResponse.json({ url: publicUrl });
-    } catch (fsError) {
-      // Serverless environment fallback to Data URI
-      const base64 = buffer.toString('base64');
-      const mimeType = file.type || 'image/jpeg';
-      const dataUri = `data:${mimeType};base64,${base64}`;
-      return NextResponse.json({ url: dataUri });
+    if (error) {
+      console.error('Supabase storage upload error:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
+
+    // Generate public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('assets')
+      .getPublicUrl(filename);
+
+    return NextResponse.json({ url: publicUrlData.publicUrl });
+  } catch (error: any) {
+    console.error('Error uploading file to Supabase:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to upload image' }, { status: 500 });
   }
 }
