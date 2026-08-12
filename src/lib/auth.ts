@@ -40,7 +40,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "mabarvip_secret_key_default_987654321_secure_token",
 };
 
 export async function isAdmin() {
