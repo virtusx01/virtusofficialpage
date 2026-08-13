@@ -48,6 +48,12 @@ export default function Footer() {
                   <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-violet-500/20 text-violet-300">QUEUE</span>
                 </Link>
               </li>
+              <li>
+                <Link href="/fanbase-cupidut-dudud" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span>Fanbase Cupidut & Dudud</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-fuchsia-500/20 text-fuchsia-300">CAT 🐾</span>
+                </Link>
+              </li>
             </ul>
           </div>
 

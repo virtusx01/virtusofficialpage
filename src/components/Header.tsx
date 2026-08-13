@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LogOut, LayoutDashboard, Sparkles, Menu, X, Home, Users } from "lucide-react";
+import { LogOut, LayoutDashboard, Sparkles, Menu, X, Home, Users, Cat } from "lucide-react";
 
 export default function Header() {
   const pathname = usePathname();
@@ -46,6 +46,11 @@ export default function Header() {
       icon: Users,
       badge: isLive ? "LIVE" : "QUEUE",
       isLive,
+    },
+    {
+      href: "/fanbase-cupidut-dudud",
+      label: "Fanbase Cat",
+      icon: Cat,
     },
   ];
 
