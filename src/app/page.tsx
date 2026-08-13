@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import LinktreeView, { LinktreeProfileData } from '@/components/LinktreeView';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function HomePage() {
@@ -10,9 +11,10 @@ export default async function HomePage() {
     profile = await prisma.linktreeProfile.findUnique({
       where: { id: 'profile' },
       include: {
-        links: {
-          orderBy: { orderIndex: 'asc' },
-        },
+        links: { orderBy: { orderIndex: 'asc' } },
+        banners: { orderBy: { orderIndex: 'asc' } },
+        topButtons: { orderBy: { orderIndex: 'asc' } },
+        codes: { orderBy: { orderIndex: 'asc' } },
       },
     });
   } catch (err) {
@@ -26,6 +28,7 @@ export default async function HomePage() {
       name: 'Jessica Jones',
       bio: 'Seasoned Senior Marketing Manager, excels in strategic marketing.',
       avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
+      avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
       theme: 'ocean',
       socialHeaderTitle: 'Social Media Handles',
       showLiveBanner: true,
@@ -40,6 +43,9 @@ export default async function HomePage() {
         { id: '3', title: 'LinkedIn', url: 'https://linkedin.com', icon: 'linkedin', category: 'social', isEnabled: true, orderIndex: 2, profileId: 'profile', createdAt: new Date(), updatedAt: new Date() },
         { id: '4', title: 'Mabar VIP Queue', url: '/mabarvip', icon: 'globe', category: 'custom', isEnabled: true, orderIndex: 3, profileId: 'profile', createdAt: new Date(), updatedAt: new Date() },
       ],
+      banners: [],
+      topButtons: [],
+      codes: [],
     };
   }
 

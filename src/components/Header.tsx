@@ -13,7 +13,11 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
-  // Auto-detect live status from system settings
+  const [siteTitle, setSiteTitle] = useState("Virtus Official");
+  const [siteSubtitle, setSiteSubtitle] = useState("Streamer TIDAK KIKIR");
+  const [siteLogoUrl, setSiteLogoUrl] = useState("");
+
+  // Auto-detect live status & site branding settings
   useEffect(() => {
     const checkLiveStatus = async () => {
       try {
@@ -27,7 +31,22 @@ export default function Header() {
       }
     };
 
+    const fetchBranding = async () => {
+      try {
+        const res = await fetch("/api/linktree");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && !data.error) {
+            if (data.siteTitle) setSiteTitle(data.siteTitle);
+            if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
+            if (data.siteLogoUrl !== undefined) setSiteLogoUrl(data.siteLogoUrl);
+          }
+        }
+      } catch (err) {}
+    };
+
     checkLiveStatus();
+    fetchBranding();
     const interval = setInterval(checkLiveStatus, 15000);
     return () => clearInterval(interval);
   }, []);
@@ -60,17 +79,22 @@ export default function Header() {
         {/* Brand Logo */}
         <Link
           href="/"
+          prefetch={true}
           id="nav-brand-logo"
           className="flex items-center gap-3 group shrink-0"
         >
-          <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-105 transition-all duration-300">
-            <Sparkles className="w-5 h-5 text-amber-400" />
+          <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
+            {siteLogoUrl ? (
+              <img src={siteLogoUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <Sparkles className="w-5 h-5 text-amber-400" />
+            )}
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-none">
-              Mabar VIP By Virtus
+              {siteTitle}
             </h1>
-            <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">DIJAMIN AUTO DIGENDONG EUYY</p>
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">{siteSubtitle}</p>
           </div>
         </Link>
 
@@ -83,6 +107,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={true}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   active
                     ? "bg-violet-600 text-white shadow-md shadow-violet-600/20"
@@ -157,6 +182,7 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={true}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                     active

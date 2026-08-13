@@ -12,14 +12,55 @@ const DEFAULT_LINKS = [
   { title: 'Mabar VIP Queue', url: '/mabarvip', icon: 'globe', category: 'custom', orderIndex: 3 },
 ];
 
+const DEFAULT_BANNERS = [
+  {
+    title: 'Cupidut & Dudud Lovers',
+    subtitle: 'Galeri album foto eksklusif dua kucing kesayangan Virtus',
+    badgeText: 'LIVE / QUEUE',
+    targetUrl: '/fanbase-cupidut-dudud',
+    imageUrl: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
+    isEnabled: true,
+    orderIndex: 0,
+  },
+];
+
+const DEFAULT_TOP_BUTTONS = [
+  {
+    title: 'Mabar VIP',
+    url: '/mabarvip',
+    icon: 'gamepad',
+    isShareAction: false,
+    isEnabled: true,
+    orderIndex: 0,
+  },
+  {
+    title: 'Share Profile',
+    url: '#share',
+    icon: 'share',
+    isShareAction: true,
+    isEnabled: true,
+    orderIndex: 1,
+  },
+];
+
+const DEFAULT_CODES = [
+  {
+    title: 'Kode Sensitivitas',
+    code: '7284-9102-1827-0192',
+    isEnabled: true,
+    orderIndex: 0,
+  },
+];
+
 export async function GET() {
   try {
     let profile = await prisma.linktreeProfile.findUnique({
       where: { id: 'profile' },
       include: {
-        links: {
-          orderBy: { orderIndex: 'asc' },
-        },
+        links: { orderBy: { orderIndex: 'asc' } },
+        banners: { orderBy: { orderIndex: 'asc' } },
+        topButtons: { orderBy: { orderIndex: 'asc' } },
+        codes: { orderBy: { orderIndex: 'asc' } },
       },
     });
 
@@ -30,21 +71,42 @@ export async function GET() {
           name: 'Jessica Jones',
           bio: 'Seasoned Senior Marketing Manager, excels in strategic marketing.',
           avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
+          avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
           theme: 'ocean',
           socialHeaderTitle: 'Social Media Handles',
           showLiveBanner: true,
-          liveBannerTitle: 'Contact Me',
-          liveBannerSub: 'Join Mabar VIP Queue & Exclusive Stream',
-          liveBannerUrl: '/mabarvip',
+          liveBannerTitle: 'Cupidut & Dudud Lovers',
+          liveBannerSub: 'Galeri album foto eksklusif dua kucing kesayangan Virtus',
+          liveBannerUrl: '/fanbase-cupidut-dudud',
           liveBannerImage: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
-          links: {
-            create: DEFAULT_LINKS,
-          },
+          links: { create: DEFAULT_LINKS },
+          banners: { create: DEFAULT_BANNERS },
+          topButtons: { create: DEFAULT_TOP_BUTTONS },
+          codes: { create: DEFAULT_CODES },
         },
         include: {
-          links: {
-            orderBy: { orderIndex: 'asc' },
-          },
+          links: { orderBy: { orderIndex: 'asc' } },
+          banners: { orderBy: { orderIndex: 'asc' } },
+          topButtons: { orderBy: { orderIndex: 'asc' } },
+          codes: { orderBy: { orderIndex: 'asc' } },
+        },
+      });
+    } else if (!profile.codes || profile.codes.length === 0) {
+      // Seed default sensitivity code if missing
+      await prisma.linktreeCode.createMany({
+        data: DEFAULT_CODES.map((c) => ({
+          ...c,
+          profileId: 'profile',
+        })),
+      });
+
+      profile = await prisma.linktreeProfile.findUnique({
+        where: { id: 'profile' },
+        include: {
+          links: { orderBy: { orderIndex: 'asc' } },
+          banners: { orderBy: { orderIndex: 'asc' } },
+          topButtons: { orderBy: { orderIndex: 'asc' } },
+          codes: { orderBy: { orderIndex: 'asc' } },
         },
       });
     }
@@ -63,6 +125,7 @@ export async function PUT(request: Request) {
       name,
       bio,
       avatarUrl,
+      avatarBorderColor,
       theme,
       socialHeaderTitle,
       showLiveBanner,
@@ -70,7 +133,14 @@ export async function PUT(request: Request) {
       liveBannerSub,
       liveBannerUrl,
       liveBannerImage,
+      siteTitle,
+      siteSubtitle,
+      siteLogoUrl,
+      footerDesc,
       links,
+      banners,
+      topButtons,
+      codes,
     } = body;
 
     // Update profile metadata
@@ -80,6 +150,7 @@ export async function PUT(request: Request) {
         name,
         bio,
         avatarUrl,
+        avatarBorderColor,
         theme,
         socialHeaderTitle,
         showLiveBanner,
@@ -87,12 +158,17 @@ export async function PUT(request: Request) {
         liveBannerSub,
         liveBannerUrl,
         liveBannerImage,
+        siteTitle,
+        siteSubtitle,
+        siteLogoUrl,
+        footerDesc,
       },
       create: {
         id: 'profile',
         name: name || 'Jessica Jones',
         bio: bio || '',
         avatarUrl: avatarUrl || '',
+        avatarBorderColor: avatarBorderColor || 'from-cyan-400 via-indigo-500 to-purple-500',
         theme: theme || 'ocean',
         socialHeaderTitle: socialHeaderTitle || 'Social Media Handles',
         showLiveBanner: showLiveBanner ?? true,
@@ -100,12 +176,15 @@ export async function PUT(request: Request) {
         liveBannerSub: liveBannerSub || '',
         liveBannerUrl: liveBannerUrl || '/mabarvip',
         liveBannerImage: liveBannerImage || '',
+        siteTitle: siteTitle || 'Virtus Official',
+        siteSubtitle: siteSubtitle || 'Streamer TIDAK KIKIR',
+        siteLogoUrl: siteLogoUrl || '',
+        footerDesc: footerDesc || 'Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
       },
     });
 
     // Sync links if provided
     if (Array.isArray(links)) {
-      // Delete existing links and recreate with clean UUIDs
       await prisma.linktreeLink.deleteMany({
         where: { profileId: 'profile' },
       });
@@ -126,12 +205,78 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Sync banners if provided
+    if (Array.isArray(banners)) {
+      await prisma.linktreeBanner.deleteMany({
+        where: { profileId: 'profile' },
+      });
+
+      if (banners.length > 0) {
+        await prisma.linktreeBanner.createMany({
+          data: banners.map((banner: any, idx: number) => ({
+            id: isUUID(banner.id) ? banner.id : undefined,
+            title: banner.title || 'Judul Banner',
+            subtitle: banner.subtitle || '',
+            badgeText: banner.badgeText || 'LIVE / QUEUE',
+            targetUrl: banner.targetUrl || '/mabarvip',
+            imageUrl: banner.imageUrl || 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
+            isEnabled: banner.isEnabled ?? true,
+            orderIndex: idx,
+            profileId: 'profile',
+          })),
+        });
+      }
+    }
+
+    // Sync topButtons if provided
+    if (Array.isArray(topButtons)) {
+      await prisma.linktreeTopButton.deleteMany({
+        where: { profileId: 'profile' },
+      });
+
+      if (topButtons.length > 0) {
+        await prisma.linktreeTopButton.createMany({
+          data: topButtons.map((btn: any, idx: number) => ({
+            id: isUUID(btn.id) ? btn.id : undefined,
+            title: btn.title || 'Tombol',
+            url: btn.url || '#',
+            icon: btn.icon || 'gamepad',
+            isShareAction: !!btn.isShareAction,
+            isEnabled: btn.isEnabled ?? true,
+            orderIndex: idx,
+            profileId: 'profile',
+          })),
+        });
+      }
+    }
+
+    // Sync codes if provided
+    if (Array.isArray(codes)) {
+      await prisma.linktreeCode.deleteMany({
+        where: { profileId: 'profile' },
+      });
+
+      if (codes.length > 0) {
+        await prisma.linktreeCode.createMany({
+          data: codes.map((c: any, idx: number) => ({
+            id: isUUID(c.id) ? c.id : undefined,
+            title: c.title || 'Kode Sensitivitas',
+            code: c.code || '',
+            isEnabled: c.isEnabled ?? true,
+            orderIndex: idx,
+            profileId: 'profile',
+          })),
+        });
+      }
+    }
+
     const result = await prisma.linktreeProfile.findUnique({
       where: { id: 'profile' },
       include: {
-        links: {
-          orderBy: { orderIndex: 'asc' },
-        },
+        links: { orderBy: { orderIndex: 'asc' } },
+        banners: { orderBy: { orderIndex: 'asc' } },
+        topButtons: { orderBy: { orderIndex: 'asc' } },
+        codes: { orderBy: { orderIndex: 'asc' } },
       },
     });
 

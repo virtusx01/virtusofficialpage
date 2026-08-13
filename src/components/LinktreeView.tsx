@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -16,6 +17,8 @@ import {
   Send,
   Video,
   Music,
+  Check,
+  Copy,
 } from 'lucide-react';
 
 export interface LinktreeItem {
@@ -28,11 +31,41 @@ export interface LinktreeItem {
   orderIndex: number;
 }
 
+export interface LinktreeBannerItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  badgeText: string;
+  targetUrl: string;
+  imageUrl: string;
+  isEnabled: boolean;
+  orderIndex: number;
+}
+
+export interface LinktreeTopButtonItem {
+  id: string;
+  title: string;
+  url: string;
+  icon: string;
+  isShareAction: boolean;
+  isEnabled: boolean;
+  orderIndex: number;
+}
+
+export interface LinktreeCodeItem {
+  id: string;
+  title: string;
+  code: string;
+  isEnabled: boolean;
+  orderIndex: number;
+}
+
 export interface LinktreeProfileData {
   id: string;
   name: string;
   bio: string;
   avatarUrl: string;
+  avatarBorderColor?: string;
   theme: string;
   socialHeaderTitle: string;
   showLiveBanner: boolean;
@@ -41,6 +74,9 @@ export interface LinktreeProfileData {
   liveBannerUrl: string;
   liveBannerImage: string;
   links: LinktreeItem[];
+  banners?: LinktreeBannerItem[];
+  topButtons?: LinktreeTopButtonItem[];
+  codes?: LinktreeCodeItem[];
 }
 
 const getIconComponent = (iconName: string) => {
@@ -161,9 +197,31 @@ const THEMES: Record<string, { bg: string; cardBg: string; textColor: string; su
   },
 };
 
-export default function LinktreeView({ profile }: { profile: LinktreeProfileData }) {
+export default function LinktreeView({ profile: initialProfile }: { profile: LinktreeProfileData }) {
+  const [profile, setProfile] = useState<LinktreeProfileData>(initialProfile);
+  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/linktree')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && !data.error) setProfile(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleCopyCode = (id: string, codeText: string) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(codeText);
+    }
+    setCopiedCodeId(id);
+    setTimeout(() => {
+      setCopiedCodeId((prev) => (prev === id ? null : prev));
+    }, 2000);
+  };
+
   const currentTheme = THEMES[profile.theme] || THEMES.ocean;
-  const enabledLinks = profile.links.filter((l) => l.isEnabled);
+  const enabledLinks = (profile.links || []).filter((l) => l.isEnabled);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -220,30 +278,86 @@ export default function LinktreeView({ profile }: { profile: LinktreeProfileData
           >
             {/* Top Bar / Actions */}
             <motion.div variants={itemVariants} className="w-full flex items-center justify-between px-2 pt-2">
-              <a
-                href="/mabarvip"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-md border border-white/15 transition-all duration-200"
-              >
-                <Gamepad2 className="w-4 h-4 text-emerald-400" />
-                <span>Mabar VIP</span>
-              </a>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({ title: profile.name, url: window.location.href });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      alert('Link copied to clipboard!');
+              {profile.topButtons && profile.topButtons.length > 0 ? (
+                profile.topButtons
+                  .filter((btn) => btn.isEnabled)
+                  .map((btn) => {
+                    if (btn.isShareAction || btn.url === '#share') {
+                      return (
+                        <button
+                          key={btn.id}
+                          onClick={() => {
+                            if (navigator.share) {
+                              navigator.share({ title: profile.name, url: window.location.href });
+                            } else {
+                              navigator.clipboard.writeText(window.location.href);
+                              alert('Link copied to clipboard!');
+                            }
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200 cursor-pointer"
+                          title={btn.title}
+                        >
+                          <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon)}</div>
+                          <span>{btn.title}</span>
+                        </button>
+                      );
                     }
-                  }}
-                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md border border-white/15 transition-all duration-200"
-                  title="Share Profile"
-                >
-                  <Share2 className="w-4 h-4" />
-                </button>
-              </div>
+                    const isInternal = btn.url.startsWith('/');
+                    if (isInternal) {
+                      return (
+                        <Link
+                          key={btn.id}
+                          href={btn.url}
+                          prefetch={true}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
+                        >
+                          <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon)}</div>
+                          <span>{btn.title}</span>
+                        </Link>
+                      );
+                    }
+                    return (
+                      <a
+                        key={btn.id}
+                        href={btn.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
+                      >
+                        <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon)}</div>
+                        <span>{btn.title}</span>
+                      </a>
+                    );
+                  })
+              ) : (
+                <>
+                  <Link
+                    href="/mabarvip"
+                    prefetch={true}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-md border border-white/15 transition-all duration-200"
+                  >
+                    <Gamepad2 className="w-4 h-4 text-emerald-400" />
+                    <span>Mabar VIP</span>
+                  </Link>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({ title: profile.name, url: window.location.href });
+                        } else {
+                          navigator.clipboard.writeText(window.location.href);
+                          alert('Link copied to clipboard!');
+                        }
+                      }}
+                      className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md border border-white/15 transition-all duration-200"
+                      title="Share Profile"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
 
             {/* Profile Avatar */}
@@ -251,7 +365,13 @@ export default function LinktreeView({ profile }: { profile: LinktreeProfileData
               <motion.div
                 whileHover={{ scale: 1.05, rotate: 2 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500 shadow-2xl"
+                className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 ${
+                  profile.avatarBorderColor?.startsWith('bg-') || profile.avatarBorderColor?.startsWith('from-')
+                    ? `bg-gradient-to-tr ${profile.avatarBorderColor}`
+                    : profile.avatarBorderColor
+                    ? profile.avatarBorderColor
+                    : 'bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500'
+                } shadow-2xl`}
               >
                 <img
                   src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
@@ -265,13 +385,58 @@ export default function LinktreeView({ profile }: { profile: LinktreeProfileData
             </motion.div>
 
             {/* Title & Bio */}
-            <motion.div variants={itemVariants} className="space-y-2 px-4">
+            <motion.div variants={itemVariants} className="space-y-2 px-4 w-full">
               <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${currentTheme.textColor}`}>
                 {profile.name}
               </h1>
               <p className={`text-sm leading-relaxed max-w-xs mx-auto font-medium ${currentTheme.subColor}`}>
                 {profile.bio}
               </p>
+
+              {/* Sensitivity & Game Codes (Located under Bio) */}
+              {profile.codes && profile.codes.filter((c) => c.isEnabled).length > 0 && (
+                <div className="pt-2 w-full max-w-xs mx-auto space-y-2">
+                  {profile.codes
+                    .filter((c) => c.isEnabled)
+                    .map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex items-center justify-between gap-2 px-3.5 py-2 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-md text-xs transition-all hover:bg-white/15 shadow-sm"
+                      >
+                        <div className="flex flex-col text-left truncate">
+                          <span className="text-[10px] font-semibold text-slate-300 uppercase tracking-wider">
+                            {c.title || 'Kode Sensitivitas'}:
+                          </span>
+                          <span className="font-mono font-bold text-white tracking-wide truncate">
+                            {c.code}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCode(c.id, c.code)}
+                          className={`px-3 py-1 rounded-xl text-[10px] shrink-0 border transition-all duration-200 cursor-pointer shadow-sm flex items-center gap-1.5 font-bold ${
+                            copiedCodeId === c.id
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold scale-105'
+                              : 'bg-violet-600/80 hover:bg-violet-500 text-white border-violet-400/30'
+                          }`}
+                          title="Salin Kode"
+                        >
+                          {copiedCodeId === c.id ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-slate-950 stroke-[3]" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-white/80" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
             </motion.div>
 
             {/* Section Header */}
@@ -307,57 +472,128 @@ export default function LinktreeView({ profile }: { profile: LinktreeProfileData
               ))}
             </motion.div>
 
-            {/* Live / Custom Banner Card */}
-            {profile.showLiveBanner && (
-              <motion.div
-                variants={itemVariants}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full pt-2"
-              >
-                <a
-                  href={profile.liveBannerUrl || '/mabarvip'}
-                  className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20"
+            {/* Live / Custom Banner Cards (Multiple Support) */}
+            {profile.banners && profile.banners.length > 0 ? (
+              profile.banners
+                .filter((banner) => banner.isEnabled !== false)
+                .map((banner) => {
+                  const isInternal = banner.targetUrl?.startsWith('/');
+                  return (
+                    <motion.div
+                      key={banner.id}
+                      variants={itemVariants}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full pt-2"
+                    >
+                      {isInternal ? (
+                        <Link
+                          href={banner.targetUrl || '/mabarvip'}
+                          prefetch={true}
+                          className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
+                        >
+                          <img
+                            src={
+                              banner.imageUrl ||
+                              'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80'
+                            }
+                            alt=""
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
+                            <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
+                              {banner.title}
+                            </h3>
+                            {banner.subtitle && (
+                              <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
+                                {banner.subtitle}
+                              </p>
+                            )}
+                            <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
+                              <span>Kunjungi</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                          </div>
+                        </Link>
+                      ) : (
+                        <a
+                          href={banner.targetUrl || '/mabarvip'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
+                        >
+                          <img
+                            src={
+                              banner.imageUrl ||
+                              'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80'
+                            }
+                            alt=""
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
+                            <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
+                              {banner.title}
+                            </h3>
+                            {banner.subtitle && (
+                              <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
+                                {banner.subtitle}
+                              </p>
+                            )}
+                            <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
+                              <span>Kunjungi</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                          </div>
+                        </a>
+                      )}
+                    </motion.div>
+                  );
+                })
+            ) : (
+              profile.showLiveBanner && (
+                <motion.div
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full pt-2"
                 >
-                  {/* Background Image */}
-                  <img
-                    src={
-                      profile.liveBannerImage ||
-                      'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80'
-                    }
-                    alt={profile.liveBannerTitle}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-slate-950 animate-pulse">
-                        LIVE / QUEUE
-                      </span>
-                      <Sparkles className="w-4 h-4 text-amber-400" />
+                  <Link
+                    href={profile.liveBannerUrl || '/mabarvip'}
+                    prefetch={true}
+                    className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
+                  >
+                    <img
+                      src={
+                        profile.liveBannerImage ||
+                        'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80'
+                      }
+                      alt=""
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
+                      <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
+                        {profile.liveBannerTitle}
+                      </h3>
+                      <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
+                        {profile.liveBannerSub}
+                      </p>
+                      <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
+                        <span>Kunjungi</span>
+                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
-                    <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
-                      {profile.liveBannerTitle}
-                    </h3>
-                    <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
-                      {profile.liveBannerSub}
-                    </p>
-                    <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
-                      <span>Enter Portal</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </a>
-              </motion.div>
+                  </Link>
+                </motion.div>
+              )
             )}
 
             {/* Branding badge */}
             <motion.div variants={itemVariants} className="pt-2 text-center text-xs opacity-60 text-white">
               <p className="flex items-center justify-center gap-1 font-medium">
                 <span>Powered by</span>
-                <a href="/mabarvip" className="underline hover:text-cyan-300 transition-colors">
-                  MabarVIP By Virtus
-                </a>
+                <Link href="/mabarvip" prefetch={true} className="underline hover:text-cyan-300 transition-colors">
+                  Virtus Official
+                </Link>
               </p>
             </motion.div>
           </motion.div>

@@ -39,11 +39,41 @@ interface LinkItem {
   orderIndex: number;
 }
 
+interface BannerItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  badgeText: string;
+  targetUrl: string;
+  imageUrl: string;
+  isEnabled: boolean;
+  orderIndex: number;
+}
+
+interface TopButtonItem {
+  id: string;
+  title: string;
+  url: string;
+  icon: string;
+  isShareAction: boolean;
+  isEnabled: boolean;
+  orderIndex: number;
+}
+
+interface CodeItem {
+  id: string;
+  title: string;
+  code: string;
+  isEnabled: boolean;
+  orderIndex: number;
+}
+
 interface ProfileData {
   id: string;
   name: string;
   bio: string;
   avatarUrl: string;
+  avatarBorderColor: string;
   theme: string;
   socialHeaderTitle: string;
   showLiveBanner: boolean;
@@ -51,7 +81,14 @@ interface ProfileData {
   liveBannerSub: string;
   liveBannerUrl: string;
   liveBannerImage: string;
+  siteTitle?: string;
+  siteSubtitle?: string;
+  siteLogoUrl?: string;
+  footerDesc?: string;
   links: LinkItem[];
+  banners: BannerItem[];
+  topButtons: TopButtonItem[];
+  codes: CodeItem[];
 }
 
 const AVAILABLE_ICONS = [
@@ -93,6 +130,7 @@ export default function EditLinktreePage() {
     name: "Jessica Jones",
     bio: "Seasoned Senior Marketing Manager, excels in strategic marketing.",
     avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
+    avatarBorderColor: "from-cyan-400 via-indigo-500 to-purple-500",
     theme: "ocean",
     socialHeaderTitle: "Social Media Handles",
     showLiveBanner: true,
@@ -100,12 +138,19 @@ export default function EditLinktreePage() {
     liveBannerSub: "Join Mabar VIP Queue & Exclusive Stream",
     liveBannerUrl: "/mabarvip",
     liveBannerImage: "https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80",
+    siteTitle: "Virtus Official",
+    siteSubtitle: "Streamer TIDAK KIKIR",
+    siteLogoUrl: "",
+    footerDesc: "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
     links: [],
+    banners: [],
+    topButtons: [],
+    codes: [],
   });
 
   const [uploadingField, setUploadingField] = useState<string | null>(null);
 
-  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage") => {
+  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "siteLogoUrl") => {
     setUploadingField(field);
     try {
       const formData = new FormData();
@@ -120,6 +165,32 @@ export default function EditLinktreePage() {
 
       if (res.ok && data.url) {
         setProfile((prev) => ({ ...prev, [field]: data.url }));
+      } else {
+        alert(`Gagal mengunggah gambar: ${data.error || "Server error"}`);
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      alert(`Terjadi kesalahan saat mengunggah gambar: ${err?.message || err}`);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  const handleBannerImageUpload = async (file: File, index: number) => {
+    setUploadingField(`banner-${index}`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        updateBanner(index, "imageUrl", data.url);
       } else {
         alert(`Gagal mengunggah gambar: ${data.error || "Server error"}`);
       }
@@ -227,6 +298,128 @@ export default function EditLinktreePage() {
     setProfile({ ...profile, links: updatedLinks });
   };
 
+  const addBanner = () => {
+    const newBanner: BannerItem = {
+      id: `new-${Date.now()}`,
+      title: "Judul Banner Baru",
+      subtitle: "Deskripsi singkat promo banner",
+      badgeText: "PROMO / EVENT",
+      targetUrl: "/mabarvip",
+      imageUrl: "https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80",
+      isEnabled: true,
+      orderIndex: profile.banners?.length || 0,
+    };
+    setProfile({ ...profile, banners: [...(profile.banners || []), newBanner] });
+  };
+
+  const updateBanner = (index: number, key: keyof BannerItem, value: any) => {
+    const updated = [...(profile.banners || [])];
+    updated[index] = { ...updated[index], [key]: value };
+    setProfile({ ...profile, banners: updated });
+  };
+
+  const removeBanner = (index: number) => {
+    const updated = (profile.banners || []).filter((_, i) => i !== index);
+    setProfile({ ...profile, banners: updated });
+  };
+
+  const moveBanner = (index: number, direction: "up" | "down") => {
+    const bannersList = profile.banners || [];
+    if (
+      (direction === "up" && index === 0) ||
+      (direction === "down" && index === bannersList.length - 1)
+    ) {
+      return;
+    }
+    const targetIdx = direction === "up" ? index - 1 : index + 1;
+    const updated = [...bannersList];
+    const temp = updated[index];
+    updated[index] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    updated.forEach((item, idx) => (item.orderIndex = idx));
+    setProfile({ ...profile, banners: updated });
+  };
+
+  const addTopButton = () => {
+    const newBtn: TopButtonItem = {
+      id: `new-${Date.now()}`,
+      title: "Tombol Baru",
+      url: "/mabarvip",
+      icon: "gamepad",
+      isShareAction: false,
+      isEnabled: true,
+      orderIndex: (profile.topButtons || []).length,
+    };
+    setProfile({ ...profile, topButtons: [...(profile.topButtons || []), newBtn] });
+  };
+
+  const updateTopButton = (index: number, key: keyof TopButtonItem, value: any) => {
+    const updated = [...(profile.topButtons || [])];
+    updated[index] = { ...updated[index], [key]: value };
+    setProfile({ ...profile, topButtons: updated });
+  };
+
+  const removeTopButton = (index: number) => {
+    const updated = (profile.topButtons || []).filter((_, i) => i !== index);
+    setProfile({ ...profile, topButtons: updated });
+  };
+
+  const moveTopButton = (index: number, direction: "up" | "down") => {
+    const list = profile.topButtons || [];
+    if (
+      (direction === "up" && index === 0) ||
+      (direction === "down" && index === list.length - 1)
+    ) {
+      return;
+    }
+    const targetIdx = direction === "up" ? index - 1 : index + 1;
+    const updated = [...list];
+    const temp = updated[index];
+    updated[index] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    updated.forEach((item, idx) => (item.orderIndex = idx));
+    setProfile({ ...profile, topButtons: updated });
+  };
+
+  const addCode = () => {
+    const newCode: CodeItem = {
+      id: `new-${Date.now()}`,
+      title: "Kode Sensitivitas",
+      code: "7284-9102-1827-0192",
+      isEnabled: true,
+      orderIndex: (profile.codes || []).length,
+    };
+    setProfile({ ...profile, codes: [...(profile.codes || []), newCode] });
+  };
+
+  const updateCode = (index: number, key: keyof CodeItem, value: any) => {
+    const updated = [...(profile.codes || [])];
+    updated[index] = { ...updated[index], [key]: value };
+    setProfile({ ...profile, codes: updated });
+  };
+
+  const removeCode = (index: number) => {
+    const updated = (profile.codes || []).filter((_, i) => i !== index);
+    setProfile({ ...profile, codes: updated });
+  };
+
+  const moveCode = (index: number, direction: "up" | "down") => {
+    const list = profile.codes || [];
+    if (
+      (direction === "up" && index === 0) ||
+      (direction === "down" && index === list.length - 1)
+    ) {
+      return;
+    }
+    const targetIdx = direction === "up" ? index - 1 : index + 1;
+    const updated = [...list];
+    const temp = updated[index];
+    updated[index] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    updated.forEach((item, idx) => (item.orderIndex = idx));
+    setProfile({ ...profile, codes: updated });
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100">
@@ -312,6 +505,78 @@ export default function EditLinktreePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left / Middle: Configuration Panel */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Section 0.5: Branding Website (Header & Footer) */}
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
+                <Globe className="w-5 h-5 text-fuchsia-400" />
+                <span>Branding Header & Footer Website</span>
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Judul Header & Footer</label>
+                  <input
+                    type="text"
+                    value={profile.siteTitle || "Virtus Official"}
+                    onChange={(e) => setProfile({ ...profile, siteTitle: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
+                    placeholder="Contoh: Virtus Official"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Sub-judul / Tagline Website</label>
+                  <input
+                    type="text"
+                    value={profile.siteSubtitle || "Streamer TIDAK KIKIR"}
+                    onChange={(e) => setProfile({ ...profile, siteSubtitle: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
+                    placeholder="Contoh: Streamer TIDAK KIKIR"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Logo Website (Upload Gambar / Input URL)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={profile.siteLogoUrl || ""}
+                    onChange={(e) => setProfile({ ...profile, siteLogoUrl: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
+                    placeholder="Biarkan kosong untuk menggunakan ikon Sparkles bawaan"
+                  />
+                  <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
+                    {uploadingField === "siteLogoUrl" ? (
+                      <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4 text-violet-400" />
+                    )}
+                    <span>Upload Logo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "siteLogoUrl");
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Deskripsi Footer Website</label>
+                <textarea
+                  rows={2}
+                  value={profile.footerDesc || ""}
+                  onChange={(e) => setProfile({ ...profile, footerDesc: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100 resize-none"
+                  placeholder="Deskripsi singkat yang tampil di bagian paling bawah footer..."
+                />
+              </div>
+            </div>
+
             {/* Section 1: Profil */}
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
@@ -361,15 +626,46 @@ export default function EditLinktreePage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Bio / Deskripsi Singkat</label>
-                <textarea
-                  rows={3}
-                  value={profile.bio}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100 resize-none"
-                  placeholder="Tuliskan bio atau informasi singkat..."
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Bio / Deskripsi Singkat</label>
+                  <textarea
+                    rows={2}
+                    value={profile.bio}
+                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100 resize-none"
+                    placeholder="Tuliskan bio atau informasi singkat..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Warna / Gradient Border Profil</label>
+                  <input
+                    type="text"
+                    value={profile.avatarBorderColor || "from-cyan-400 via-indigo-500 to-purple-500"}
+                    onChange={(e) => setProfile({ ...profile, avatarBorderColor: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-xs font-mono outline-none text-slate-100"
+                    placeholder="from-cyan-400 via-indigo-500 to-purple-500"
+                  />
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {[
+                      { label: "Cyan Purple", class: "from-cyan-400 via-indigo-500 to-purple-500" },
+                      { label: "Neon Pink", class: "from-violet-500 via-fuchsia-500 to-pink-500" },
+                      { label: "Emerald Teal", class: "from-emerald-400 via-teal-500 to-cyan-500" },
+                      { label: "Sunset Fire", class: "from-amber-400 via-orange-500 to-red-500" },
+                      { label: "Electric Blue", class: "from-blue-500 via-sky-400 to-cyan-300" },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => setProfile({ ...profile, avatarBorderColor: preset.class })}
+                        className="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -382,6 +678,220 @@ export default function EditLinktreePage() {
                   placeholder="Contoh: Social Media Handles"
                 />
               </div>
+            </div>
+
+            {/* Section 1.5: Tombol Aksi Atas (Header Top Buttons) */}
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <Gamepad2 className="w-5 h-5 text-cyan-400" />
+                  <span>Tombol Aksi Atas (Header Buttons) ({(profile.topButtons || []).length})</span>
+                </h2>
+                <button
+                  type="button"
+                  onClick={addTopButton}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Tombol Atas</span>
+                </button>
+              </div>
+
+              {(profile.topButtons || []).length === 0 ? (
+                <div className="p-4 text-center bg-slate-950/60 border border-dashed border-slate-800 rounded-xl">
+                  <p className="text-xs text-slate-400">Belum ada tombol atas. Klik tombol di atas untuk menambah.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(profile.topButtons || []).map((btn, idx) => (
+                    <div key={btn.id || idx} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">
+                            #{idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={btn.title}
+                            onChange={(e) => updateTopButton(idx, "title", e.target.value)}
+                            className="bg-transparent font-bold text-sm text-slate-100 border-b border-transparent focus:border-cyan-500 outline-none px-1 py-0.5"
+                            placeholder="Judul Tombol"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={btn.isEnabled}
+                              onChange={(e) => updateTopButton(idx, "isEnabled", e.target.checked)}
+                              className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500"
+                            />
+                            <span>{btn.isEnabled ? "Aktif" : "Non-aktif"}</span>
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => moveTopButton(idx, "up")}
+                            disabled={idx === 0}
+                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                          >
+                            <MoveUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveTopButton(idx, "down")}
+                            disabled={idx === (profile.topButtons || []).length - 1}
+                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                          >
+                            <MoveDown className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeTopButton(idx)}
+                            className="p-1 rounded bg-red-950/50 hover:bg-red-900/60 text-red-400 hover:text-red-200 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">URL Tujuan</label>
+                          <input
+                            type="text"
+                            value={btn.url}
+                            onChange={(e) => updateTopButton(idx, "url", e.target.value)}
+                            disabled={btn.isShareAction}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-cyan-500 disabled:opacity-40"
+                            placeholder={btn.isShareAction ? "Fitur Share Otomatis" : "/mabarvip"}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">Ikon</label>
+                          <select
+                            value={btn.icon}
+                            onChange={(e) => updateTopButton(idx, "icon", e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-cyan-500"
+                          >
+                            {AVAILABLE_ICONS.map((ic) => (
+                              <option key={ic.id} value={ic.id}>
+                                {ic.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="flex items-center pt-4">
+                          <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={btn.isShareAction}
+                              onChange={(e) => updateTopButton(idx, "isShareAction", e.target.checked)}
+                              className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500"
+                            />
+                            <span>Aksi Bagikan Profil</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section 1.7: Kode Sensitivitas & Kode Game (Dibawah Bio) */}
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <Gamepad2 className="w-5 h-5 text-violet-400" />
+                  <span>Kode Sensitivitas & Game (Tampil Di Bawah Bio) ({(profile.codes || []).length})</span>
+                </h2>
+                <button
+                  type="button"
+                  onClick={addCode}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Kode</span>
+                </button>
+              </div>
+
+              {(profile.codes || []).length === 0 ? (
+                <div className="p-4 text-center bg-slate-950/60 border border-dashed border-slate-800 rounded-xl">
+                  <p className="text-xs text-slate-400">Belum ada kode sensitivitas. Klik tombol di atas untuk menambah.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(profile.codes || []).map((c, idx) => (
+                    <div key={c.id || idx} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="text-xs font-mono font-bold text-violet-400 bg-violet-950/60 px-2 py-0.5 rounded border border-violet-800/50">
+                            #{idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={c.title}
+                            onChange={(e) => updateCode(idx, "title", e.target.value)}
+                            className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-100 font-bold focus:border-violet-500 outline-none w-full max-w-xs"
+                            placeholder="Contoh: Kode Sensitivitas PUBG"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={c.isEnabled}
+                              onChange={(e) => updateCode(idx, "isEnabled", e.target.checked)}
+                              className="rounded border-slate-700 text-violet-500 focus:ring-violet-500"
+                            />
+                            <span>{c.isEnabled ? "Aktif" : "Non-aktif"}</span>
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => moveCode(idx, "up")}
+                            disabled={idx === 0}
+                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                          >
+                            <MoveUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveCode(idx, "down")}
+                            disabled={idx === (profile.codes || []).length - 1}
+                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                          >
+                            <MoveDown className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeCode(idx)}
+                            className="p-1 rounded bg-red-950/50 hover:bg-red-900/60 text-red-400 hover:text-red-200 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">Isi Kode (Sensitivitas / Layout / ID)</label>
+                        <input
+                          type="text"
+                          value={c.code}
+                          onChange={(e) => updateCode(idx, "code", e.target.value)}
+                          className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono font-bold outline-none text-slate-100 focus:border-violet-500"
+                          placeholder="Contoh: 7284-9102-1827-0192"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Section 2: Tema Visual */}
@@ -522,89 +1032,154 @@ export default function EditLinktreePage() {
               </div>
             </div>
 
-            {/* Section 4: Banner Live & Contact */}
+            {/* Section 4: Banner Cards CRUD Manager */}
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-amber-400" />
-                  <span>Kartu Banner Live / Promo</span>
+                  <span>Kelola Kartu Banner Live / Promo ({(profile.banners || []).length})</span>
                 </h2>
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={profile.showLiveBanner}
-                    onChange={(e) => setProfile({ ...profile, showLiveBanner: e.target.checked })}
-                    className="rounded border-slate-700 text-violet-600 focus:ring-violet-500"
-                  />
-                  <span>Tampilkan Banner</span>
-                </label>
+                <button
+                  type="button"
+                  onClick={addBanner}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Banner</span>
+                </button>
               </div>
 
-              {profile.showLiveBanner && (
+              {(profile.banners || []).length === 0 ? (
+                <div className="p-6 text-center bg-slate-950/60 border border-dashed border-slate-800 rounded-xl space-y-2">
+                  <p className="text-xs text-slate-400">Belum ada kartu banner. Klik tombol di atas untuk membuat banner baru.</p>
+                </div>
+              ) : (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">Judul Banner</label>
-                      <input
-                        type="text"
-                        value={profile.liveBannerTitle}
-                        onChange={(e) => setProfile({ ...profile, liveBannerTitle: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                        placeholder="Contoh: Contact Me / Mabar VIP Queue"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">Sub Judul</label>
-                      <input
-                        type="text"
-                        value={profile.liveBannerSub}
-                        onChange={(e) => setProfile({ ...profile, liveBannerSub: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                        placeholder="Deskripsi singkat promo"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">URL Target Klik</label>
-                      <input
-                        type="text"
-                        value={profile.liveBannerUrl}
-                        onChange={(e) => setProfile({ ...profile, liveBannerUrl: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                        placeholder="/mabarvip"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">Gambar Background URL</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={profile.liveBannerImage}
-                          onChange={(e) => setProfile({ ...profile, liveBannerImage: e.target.value })}
-                          className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                          placeholder="https://..."
-                        />
-                        <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
-                          {uploadingField === "liveBannerImage" ? (
-                            <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
-                          ) : (
-                            <Upload className="w-4 h-4 text-violet-400" />
-                          )}
-                          <span>Upload</span>
+                  {(profile.banners || []).map((banner, idx) => (
+                    <div
+                      key={banner.id || idx}
+                      className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 relative group"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/50">
+                            #{idx + 1}
+                          </span>
                           <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "liveBannerImage");
-                            }}
+                            type="text"
+                            value={banner.title}
+                            onChange={(e) => updateBanner(idx, "title", e.target.value)}
+                            className="bg-transparent font-bold text-sm text-slate-100 border-b border-transparent focus:border-amber-500 outline-none px-1 py-0.5"
+                            placeholder="Judul Banner"
                           />
-                        </label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={banner.isEnabled}
+                              onChange={(e) => updateBanner(idx, "isEnabled", e.target.checked)}
+                              className="rounded border-slate-700 text-amber-500 focus:ring-amber-500"
+                            />
+                            <span>{banner.isEnabled ? "Aktif" : "Non-aktif"}</span>
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => moveBanner(idx, "up")}
+                            disabled={idx === 0}
+                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                            title="Geser Ke Atas"
+                          >
+                            <MoveUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveBanner(idx, "down")}
+                            disabled={idx === (profile.banners || []).length - 1}
+                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                            title="Geser Ke Bawah"
+                          >
+                            <MoveDown className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => removeBanner(idx)}
+                            className="p-1 rounded bg-red-950/50 hover:bg-red-900/60 text-red-400 hover:text-red-200 transition-colors"
+                            title="Hapus Banner"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">Sub Judul / Deskripsi</label>
+                          <input
+                            type="text"
+                            value={banner.subtitle}
+                            onChange={(e) => updateBanner(idx, "subtitle", e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
+                            placeholder="Deskripsi promo"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">Text Badge Pill</label>
+                          <input
+                            type="text"
+                            value={banner.badgeText}
+                            onChange={(e) => updateBanner(idx, "badgeText", e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
+                            placeholder="LIVE / QUEUE, PROMO, dll"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">URL Target Klik</label>
+                          <input
+                            type="text"
+                            value={banner.targetUrl}
+                            onChange={(e) => updateBanner(idx, "targetUrl", e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
+                            placeholder="/mabarvip"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">Gambar Background URL</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={banner.imageUrl}
+                            onChange={(e) => updateBanner(idx, "imageUrl", e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
+                            placeholder="https://..."
+                          />
+                          <label className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors">
+                            {uploadingField === `banner-${idx}` ? (
+                              <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                            ) : (
+                              <Upload className="w-3.5 h-3.5 text-amber-400" />
+                            )}
+                            <span>Upload</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) handleBannerImageUpload(e.target.files[0], idx);
+                              }}
+                            />
+                          </label>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -631,8 +1206,12 @@ export default function EditLinktreePage() {
                     <span>Link Aktif</span>
                   </div>
                   <div>
+                    <span className="block font-bold text-slate-200">{(profile.banners || []).filter((b) => b.isEnabled).length}</span>
+                    <span>Banner Aktif</span>
+                  </div>
+                  <div>
                     <span className="block font-bold text-slate-200 uppercase">{profile.theme}</span>
-                    <span>Tema Selected</span>
+                    <span>Tema</span>
                   </div>
                 </div>
 

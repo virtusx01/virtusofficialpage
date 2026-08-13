@@ -38,6 +38,7 @@ model LinktreeProfile {
   name             String         @default("Jessica Jones")
   bio              String         @default("Seasoned Senior Marketing Manager, excels in strategic marketing.")
   avatarUrl        String         @default("https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80")
+  avatarBorderColor String        @default("from-cyan-400 via-indigo-500 to-purple-500")
   theme            String         @default("ocean") // ocean, dark, neon, sunset, glass
   socialHeaderTitle String        @default("Social Media Handles")
   showLiveBanner   Boolean        @default(true)
@@ -45,7 +46,14 @@ model LinktreeProfile {
   liveBannerSub    String         @default("Join our exclusive gaming stream & VIP queue")
   liveBannerUrl    String         @default("/mabarvip")
   liveBannerImage  String         @default("https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80")
+  siteTitle        String         @default("Virtus Official")
+  siteSubtitle     String         @default("Streamer TIDAK KIKIR")
+  siteLogoUrl      String         @default("")
+  footerDesc       String         @default("Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.")
   links            LinktreeLink[]
+  banners          LinktreeBanner[]
+  topButtons       LinktreeTopButton[]
+  codes            LinktreeCode[]
   updatedAt        DateTime       @updatedAt
 }
 
@@ -55,6 +63,47 @@ model LinktreeLink {
   url         String
   icon        String          @default("globe") // facebook, instagram, linkedin, youtube, tiktok, twitter, github, globe, message
   category    String          @default("social") // "social" | "custom"
+  isEnabled   Boolean         @default(true)
+  orderIndex  Int             @default(0)
+  profileId   String          @default("profile")
+  profile     LinktreeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model LinktreeBanner {
+  id          String          @id @default(uuid())
+  title       String          @default("Judul Banner")
+  subtitle    String          @default("Deskripsi singkat banner")
+  badgeText   String          @default("LIVE / QUEUE")
+  targetUrl   String          @default("/mabarvip")
+  imageUrl    String          @default("https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80")
+  isEnabled   Boolean         @default(true)
+  orderIndex  Int             @default(0)
+  profileId   String          @default("profile")
+  profile     LinktreeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model LinktreeTopButton {
+  id            String          @id @default(uuid())
+  title         String          @default("Mabar VIP")
+  url           String          @default("/mabarvip")
+  icon          String          @default("gamepad") // gamepad, share, globe, message, stream, etc.
+  isShareAction Boolean         @default(false)
+  isEnabled     Boolean         @default(true)
+  orderIndex    Int             @default(0)
+  profileId     String          @default("profile")
+  profile       LinktreeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model LinktreeCode {
+  id          String          @id @default(uuid())
+  title       String          @default("Kode Sensitivitas")
+  code        String          @default("7284-9102-1827-0192")
   isEnabled   Boolean         @default(true)
   orderIndex  Int             @default(0)
   profileId   String          @default("profile")
@@ -73,4 +122,5 @@ model FanbaseCat {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
 

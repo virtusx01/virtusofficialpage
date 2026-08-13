@@ -1,9 +1,57 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, Heart, ArrowUpRight } from "lucide-react";
 
+interface SocialLink {
+  id: string;
+  title: string;
+  url: string;
+  icon: string;
+  category?: string;
+  isEnabled?: boolean;
+}
+
 export default function Footer() {
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [siteTitle, setSiteTitle] = useState("Virtus Official");
+  const [siteSubtitle, setSiteSubtitle] = useState("Streamer TIDAK KIKIR");
+  const [siteLogoUrl, setSiteLogoUrl] = useState("");
+  const [footerDesc, setFooterDesc] = useState("Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.");
+
+  useEffect(() => {
+    const fetchSocialLinks = async () => {
+      try {
+        const res = await fetch("/api/linktree");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.links)) {
+            const active = data.links.filter((l: SocialLink) => l.isEnabled !== false);
+            setSocialLinks(active);
+          }
+          if (data.siteTitle) setSiteTitle(data.siteTitle);
+          if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
+          if (data.siteLogoUrl !== undefined) setSiteLogoUrl(data.siteLogoUrl);
+          if (data.footerDesc) setFooterDesc(data.footerDesc);
+        }
+      } catch (err) {
+        console.error("Failed to fetch social links for footer:", err);
+      }
+    };
+
+    fetchSocialLinks();
+  }, []);
+
+  const defaultLinks: SocialLink[] = [
+    { id: "1", title: "Order VIP Sociabuzz", url: "https://sociabuzz.com/onlyvirtus/tribe", icon: "sociabuzz" },
+    { id: "2", title: "WhatsApp Community", url: "https://whatsapp.com", icon: "whatsapp" },
+    { id: "3", title: "TikTok Virtus", url: "https://tiktok.com", icon: "tiktok" },
+    { id: "4", title: "YouTube Channel", url: "https://youtube.com", icon: "youtube" },
+  ];
+
+  const linksToRender = socialLinks.length > 0 ? socialLinks : defaultLinks;
+
   return (
     <footer className="border-t border-slate-900 bg-slate-950/90 text-slate-400 font-sans relative overflow-hidden">
       {/* Background Subtle Glow */}
@@ -13,19 +61,23 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Col 1: Brand Info */}
           <div className="md:col-span-2 space-y-4">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/10 group-hover:scale-105 transition-all">
-                <Sparkles className="w-5 h-5 text-amber-400" />
+            <Link href="/" prefetch={true} className="flex items-center gap-3 group">
+              <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/10 group-hover:scale-105 transition-all overflow-hidden shrink-0">
+                {siteLogoUrl ? (
+                  <img src={siteLogoUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                )}
               </div>
               <div>
                 <h3 className="text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent">
-                  Mabar VIP By Virtus
+                  {siteTitle}
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">DIJAMIN AUTO DIGENDONG EUYY</p>
+                <p className="text-xs text-slate-500 font-medium">{siteSubtitle}</p>
               </div>
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed max-w-md">
-              Platform resmi antrean Mabar VIP dan Linktree Virtus. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan konten terbaru kami.
+              {footerDesc}
             </p>
             <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-3 py-1.5 rounded-full w-fit">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -38,18 +90,18 @@ export default function Footer() {
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">Navigasi Utama</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/" className="hover:text-white transition-colors flex items-center gap-1.5">
+                <Link href="/" prefetch={true} className="hover:text-white transition-colors flex items-center gap-1.5">
                   <span>Halaman Utama (Linktree)</span>
                 </Link>
               </li>
               <li>
-                <Link href="/mabarvip" className="hover:text-white transition-colors flex items-center gap-1.5">
+                <Link href="/mabarvip" prefetch={true} className="hover:text-white transition-colors flex items-center gap-1.5">
                   <span>Mabar VIP</span>
                   <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-violet-500/20 text-violet-300">QUEUE</span>
                 </Link>
               </li>
               <li>
-                <Link href="/fanbase-cupidut-dudud" className="hover:text-white transition-colors flex items-center gap-1.5">
+                <Link href="/fanbase-cupidut-dudud" prefetch={true} className="hover:text-white transition-colors flex items-center gap-1.5">
                   <span>Fanbase Cupidut & Dudud</span>
                   <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-fuchsia-500/20 text-fuchsia-300">CAT 🐾</span>
                 </Link>
@@ -57,61 +109,46 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Col 3: Social & Support */}
+          {/* Col 3: Social & Support (Based on main page Linktree data) */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">Sosial Media & Join</h4>
             <ul className="space-y-2 text-sm">
-              <li>
-                <a
-                  href="https://sociabuzz.com/onlyvirtus/tribe"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-amber-400 transition-colors flex items-center gap-1 text-amber-500 font-medium"
-                >
-                  <span>Order VIP Sociabuzz</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://whatsapp.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-emerald-400 transition-colors flex items-center gap-1"
-                >
-                  <span>WhatsApp Community</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://tiktok.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-cyan-400 transition-colors flex items-center gap-1"
-                >
-                  <span>TikTok Virtus</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-red-400 transition-colors flex items-center gap-1"
-                >
-                  <span>YouTube Channel</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </a>
-              </li>
+              {linksToRender.map((link) => {
+                const isInternal = link.url.startsWith("/");
+                if (isInternal) {
+                  return (
+                    <li key={link.id}>
+                      <Link
+                        href={link.url}
+                        prefetch={true}
+                        className="hover:text-white transition-colors flex items-center gap-1 text-slate-300"
+                      >
+                        <span>{link.title}</span>
+                      </Link>
+                    </li>
+                  );
+                }
+                return (
+                  <li key={link.id}>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-violet-300 transition-colors flex items-center gap-1 text-slate-300"
+                    >
+                      <span>{link.title}</span>
+                      <ArrowUpRight className="w-3.5 h-3.5 opacity-70" />
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>&copy; {new Date().getFullYear()} Mabar VIP By Virtus. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Virtus Official. All rights reserved.</p>
           <div className="flex items-center gap-1">
             <span>Crafted with</span>
             <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 inline" />

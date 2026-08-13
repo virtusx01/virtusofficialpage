@@ -10,8 +10,8 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        const adminUser = process.env.ADMIN_USERNAME || "admin";
-        const adminPass = process.env.ADMIN_PASSWORD || "mabarvip123";
+        const adminUser = process.env.ADMIN_USERNAME || "admin_virtus";
+        const adminPass = process.env.ADMIN_PASSWORD || "@Deathready0";
 
         if (
           credentials?.username === adminUser &&
