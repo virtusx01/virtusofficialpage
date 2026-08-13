@@ -149,6 +149,8 @@ export default function EditLinktreePage() {
   });
 
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [faviconUploading, setFaviconUploading] = useState(false);
+  const [faviconSuccess, setFaviconSuccess] = useState(false);
 
   const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.85): Promise<Blob> => {
     return new Promise((resolve) => {
@@ -197,12 +199,10 @@ export default function EditLinktreePage() {
     });
   };
 
-  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "siteLogoUrl") => {
+  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage") => {
     setUploadingField(field);
     try {
-      // Logo/icon site hanya perlu max 120x120px agar super cepat diupload & dimuat
-      const isLogo = field === "siteLogoUrl";
-      const compressedBlob = await compressImage(file, isLogo ? 120 : 800, isLogo ? 120 : 800, isLogo ? 0.9 : 0.85);
+      const compressedBlob = await compressImage(file, 800, 800, 0.85);
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
 
@@ -224,6 +224,69 @@ export default function EditLinktreePage() {
       alert(`Terjadi kesalahan saat mengunggah gambar: ${err?.message || err}`);
     } finally {
       setUploadingField(null);
+    }
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    setUploadingField("siteLogoUrl");
+    try {
+      // Logo hanya 120x120px — file statis di /public/site-logo.png
+      const compressedBlob = await compressImage(file, 120, 120, 0.92);
+      const formData = new FormData();
+      formData.append("file", compressedBlob, "site-logo.png");
+      formData.append("target", "logo");
+
+      const res = await fetch("/api/upload-public", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        // Gunakan cache-busting agar browser muat versi terbaru
+        const cacheBustedUrl = `/site-logo.png?v=${Date.now()}`;
+        setProfile((prev) => ({ ...prev, siteLogoUrl: cacheBustedUrl }));
+        setSaveSuccess(false);
+      } else {
+        alert(`Gagal mengunggah logo: ${data.error || "Server error"}`);
+      }
+    } catch (err: any) {
+      console.error("Logo upload error:", err);
+      alert(`Terjadi kesalahan: ${err?.message || err}`);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  const handleFaviconUpload = async (file: File) => {
+    setFaviconUploading(true);
+    setFaviconSuccess(false);
+    try {
+      // Favicon dikompres jadi 64x64px agar ringan
+      const compressedBlob = await compressImage(file, 64, 64, 0.95);
+      const formData = new FormData();
+      formData.append("file", compressedBlob, "favicon.ico");
+      formData.append("target", "favicon");
+
+      const res = await fetch("/api/upload-public", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        setFaviconSuccess(true);
+        setTimeout(() => setFaviconSuccess(false), 3000);
+      } else {
+        alert(`Gagal mengunggah favicon: ${data.error || "Server error"}`);
+      }
+    } catch (err: any) {
+      console.error("Favicon upload error:", err);
+      alert(`Terjadi kesalahan: ${err?.message || err}`);
+    } finally {
+      setFaviconUploading(false);
     }
   };
 
@@ -589,33 +652,47 @@ export default function EditLinktreePage() {
                 </div>
               </div>
 
+              {/* Logo Website */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Logo Website (Upload Gambar / Input URL)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={profile.siteLogoUrl || ""}
-                    onChange={(e) => setProfile({ ...profile, siteLogoUrl: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
-                    placeholder="Biarkan kosong untuk menggunakan ikon Sparkles bawaan"
-                  />
-                  <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
-                    {uploadingField === "siteLogoUrl" ? (
-                      <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Logo Website <span className="text-slate-500 font-normal">(disimpan statis di /public – dimuat instan)</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  {/* Preview logo */}
+                  <div className="h-12 w-12 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center overflow-hidden shrink-0">
+                    {profile.siteLogoUrl ? (
+                      <img src={profile.siteLogoUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <Upload className="w-4 h-4 text-violet-400" />
+                      <span className="text-[10px] text-slate-500 text-center leading-tight px-1">Belum ada</span>
                     )}
-                    <span>Upload Logo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "siteLogoUrl");
-                      }}
-                    />
-                  </label>
+                  </div>
+                  <div className="flex-1 flex gap-2">
+                    <label className="flex items-center gap-1.5 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-lg shadow-violet-900/40">
+                      {uploadingField === "siteLogoUrl" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      <span>{uploadingField === "siteLogoUrl" ? "Mengupload..." : "Upload Logo"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]);
+                        }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setProfile({ ...profile, siteLogoUrl: "" })}
+                      className="px-3 py-2 bg-slate-800 hover:bg-red-900/60 text-slate-400 hover:text-red-300 border border-slate-700 rounded-xl text-xs font-semibold transition-colors"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </div>
+                <p className="text-[11px] text-slate-600 mt-1.5">File disimpan di <code className="text-slate-500">/public/site-logo.png</code> — tidak perlu tekan Simpan Perubahan</p>
               </div>
 
               <div>
@@ -627,6 +704,44 @@ export default function EditLinktreePage() {
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100 resize-none"
                   placeholder="Deskripsi singkat yang tampil di bagian paling bawah footer..."
                 />
+              </div>
+
+              {/* Favicon / Icon Tab Browser */}
+              <div className="pt-3 border-t border-slate-800/60">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Icon Tab Browser (Favicon) <span className="text-slate-500 font-normal">(disimpan statis di /public)</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                    <img
+                      src={`/favicon.ico?v=${Date.now()}`}
+                      alt=""
+                      className="w-8 h-8 object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </div>
+                  <div className="flex-1 flex gap-2 items-center">
+                    <label className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-lg ${faviconSuccess ? 'bg-emerald-600 text-white shadow-emerald-900/40' : 'bg-slate-700 hover:bg-slate-600 text-slate-200 shadow-slate-900/40'}`}>
+                      {faviconUploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : faviconSuccess ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      <span>{faviconUploading ? "Mengupload..." : faviconSuccess ? "Berhasil!" : "Upload Favicon"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleFaviconUpload(e.target.files[0]);
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-600 mt-1.5">Disimpan sebagai <code className="text-slate-500">/public/favicon.ico</code> dan <code className="text-slate-500">/public/icon.png</code> — tidak perlu tekan Simpan Perubahan</p>
               </div>
             </div>
 

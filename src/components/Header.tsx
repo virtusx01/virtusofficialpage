@@ -15,12 +15,16 @@ export default function Header() {
 
   const [siteTitle, setSiteTitle] = useState("Virtus Official");
   const [siteSubtitle, setSiteSubtitle] = useState("Streamer TIDAK KIKIR");
-  const [siteLogoUrl, setSiteLogoUrl] = useState("");
+  // Logo selalu dari path statis /site-logo.png — tidak perlu fetch API
+  const [logoExists, setLogoExists] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
-    setLogoError(false);
-  }, [siteLogoUrl]);
+    // Cek apakah file statis logo tersedia
+    fetch(`/site-logo.png`, { method: 'HEAD' })
+      .then((r) => { if (r.ok) setLogoExists(true); })
+      .catch(() => {});
+  }, []);
 
   // Auto-detect live status & site branding settings
   useEffect(() => {
@@ -44,7 +48,6 @@ export default function Header() {
           if (data && !data.error) {
             if (data.siteTitle) setSiteTitle(data.siteTitle);
             if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
-            if (data.siteLogoUrl !== undefined) setSiteLogoUrl(data.siteLogoUrl);
           }
         }
       } catch (err) {}
@@ -89,8 +92,8 @@ export default function Header() {
           className="flex items-center gap-3 group shrink-0"
         >
           <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
-            {siteLogoUrl && !logoError ? (
-              <img src={siteLogoUrl} alt="" onError={() => setLogoError(true)} className="w-full h-full object-cover" />
+            {logoExists && !logoError ? (
+              <img src="/site-logo.png" alt="" onError={() => setLogoError(true)} className="w-full h-full object-cover" />
             ) : (
               <Sparkles className="w-5 h-5 text-amber-400" />
             )}
