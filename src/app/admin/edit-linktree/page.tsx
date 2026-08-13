@@ -152,7 +152,7 @@ export default function EditLinktreePage() {
 
   const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.85): Promise<Blob> => {
     return new Promise((resolve) => {
-      if (file.size <= 150 * 1024 || !file.type.startsWith('image/')) {
+      if (!file.type.startsWith('image/')) {
         return resolve(file);
       }
       const reader = new FileReader();
@@ -200,7 +200,9 @@ export default function EditLinktreePage() {
   const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "siteLogoUrl") => {
     setUploadingField(field);
     try {
-      const compressedBlob = await compressImage(file);
+      // Logo/icon site hanya perlu max 120x120px agar super cepat diupload & dimuat
+      const isLogo = field === "siteLogoUrl";
+      const compressedBlob = await compressImage(file, isLogo ? 120 : 800, isLogo ? 120 : 800, isLogo ? 0.9 : 0.85);
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
 

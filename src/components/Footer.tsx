@@ -84,10 +84,6 @@ export default function Footer() {
             <p className="text-sm text-slate-400 leading-relaxed max-w-md">
               {footerDesc}
             </p>
-            <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-3 py-1.5 rounded-full w-fit">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-semibold">Server & System Operational</span>
-            </div>
           </div>
 
           {/* Col 2: Navigation Links */}
@@ -153,11 +149,11 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>&copy; {new Date().getFullYear()} Virtus Official. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Virtus Official. Hak cipta dilindungi.</p>
           <div className="flex items-center gap-1">
-            <span>Crafted with</span>
+            <span>Dibuat dengan</span>
             <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 inline" />
-            <span>for Virtus Community</span>
+            <span>untuk Komunitas Virtus</span>
           </div>
         </div>
       </div>
