@@ -19,6 +19,11 @@ export default function Footer() {
   const [siteSubtitle, setSiteSubtitle] = useState("Streamer TIDAK KIKIR");
   const [siteLogoUrl, setSiteLogoUrl] = useState("");
   const [footerDesc, setFooterDesc] = useState("Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.");
+  const [logoError, setLogoError] = useState(false);
+
+  useEffect(() => {
+    setLogoError(false);
+  }, [siteLogoUrl]);
 
   useEffect(() => {
     const fetchSocialLinks = async () => {
@@ -63,8 +68,8 @@ export default function Footer() {
           <div className="md:col-span-2 space-y-4">
             <Link href="/" prefetch={true} className="flex items-center gap-3 group">
               <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/10 group-hover:scale-105 transition-all overflow-hidden shrink-0">
-                {siteLogoUrl ? (
-                  <img src={siteLogoUrl} alt="" className="w-full h-full object-cover" />
+                {siteLogoUrl && !logoError ? (
+                  <img src={siteLogoUrl} alt="" onError={() => setLogoError(true)} className="w-full h-full object-cover" />
                 ) : (
                   <Sparkles className="w-5 h-5 text-amber-400" />
                 )}

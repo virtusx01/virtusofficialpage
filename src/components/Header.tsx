@@ -16,6 +16,11 @@ export default function Header() {
   const [siteTitle, setSiteTitle] = useState("Virtus Official");
   const [siteSubtitle, setSiteSubtitle] = useState("Streamer TIDAK KIKIR");
   const [siteLogoUrl, setSiteLogoUrl] = useState("");
+  const [logoError, setLogoError] = useState(false);
+
+  useEffect(() => {
+    setLogoError(false);
+  }, [siteLogoUrl]);
 
   // Auto-detect live status & site branding settings
   useEffect(() => {
@@ -84,8 +89,8 @@ export default function Header() {
           className="flex items-center gap-3 group shrink-0"
         >
           <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
-            {siteLogoUrl ? (
-              <img src={siteLogoUrl} alt="" className="w-full h-full object-cover" />
+            {siteLogoUrl && !logoError ? (
+              <img src={siteLogoUrl} alt="" onError={() => setLogoError(true)} className="w-full h-full object-cover" />
             ) : (
               <Sparkles className="w-5 h-5 text-amber-400" />
             )}

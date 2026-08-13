@@ -150,11 +150,59 @@ export default function EditLinktreePage() {
 
   const [uploadingField, setUploadingField] = useState<string | null>(null);
 
+  const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.85): Promise<Blob> => {
+    return new Promise((resolve) => {
+      if (file.size <= 150 * 1024 || !file.type.startsWith('image/')) {
+        return resolve(file);
+      }
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(file);
+
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              resolve(blob || file);
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+      };
+      reader.onerror = () => resolve(file);
+    });
+  };
+
   const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "siteLogoUrl") => {
     setUploadingField(field);
     try {
+      const compressedBlob = await compressImage(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -165,6 +213,7 @@ export default function EditLinktreePage() {
 
       if (res.ok && data.url) {
         setProfile((prev) => ({ ...prev, [field]: data.url }));
+        setSaveSuccess(false);
       } else {
         alert(`Gagal mengunggah gambar: ${data.error || "Server error"}`);
       }
@@ -179,8 +228,9 @@ export default function EditLinktreePage() {
   const handleBannerImageUpload = async (file: File, index: number) => {
     setUploadingField(`banner-${index}`);
     try {
+      const compressedBlob = await compressImage(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -191,6 +241,7 @@ export default function EditLinktreePage() {
 
       if (res.ok && data.url) {
         updateBanner(index, "imageUrl", data.url);
+        setSaveSuccess(false);
       } else {
         alert(`Gagal mengunggah gambar: ${data.error || "Server error"}`);
       }
