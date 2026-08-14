@@ -79,7 +79,7 @@ export default function Footer({ initialData }: FooterProps = {}) {
                 <p className="text-xs text-slate-500 font-medium">{siteSubtitle}</p>
               </div>
             </Link>
-            <p className="text-sm text-slate-400 leading-relaxed max-w-md">
+            <p className="text-sm text-slate-400 leading-relaxed max-w-md whitespace-pre-line">
               {footerDesc}
             </p>
           </div>

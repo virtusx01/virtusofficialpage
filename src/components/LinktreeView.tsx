@@ -398,7 +398,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
               <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${currentTheme.textColor}`}>
                 {profile.name}
               </h1>
-              <p className={`text-sm leading-relaxed max-w-xs mx-auto font-medium ${currentTheme.subColor}`}>
+              <p className={`text-sm leading-relaxed max-w-xs mx-auto font-medium whitespace-pre-line ${currentTheme.subColor}`}>
                 {profile.bio}
               </p>
 

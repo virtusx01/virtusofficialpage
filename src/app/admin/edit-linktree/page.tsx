@@ -1258,7 +1258,7 @@ export default function EditLinktreePage() {
                     className="w-16 h-16 rounded-full object-cover border-2 border-violet-500 shadow-md"
                   />
                   <h3 className="font-bold text-slate-100">{profile.name || "Jessica Jones"}</h3>
-                  <p className="text-xs text-slate-400 line-clamp-2 px-2">{profile.bio}</p>
+                  <p className="text-xs text-slate-400 px-2 whitespace-pre-line">{profile.bio}</p>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-around text-xs text-slate-400">
