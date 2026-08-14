@@ -23,7 +23,7 @@ export default function Header() {
     // Cek apakah file statis logo tersedia
     fetch(`/site-logo.png`, { method: 'HEAD' })
       .then((r) => { if (r.ok) setLogoExists(true); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Auto-detect live status & site branding settings
@@ -50,7 +50,7 @@ export default function Header() {
             if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
           }
         }
-      } catch (err) {}
+      } catch (err) { }
     };
 
     checkLiveStatus();
@@ -71,12 +71,12 @@ export default function Header() {
       href: "/mabarvip",
       label: "Mabar VIP",
       icon: Users,
-      badge: isLive ? "LIVE" : "QUEUE",
+      badge: isLive ? "SEDANG LIVE" : "BELUM LIVE",
       isLive,
     },
     {
       href: "/fanbase-cupidut-dudud",
-      label: "Fanbase Cat",
+      label: "Fanbase Cupidut & Dudud",
       icon: Cat,
     },
   ];
@@ -116,26 +116,23 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 prefetch={true}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  active
-                    ? "bg-violet-600 text-white shadow-md shadow-violet-600/20"
-                    : "text-slate-300 hover:text-white hover:bg-slate-850"
-                }`}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${active
+                  ? "bg-violet-600 text-white shadow-md shadow-violet-600/20"
+                  : "text-slate-300 hover:text-white hover:bg-slate-850"
+                  }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{link.label}</span>
                 {link.badge && (
                   <span
-                    className={`flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
-                      link.isLive
-                        ? "bg-red-500/20 text-red-400 border-red-500/30 shadow-sm shadow-red-500/20"
-                        : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                    }`}
+                    className={`flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${link.isLive
+                      ? "bg-red-500/20 text-red-400 border-red-500/30 shadow-sm shadow-red-500/20"
+                      : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                      }`}
                   >
                     <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        link.isLive ? "bg-red-500 animate-pulse" : "bg-emerald-400"
-                      }`}
+                      className={`h-1.5 w-1.5 rounded-full ${link.isLive ? "bg-red-500 animate-pulse" : "bg-emerald-400"
+                        }`}
                     />
                     {link.badge}
                   </span>
@@ -192,11 +189,10 @@ export default function Header() {
                   href={link.href}
                   prefetch={true}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                    active
-                      ? "bg-violet-600 text-white shadow-md"
-                      : "text-slate-300 hover:bg-slate-900 hover:text-white"
-                  }`}
+                  className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${active
+                    ? "bg-violet-600 text-white shadow-md"
+                    : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon className="w-4 h-4" />
@@ -204,11 +200,10 @@ export default function Header() {
                   </div>
                   {link.badge && (
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        link.isLive
-                          ? "bg-red-500/20 text-red-400 border-red-500/30"
-                          : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                      }`}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${link.isLive
+                        ? "bg-red-500/20 text-red-400 border-red-500/30"
+                        : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                        }`}
                     >
                       {link.badge}
                     </span>
