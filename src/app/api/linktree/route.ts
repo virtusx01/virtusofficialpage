@@ -6,10 +6,9 @@ const isUUID = (str: any) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
 const DEFAULT_LINKS = [
-  { title: 'Facebook', url: 'https://facebook.com', icon: 'facebook', category: 'social', orderIndex: 0 },
-  { title: 'Instagram', url: 'https://instagram.com', icon: 'instagram', category: 'social', orderIndex: 1 },
-  { title: 'LinkedIn', url: 'https://linkedin.com', icon: 'linkedin', category: 'social', orderIndex: 2 },
-  { title: 'Mabar VIP Queue', url: '/mabarvip', icon: 'globe', category: 'custom', orderIndex: 3 },
+  { title: 'Tiktok', url: 'https://www.tiktok.com/@onlyvirtus', icon: 'tiktok', category: 'social', headerTitle: '', orderIndex: 0 },
+  { title: 'Youtube', url: 'https://youtube.com', icon: 'youtube', category: 'social', headerTitle: '', orderIndex: 1 },
+  { title: 'Astra Points (Top Up)', url: 'https://astrapoints.com', icon: 'globe', category: 'custom', headerTitle: 'Top Up di sini', orderIndex: 2 },
 ];
 
 const DEFAULT_BANNERS = [
