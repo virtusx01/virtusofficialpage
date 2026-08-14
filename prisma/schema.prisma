@@ -49,6 +49,7 @@ model LinktreeProfile {
   siteTitle        String         @default("Virtus Official")
   siteSubtitle     String         @default("Streamer TIDAK KIKIR")
   siteLogoUrl      String         @default("")
+  faviconUrl       String         @default("")
   footerDesc       String         @default("Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.")
   links            LinktreeLink[]
   banners          LinktreeBanner[]

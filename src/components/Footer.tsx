@@ -17,16 +17,13 @@ export default function Footer() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [siteTitle, setSiteTitle] = useState("Virtus Official");
   const [siteSubtitle, setSiteSubtitle] = useState("Streamer TIDAK KIKIR");
-  const [footerDesc, setFooterDesc] = useState("Platform resmi Virtus Official. Dapatkan akses ke informasi seputar Valorant Mobile, Mabar VIP, Fanbase Cupidut & Dudud, dan tautan sosial media resmi aku.");
-  // Logo selalu dari path statis /site-logo.png
-  const [logoExists, setLogoExists] = useState(false);
+  const [siteLogoUrl, setSiteLogoUrl] = useState("");
+  const [footerDesc, setFooterDesc] = useState("Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.");
   const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
-    fetch('/site-logo.png', { method: 'HEAD' })
-      .then((r) => { if (r.ok) setLogoExists(true); })
-      .catch(() => { });
-  }, []);
+    setLogoError(false);
+  }, [siteLogoUrl]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,6 +37,7 @@ export default function Footer() {
           }
           if (data.siteTitle) setSiteTitle(data.siteTitle);
           if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
+          if (data.siteLogoUrl !== undefined) setSiteLogoUrl(data.siteLogoUrl);
           if (data.footerDesc) setFooterDesc(data.footerDesc);
         }
       } catch (err) {
@@ -70,8 +68,8 @@ export default function Footer() {
           <div className="md:col-span-2 space-y-4">
             <Link href="/" prefetch={true} className="flex items-center gap-3 group">
               <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/10 group-hover:scale-105 transition-all overflow-hidden shrink-0">
-                {logoExists && !logoError ? (
-                  <img src="/site-logo.png" alt="" onError={() => setLogoError(true)} className="w-full h-full object-cover" />
+                {siteLogoUrl && !logoError ? (
+                  <img src={siteLogoUrl} alt="" onError={() => setLogoError(true)} className="w-full h-full object-cover" />
                 ) : (
                   <Sparkles className="w-5 h-5 text-amber-400" />
                 )}

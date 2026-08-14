@@ -230,7 +230,7 @@ export default function EditLinktreePage() {
   const handleLogoUpload = async (file: File) => {
     setUploadingField("siteLogoUrl");
     try {
-      // Logo hanya 120x120px — file statis di /public/site-logo.png
+      // Logo dikompres 120x120px lalu upload ke Supabase dengan nama tetap (upsert)
       const compressedBlob = await compressImage(file, 120, 120, 0.92);
       const formData = new FormData();
       formData.append("file", compressedBlob, "site-logo.png");
@@ -244,10 +244,17 @@ export default function EditLinktreePage() {
       const data = await res.json();
 
       if (res.ok && data.url) {
-        // Gunakan cache-busting agar browser muat versi terbaru
-        const cacheBustedUrl = `/site-logo.png?v=${Date.now()}`;
-        setProfile((prev) => ({ ...prev, siteLogoUrl: cacheBustedUrl }));
-        setSaveSuccess(false);
+        // Auto-simpan URL ke database langsung tanpa perlu klik Simpan
+        const saveRes = await fetch("/api/linktree", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ siteLogoUrl: data.url }),
+        });
+        if (saveRes.ok) {
+          setProfile((prev) => ({ ...prev, siteLogoUrl: data.url }));
+        } else {
+          setProfile((prev) => ({ ...prev, siteLogoUrl: data.url }));
+        }
       } else {
         alert(`Gagal mengunggah logo: ${data.error || "Server error"}`);
       }
@@ -263,10 +270,10 @@ export default function EditLinktreePage() {
     setFaviconUploading(true);
     setFaviconSuccess(false);
     try {
-      // Favicon dikompres jadi 64x64px agar ringan
+      // Favicon dikompres 64x64px lalu upload ke Supabase dengan nama tetap (upsert)
       const compressedBlob = await compressImage(file, 64, 64, 0.95);
       const formData = new FormData();
-      formData.append("file", compressedBlob, "favicon.ico");
+      formData.append("file", compressedBlob, "site-favicon.png");
       formData.append("target", "favicon");
 
       const res = await fetch("/api/upload-public", {
@@ -277,6 +284,12 @@ export default function EditLinktreePage() {
       const data = await res.json();
 
       if (res.ok && data.url) {
+        // Auto-simpan faviconUrl ke database
+        await fetch("/api/linktree", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ faviconUrl: data.url }),
+        });
         setFaviconSuccess(true);
         setTimeout(() => setFaviconSuccess(false), 3000);
       } else {
