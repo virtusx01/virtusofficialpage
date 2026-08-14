@@ -161,19 +161,28 @@ export default function AdminDashboard() {
     setIsModalOpen(true);
   };
 
-  // Pre-fill modal for reordering
-  const handleReorderClick = (player: Player) => {
-    setEditingPlayer(null); // Create a new record
-    setFormData({
-      name: player.name,
-      gameId: player.gameId,
-      vipType: player.vipType,
-      status: "QUEUE", // Default back to queue
-      matchesTotal: player.matchesTotal || 3,
-      matchesPlayed: 0, // Reset played count
-      notes: player.notes
-    });
-    setIsModalOpen(true);
+  // Move completed player back to active queue directly (No duplicate record created)
+  const handleReorderClick = async (player: Player) => {
+    try {
+      const res = await fetch(`/api/players/${player.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "QUEUE",
+          matchesPlayed: 0,
+          matchesTotal: player.matchesTotal || (player.vipType === "PER_MATCH" ? 3 : 0),
+        })
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Gagal memindahkan player ke antrean.");
+      }
+    } catch (error) {
+      console.error("Reorder error:", error);
+      alert("Terjadi kesalahan koneksi.");
+    }
   };
 
   // Save Player (Create or Edit)

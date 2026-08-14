@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import {
   Settings,
   Eye,
@@ -103,6 +104,9 @@ const LOCAL_STORAGE_KEY = "mabarvip_textBerjalanConfig_v1";
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function TextBerjalanClient({ initialPlayers, initialConfig }: Props) {
+  const { data: session } = useSession();
+  const isAdmin = session?.user && (session.user as any).role === "admin";
+
   // Initialize config: merge saved DB config over defaults
   const [config, setConfig] = useState<TextBerjalanConfig>(() => ({
     ...DEFAULT_CONFIG,
@@ -704,20 +708,22 @@ export default function TextBerjalanClient({ initialPlayers, initialConfig }: Pr
         </div>
       )}
 
-      {/* ── Toggle Editor Button ── */}
-      <button
-        onClick={() => setShowEditor(s => !s)}
-        style={{
-          position:"fixed", bottom:24, right:24, padding:16, borderRadius:"50%",
-          background:"rgba(2,6,23,0.6)", border:"1px solid #1e293b", color:"#fff",
-          backdropFilter:"blur(12px)", cursor:"pointer", zIndex:200,
-          opacity: showEditor ? 1 : 0.6, transition:"all 0.3s",
-          boxShadow:"0 10px 25px rgba(0,0,0,0.4)"
-        }}
-        title="Toggle Pengaturan"
-      >
-        {showEditor ? <EyeOff size={22} /> : <Eye size={22} />}
-      </button>
+      {/* ── Toggle Editor Button (Hanya Tampil Jika Login Admin) ── */}
+      {isAdmin && (
+        <button
+          onClick={() => setShowEditor(s => !s)}
+          style={{
+            position:"fixed", bottom:24, right:24, padding:16, borderRadius:"50%",
+            background:"rgba(2,6,23,0.6)", border:"1px solid #1e293b", color:"#fff",
+            backdropFilter:"blur(12px)", cursor:"pointer", zIndex:200,
+            opacity: showEditor ? 1 : 0.6, transition:"all 0.3s",
+            boxShadow:"0 10px 25px rgba(0,0,0,0.4)"
+          }}
+          title="Toggle Pengaturan (Admin)"
+        >
+          {showEditor ? <EyeOff size={22} /> : <Eye size={22} />}
+        </button>
+      )}
     </div>
   );
 }

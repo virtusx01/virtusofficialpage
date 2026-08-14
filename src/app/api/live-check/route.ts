@@ -15,12 +15,14 @@ export async function checkTikTokLive(username: string): Promise<{ isLive: boole
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
 
+    // Strategy 1: Fetch TikTok HTML profile / live page
     const res = await fetch(liveUrl, {
       signal: controller.signal,
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Cache-Control": "no-cache",
       },
     });
@@ -33,17 +35,13 @@ export async function checkTikTokLive(username: string): Promise<{ isLive: boole
 
     const html = await res.text();
 
-    // Check TikTok LIVE status indicators from SSR html & JSON state
-    const isLive =
-      (html.includes('"status":2') ||
-        html.includes('"room_status":2') ||
-        html.includes('"liveRoom"') ||
-        html.includes('"liveStatus":2') ||
-        html.includes('data-e2e="live-room"') ||
-        (html.includes("WATCH LIVE") && !html.includes("LIVE has ended"))) &&
-      !html.includes("LIVE has ended") &&
-      !html.includes("is not LIVE") &&
-      !html.includes("room_status\":4");
+    // Check TikTok LIVE status indicators from SSR html & SIGI state
+    const hasLiveRoomTag = html.includes('data-e2e="live-room"') || html.includes('data-e2e="live-player"');
+    const hasLiveStatus2 = html.includes('"status":2') || html.includes('"room_status":2') || html.includes('"liveStatus":2');
+    const hasLiveEndBanner = html.includes("LIVE has ended") || html.includes("Siaran LIVE telah berakhir") || html.includes("is not LIVE");
+    const hasStreamPlayer = html.includes("live-room-player") || (html.includes("WATCH LIVE") && !hasLiveEndBanner);
+
+    const isLive = (hasLiveRoomTag || hasLiveStatus2 || hasStreamPlayer) && !hasLiveEndBanner;
 
     return {
       isLive,
