@@ -65,11 +65,13 @@ export async function GET() {
     });
 
     if (!profile) {
-      profile = await prisma.linktreeProfile.create({
-        data: {
+      profile = await prisma.linktreeProfile.upsert({
+        where: { id: 'profile' },
+        update: {},
+        create: {
           id: 'profile',
-          name: 'Jessica Jones',
-          bio: 'Seasoned Senior Marketing Manager, excels in strategic marketing.',
+          name: 'Virtus Official',
+          bio: 'Streamer & Content Creator',
           avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
           avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
           theme: 'ocean',
