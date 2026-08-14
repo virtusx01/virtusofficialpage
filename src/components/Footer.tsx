@@ -13,22 +13,30 @@ interface SocialLink {
   isEnabled?: boolean;
 }
 
-export default function Footer() {
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const [siteTitle, setSiteTitle] = useState("Virtus Official");
-  const [siteSubtitle, setSiteSubtitle] = useState("Streamer TIDAK KIKIR");
-  const [siteLogoUrl, setSiteLogoUrl] = useState("");
-  const [footerDesc, setFooterDesc] = useState("Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.");
-  const [logoError, setLogoError] = useState(false);
+interface FooterProps {
+  initialData?: {
+    siteTitle?: string;
+    siteSubtitle?: string;
+    footerDesc?: string;
+    links?: SocialLink[];
+  };
+}
 
-  useEffect(() => {
-    setLogoError(false);
-  }, [siteLogoUrl]);
+export default function Footer({ initialData }: FooterProps = {}) {
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialData?.links || []);
+  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
+  const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
+  const [footerDesc, setFooterDesc] = useState(
+    initialData?.footerDesc ||
+    "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami."
+  );
+
+  const [isLoaded, setIsLoaded] = useState(!!initialData);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/linktree");
+        const res = await fetch("/api/linktree", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.links)) {
@@ -37,25 +45,19 @@ export default function Footer() {
           }
           if (data.siteTitle) setSiteTitle(data.siteTitle);
           if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
-          if (data.siteLogoUrl !== undefined) setSiteLogoUrl(data.siteLogoUrl);
-          if (data.footerDesc) setFooterDesc(data.footerDesc);
+          if (data.footerDesc !== undefined) setFooterDesc(data.footerDesc || "");
         }
       } catch (err) {
         console.error("Failed to fetch footer data:", err);
+      } finally {
+        setIsLoaded(true);
       }
     };
 
     fetchData();
   }, []);
 
-  const defaultLinks: SocialLink[] = [
-    { id: "1", title: "Order VIP Sociabuzz", url: "https://sociabuzz.com/onlyvirtus/tribe", icon: "sociabuzz" },
-    { id: "2", title: "WhatsApp Community", url: "https://whatsapp.com", icon: "whatsapp" },
-    { id: "3", title: "TikTok Virtus", url: "https://tiktok.com", icon: "tiktok" },
-    { id: "4", title: "YouTube Channel", url: "https://youtube.com", icon: "youtube" },
-  ];
-
-  const linksToRender = socialLinks.length > 0 ? socialLinks : defaultLinks;
+  const linksToRender = socialLinks;
 
   return (
     <footer className="border-t border-slate-900 bg-slate-950/90 text-slate-400 font-sans relative overflow-hidden">
@@ -67,12 +69,8 @@ export default function Footer() {
           {/* Col 1: Brand Info */}
           <div className="md:col-span-2 space-y-4">
             <Link href="/" prefetch={true} className="flex items-center gap-3 group">
-              <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/10 group-hover:scale-105 transition-all overflow-hidden shrink-0">
-                {siteLogoUrl && !logoError ? (
-                  <img src={siteLogoUrl} alt="" onError={() => setLogoError(true)} className="w-full h-full object-cover" />
-                ) : (
-                  <Sparkles className="w-5 h-5 text-amber-400" />
-                )}
+              <div className="h-10 w-10 rounded-xl  flex items-center justify-center  group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
+                <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h3 className="text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent">
@@ -92,7 +90,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/" prefetch={true} className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <span>Halaman Utama (Linktree)</span>
+                  <span>Halaman Utama</span>
                 </Link>
               </li>
               <li>

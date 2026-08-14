@@ -6,27 +6,28 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { LogOut, LayoutDashboard, Sparkles, Menu, X, Home, Users, Cat } from "lucide-react";
 
-export default function Header() {
+interface HeaderProps {
+  initialData?: {
+    siteTitle?: string;
+    siteSubtitle?: string;
+  };
+}
+
+export default function Header({ initialData }: HeaderProps = {}) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isAdmin = session?.user && (session.user as any).role === "admin";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
-  const [siteTitle, setSiteTitle] = useState("Virtus Official");
-  const [siteSubtitle, setSiteSubtitle] = useState("Streamer TIDAK KIKIR");
-  const [siteLogoUrl, setSiteLogoUrl] = useState("");
-  const [logoError, setLogoError] = useState(false);
-
-  useEffect(() => {
-    setLogoError(false);
-  }, [siteLogoUrl]);
+  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
+  const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
 
   // Auto-detect live status & site branding settings
   useEffect(() => {
     const checkLiveStatus = async () => {
       try {
-        const res = await fetch("/api/settings");
+        const res = await fetch("/api/settings", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setIsLive(!!data.isLive);
@@ -38,13 +39,12 @@ export default function Header() {
 
     const fetchBranding = async () => {
       try {
-        const res = await fetch("/api/linktree");
+        const res = await fetch("/api/linktree", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           if (data && !data.error) {
             if (data.siteTitle) setSiteTitle(data.siteTitle);
             if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
-            if (data.siteLogoUrl !== undefined) setSiteLogoUrl(data.siteLogoUrl);
           }
         }
       } catch (err) { }
@@ -88,12 +88,8 @@ export default function Header() {
           id="nav-brand-logo"
           className="flex items-center gap-3 group shrink-0"
         >
-          <div className="h-10 w-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
-            {siteLogoUrl && !logoError ? (
-              <img src={siteLogoUrl} alt="" onError={() => setLogoError(true)} className="w-full h-full object-cover" />
-            ) : (
-              <Sparkles className="w-5 h-5 text-amber-400" />
-            )}
+          <div className="h-10 w-10 rounded-xl  flex items-center justify-center  group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
+            <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-none">

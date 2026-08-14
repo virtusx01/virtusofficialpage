@@ -73,6 +73,10 @@ export interface LinktreeProfileData {
   liveBannerSub: string;
   liveBannerUrl: string;
   liveBannerImage: string;
+  siteTitle?: string;
+  siteSubtitle?: string;
+  siteLogoUrl?: string;
+  footerDesc?: string;
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
   topButtons?: LinktreeTopButtonItem[];
@@ -246,7 +250,12 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <Header
+        initialData={{
+          siteTitle: profile.siteTitle,
+          siteSubtitle: profile.siteSubtitle,
+        }}
+      />
       <main className={`flex-1 w-full flex items-center justify-center p-3 sm:p-6 ${currentTheme.bg} font-sans relative overflow-hidden`}>
         {/* Background Animated Blobs / Glow */}
         <motion.div
@@ -599,7 +608,14 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
           </motion.div>
         </div>
       </main>
-      <Footer />
+      <Footer
+        initialData={{
+          siteTitle: profile.siteTitle,
+          siteSubtitle: profile.siteSubtitle,
+          footerDesc: profile.footerDesc,
+          links: profile.links,
+        }}
+      />
     </div>
   );
 }

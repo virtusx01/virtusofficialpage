@@ -59,10 +59,11 @@ export default function MabarVipPage() {
   const [filterType, setFilterType] = useState<"ALL" | "END_LIVE" | "PER_MATCH">("ALL");
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      // Fetch players
-      const playerRes = await fetch("/api/players");
+      // Fetch players with no-store
+      const playerRes = await fetch("/api/players", { cache: "no-store" });
       if (playerRes.ok) {
         const data = await playerRes.json();
         setPlayers(data.players || []);
@@ -72,8 +73,8 @@ export default function MabarVipPage() {
         setCompleted(data.completed || []);
       }
 
-      // Fetch settings
-      const settingsRes = await fetch("/api/settings");
+      // Fetch settings with no-store
+      const settingsRes = await fetch("/api/settings", { cache: "no-store" });
       if (settingsRes.ok) {
         const data = await settingsRes.json();
         setSettings(data);
@@ -89,9 +90,28 @@ export default function MabarVipPage() {
 
   useEffect(() => {
     fetchData();
-    // Auto refresh every 10 seconds to keep live queue fresh
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+
+    // Setup Server-Sent Events (SSE) for real-time instant queue updates
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource("/api/events");
+      eventSource.onmessage = () => {
+        fetchData(true);
+      };
+      eventSource.onerror = () => {
+        // SSE fallback handled by polling interval
+      };
+    } catch (e) {
+      // Fallback
+    }
+
+    // Auto refresh every 8 seconds as polling fallback
+    const interval = setInterval(() => fetchData(true), 8000);
+
+    return () => {
+      clearInterval(interval);
+      if (eventSource) eventSource.close();
+    };
   }, []);
 
   // Filter logic
@@ -247,7 +267,7 @@ export default function MabarVipPage() {
               />
             </div>
             <button
-              onClick={fetchData}
+              onClick={() => fetchData(false)}
               title="Refresh manual"
               className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl transition-all cursor-pointer"
             >

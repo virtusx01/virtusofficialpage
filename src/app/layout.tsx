@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VIP Matchmaking & Live Queue - Mabar VIP",
-  description: "Monitor live VIP players queue status for live streaming, including matches played and queue position in real-time.",
+  title: "Virtus Official Page",
+  description: "Streamer & Content Creator",
 };
 
 export default function RootLayout({
