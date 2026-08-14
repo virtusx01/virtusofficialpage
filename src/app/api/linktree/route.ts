@@ -202,6 +202,7 @@ export async function PUT(request: Request) {
             url: link.url || '#',
             icon: link.icon || 'globe',
             category: link.category || 'social',
+            headerTitle: link.headerTitle || '',
             isEnabled: link.isEnabled ?? true,
             orderIndex: idx,
             profileId: 'profile',

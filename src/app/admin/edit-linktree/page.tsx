@@ -35,6 +35,7 @@ interface LinkItem {
   url: string;
   icon: string;
   category: string;
+  headerTitle?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -316,6 +317,7 @@ export default function EditLinktreePage() {
       url: "https://",
       icon: "globe",
       category: "custom",
+      headerTitle: "",
       isEnabled: true,
       orderIndex: profile.links.length,
     };
@@ -1087,6 +1089,20 @@ export default function EditLinktreePage() {
                           ))}
                         </select>
                       </div>
+                    </div>
+
+                    {/* Sub Judul / Header Section Di Atas Tombol Ini */}
+                    <div className="pt-2 border-t border-slate-900">
+                      <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                        Sub Judul Kategori Di Atas Tombol Ini <span className="text-slate-600 font-normal">(Opsional, contoh: "Top Up di sini", "Official Store")</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={link.headerTitle || ""}
+                        onChange={(e) => updateLink(idx, "headerTitle", e.target.value)}
+                        className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500 placeholder-slate-600"
+                        placeholder="Kosongkan jika tombol ini tergabung dengan kelompok sebelumnya"
+                      />
                     </div>
                   </div>
                 ))}
