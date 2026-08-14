@@ -23,15 +23,26 @@ export default function Header({ initialData }: HeaderProps = {}) {
   const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
   const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
 
-  // Auto-detect live status & site branding settings
+  // Auto-detect live status (auto TikTok detector) & site branding settings
   useEffect(() => {
     const checkLiveStatus = async () => {
       try {
+        // Auto-check live status from settings & TikTok
         const res = await fetch("/api/settings", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setIsLive(!!data.isLive);
         }
+
+        // Trigger TikTok live checker periodically in background
+        fetch("/api/live-check", { cache: "no-store" })
+          .then((r) => r.json())
+          .then((liveData) => {
+            if (liveData && typeof liveData.isLive === "boolean") {
+              setIsLive(liveData.isLive);
+            }
+          })
+          .catch(() => {});
       } catch (err) {
         console.error("Failed to check live status:", err);
       }

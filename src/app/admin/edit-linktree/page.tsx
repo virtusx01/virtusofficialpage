@@ -227,82 +227,6 @@ export default function EditLinktreePage() {
     }
   };
 
-  const handleLogoUpload = async (file: File) => {
-    setUploadingField("siteLogoUrl");
-    try {
-      // Logo dikompres 120x120px lalu upload ke Supabase dengan nama tetap (upsert)
-      const compressedBlob = await compressImage(file, 120, 120, 0.92);
-      const formData = new FormData();
-      formData.append("file", compressedBlob, "site-logo.png");
-      formData.append("target", "logo");
-
-      const res = await fetch("/api/upload-public", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.url) {
-        // Auto-simpan URL ke database langsung tanpa perlu klik Simpan
-        const saveRes = await fetch("/api/linktree", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ siteLogoUrl: data.url }),
-        });
-        if (saveRes.ok) {
-          setProfile((prev) => ({ ...prev, siteLogoUrl: data.url }));
-        } else {
-          setProfile((prev) => ({ ...prev, siteLogoUrl: data.url }));
-        }
-      } else {
-        alert(`Gagal mengunggah logo: ${data.error || "Server error"}`);
-      }
-    } catch (err: any) {
-      console.error("Logo upload error:", err);
-      alert(`Terjadi kesalahan: ${err?.message || err}`);
-    } finally {
-      setUploadingField(null);
-    }
-  };
-
-  const handleFaviconUpload = async (file: File) => {
-    setFaviconUploading(true);
-    setFaviconSuccess(false);
-    try {
-      // Favicon dikompres 64x64px lalu upload ke Supabase dengan nama tetap (upsert)
-      const compressedBlob = await compressImage(file, 64, 64, 0.95);
-      const formData = new FormData();
-      formData.append("file", compressedBlob, "site-favicon.png");
-      formData.append("target", "favicon");
-
-      const res = await fetch("/api/upload-public", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.url) {
-        // Auto-simpan faviconUrl ke database
-        await fetch("/api/linktree", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ faviconUrl: data.url }),
-        });
-        setFaviconSuccess(true);
-        setTimeout(() => setFaviconSuccess(false), 3000);
-      } else {
-        alert(`Gagal mengunggah favicon: ${data.error || "Server error"}`);
-      }
-    } catch (err: any) {
-      console.error("Favicon upload error:", err);
-      alert(`Terjadi kesalahan: ${err?.message || err}`);
-    } finally {
-      setFaviconUploading(false);
-    }
-  };
-
   const handleBannerImageUpload = async (file: File, index: number) => {
     setUploadingField(`banner-${index}`);
     try {
@@ -668,44 +592,18 @@ export default function EditLinktreePage() {
               {/* Logo Website */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Logo Website <span className="text-slate-500 font-normal">(disimpan statis di /public – dimuat instan)</span>
+                  Logo Website <span className="text-slate-500 font-normal">(disimpan statis di /public/logo.png – dimuat instan)</span>
                 </label>
                 <div className="flex items-center gap-3">
                   {/* Preview logo */}
                   <div className="h-12 w-12 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center overflow-hidden shrink-0">
-                    {profile.siteLogoUrl ? (
-                      <img src={profile.siteLogoUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[10px] text-slate-500 text-center leading-tight px-1">Belum ada</span>
-                    )}
+                    <img src="/logo.png" alt="Logo Statis" className="w-full h-full object-cover" />
                   </div>
-                  <div className="flex-1 flex gap-2">
-                    <label className="flex items-center gap-1.5 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-lg shadow-violet-900/40">
-                      {uploadingField === "siteLogoUrl" ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Upload className="w-4 h-4" />
-                      )}
-                      <span>{uploadingField === "siteLogoUrl" ? "Mengupload..." : "Upload Logo"}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]);
-                        }}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setProfile({ ...profile, siteLogoUrl: "" })}
-                      className="px-3 py-2 bg-slate-800 hover:bg-red-900/60 text-slate-400 hover:text-red-300 border border-slate-700 rounded-xl text-xs font-semibold transition-colors"
-                    >
-                      Hapus
-                    </button>
+                  <div className="flex-1">
+                    <p className="text-xs text-slate-300 font-medium">Logo Aktif: <code className="text-violet-400 font-mono text-[11px]">/public/logo.png</code></p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Logo Header dan Footer sekarang otomatis memuat file statis dari folder public agar instan dan tanpa jeda.</p>
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-600 mt-1.5">File disimpan di <code className="text-slate-500">/public/site-logo.png</code> — tidak perlu tekan Simpan Perubahan</p>
               </div>
 
               <div>
@@ -722,39 +620,21 @@ export default function EditLinktreePage() {
               {/* Favicon / Icon Tab Browser */}
               <div className="pt-3 border-t border-slate-800/60">
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Icon Tab Browser (Favicon) <span className="text-slate-500 font-normal">(disimpan statis di /public)</span>
+                  Icon Tab Browser (Favicon) <span className="text-slate-500 font-normal">(disimpan statis di /public/favicon.ico)</span>
                 </label>
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                     <img
-                      src={`/favicon.ico?v=${Date.now()}`}
-                      alt=""
+                      src="/favicon.ico"
+                      alt="Favicon"
                       className="w-8 h-8 object-contain"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   </div>
-                  <div className="flex-1 flex gap-2 items-center">
-                    <label className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-lg ${faviconSuccess ? 'bg-emerald-600 text-white shadow-emerald-900/40' : 'bg-slate-700 hover:bg-slate-600 text-slate-200 shadow-slate-900/40'}`}>
-                      {faviconUploading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : faviconSuccess ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <Upload className="w-4 h-4" />
-                      )}
-                      <span>{faviconUploading ? "Mengupload..." : faviconSuccess ? "Berhasil!" : "Upload Favicon"}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) handleFaviconUpload(e.target.files[0]);
-                        }}
-                      />
-                    </label>
+                  <div className="flex-1">
+                    <p className="text-xs text-slate-300 font-medium">Favicon Aktif: <code className="text-violet-400 font-mono text-[11px]">/public/favicon.ico</code></p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Favicon otomatis tampil di tab browser untuk semua pengunjung website.</p>
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-600 mt-1.5">Disimpan sebagai <code className="text-slate-500">/public/favicon.ico</code> dan <code className="text-slate-500">/public/icon.png</code> — tidak perlu tekan Simpan Perubahan</p>
               </div>
             </div>
 
