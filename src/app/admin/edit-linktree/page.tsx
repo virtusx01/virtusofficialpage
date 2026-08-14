@@ -265,10 +265,12 @@ export default function EditLinktreePage() {
   useEffect(() => {
     const fetchLinktreeData = async () => {
       try {
-        const res = await fetch("/api/linktree");
+        const res = await fetch("/api/linktree", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
-          setProfile(data);
+          if (data && !data.error) {
+            setProfile(data);
+          }
         }
       } catch (err) {
         console.error("Failed to load Linktree data:", err);
