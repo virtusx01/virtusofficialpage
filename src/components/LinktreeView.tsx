@@ -19,6 +19,10 @@ import {
   Music,
   Check,
   Copy,
+  CreditCard,
+  ShoppingBag,
+  Coins,
+  Store,
 } from 'lucide-react';
 
 export interface LinktreeItem {
@@ -27,6 +31,7 @@ export interface LinktreeItem {
   url: string;
   icon: string;
   category: string;
+  sectionTitle?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -150,6 +155,18 @@ const getIconComponent = (iconName: string) => {
           <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 3 15.68 6.34 6.34 0 0 0 9.33 22a6.34 6.34 0 0 0 6.34-6.34V9.05a8.16 8.16 0 0 0 4.77 1.52V7.13a4.85 4.85 0 0 1-.85-.44z" />
         </svg>
       );
+    case 'topup':
+    case 'credit-card':
+    case 'payment':
+      return <CreditCard className="w-5 h-5 text-amber-400" />;
+    case 'store':
+    case 'shop':
+      return <Store className="w-5 h-5 text-cyan-400" />;
+    case 'coins':
+    case 'points':
+      return <Coins className="w-5 h-5 text-yellow-400" />;
+    case 'shopping-bag':
+      return <ShoppingBag className="w-5 h-5 text-emerald-400" />;
     case 'message':
     case 'discord':
       return <MessageCircle className="w-5 h-5 text-indigo-500" />;
@@ -448,37 +465,46 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
               )}
             </motion.div>
 
-            {/* Section Header */}
-            {profile.socialHeaderTitle && (
-              <motion.div variants={itemVariants} className="pt-2">
-                <span className={`text-xs uppercase font-bold tracking-widest px-3 py-1 rounded-full bg-white/10 ${currentTheme.subColor} border border-white/10`}>
-                  {profile.socialHeaderTitle}
-                </span>
-              </motion.div>
-            )}
-
-            {/* Links List */}
+            {/* Links List with Dynamic Section Headers */}
             <motion.div variants={containerVariants} className="w-full space-y-3.5 px-1">
-              {enabledLinks.map((link) => (
-                <motion.a
-                  key={link.id}
-                  href={link.url}
-                  target={link.url.startsWith('http') ? '_blank' : '_self'}
-                  rel="noopener noreferrer"
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.025, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`w-full py-4 px-6 rounded-full flex items-center justify-between transition-all duration-300 font-semibold text-base ${currentTheme.cardBg}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner">
-                      {getIconComponent(link.icon)}
-                    </div>
-                    <span className="tracking-wide">{link.title}</span>
+              {enabledLinks.map((link, idx) => {
+                // If link has a specific sectionTitle, show it; or if first link and profile.socialHeaderTitle exists, show default
+                const prevLink = idx > 0 ? enabledLinks[idx - 1] : null;
+                const showHeader =
+                  (link.sectionTitle && (!prevLink || prevLink.sectionTitle !== link.sectionTitle)) ||
+                  (idx === 0 && !link.sectionTitle && profile.socialHeaderTitle);
+                const headerText = link.sectionTitle || (idx === 0 ? profile.socialHeaderTitle : '');
+
+                return (
+                  <div key={link.id} className="w-full space-y-3.5">
+                    {showHeader && headerText && (
+                      <motion.div variants={itemVariants} className="pt-3 pb-1 text-center">
+                        <span className={`text-xs uppercase font-bold tracking-widest px-3.5 py-1 rounded-full bg-white/10 ${currentTheme.subColor} border border-white/10 shadow-sm inline-block`}>
+                          {headerText}
+                        </span>
+                      </motion.div>
+                    )}
+
+                    <motion.a
+                      href={link.url}
+                      target={link.url.startsWith('http') ? '_blank' : '_self'}
+                      rel="noopener noreferrer"
+                      variants={itemVariants}
+                      whileHover={{ scale: 1.025, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full py-4 px-6 rounded-full flex items-center justify-between transition-all duration-300 font-semibold text-base ${currentTheme.cardBg}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner">
+                          {getIconComponent(link.icon)}
+                        </div>
+                        <span className="tracking-wide">{link.title}</span>
+                      </div>
+                      <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                    </motion.a>
                   </div>
-                  <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
-                </motion.a>
-              ))}
+                );
+              })}
             </motion.div>
 
             {/* Live / Custom Banner Cards (Multiple Support) */}
