@@ -35,7 +35,6 @@ interface LinkItem {
   url: string;
   icon: string;
   category: string;
-  headerTitle?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -128,31 +127,24 @@ export default function EditLinktreePage() {
 
   const [profile, setProfile] = useState<ProfileData>({
     id: "profile",
-    name: "Virtus Official",
-    bio: "Streamer & Content Creator",
-    avatarUrl: "/logo.png",
+    name: "Jessica Jones",
+    bio: "Seasoned Senior Marketing Manager, excels in strategic marketing.",
+    avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
     avatarBorderColor: "from-cyan-400 via-indigo-500 to-purple-500",
     theme: "ocean",
     socialHeaderTitle: "Social Media Handles",
     showLiveBanner: true,
-    liveBannerTitle: "Cupidut & Dudud Lovers",
-    liveBannerSub: "Galeri album foto eksklusif dua kucing kesayangan Virtus",
-    liveBannerUrl: "/fanbase-cupidut-dudud",
+    liveBannerTitle: "Contact Me",
+    liveBannerSub: "Join Mabar VIP Queue & Exclusive Stream",
+    liveBannerUrl: "/mabarvip",
     liveBannerImage: "https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80",
     siteTitle: "Virtus Official",
     siteSubtitle: "Streamer TIDAK KIKIR",
     siteLogoUrl: "",
     footerDesc: "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
-    links: [
-      { id: "1", title: "Tiktok", url: "https://www.tiktok.com/@onlyvirtus", icon: "tiktok", category: "social", headerTitle: "", isEnabled: true, orderIndex: 0 },
-      { id: "2", title: "Youtube", url: "https://youtube.com", icon: "youtube", category: "social", headerTitle: "", isEnabled: true, orderIndex: 1 },
-      { id: "3", title: "Astra Points (Top Up)", url: "https://astrapoints.com", icon: "globe", category: "custom", headerTitle: "Top Up di sini", isEnabled: true, orderIndex: 2 },
-    ],
+    links: [],
     banners: [],
-    topButtons: [
-      { id: "1", title: "Mabar VIP", url: "/mabarvip", icon: "gamepad", isShareAction: false, isEnabled: true, orderIndex: 0 },
-      { id: "2", title: "Share Profile", url: "#share", icon: "share", isShareAction: true, isEnabled: true, orderIndex: 1 },
-    ],
+    topButtons: [],
     codes: [],
   });
 
@@ -272,12 +264,10 @@ export default function EditLinktreePage() {
   useEffect(() => {
     const fetchLinktreeData = async () => {
       try {
-        const res = await fetch("/api/linktree", { cache: "no-store" });
+        const res = await fetch("/api/linktree");
         if (res.ok) {
           const data = await res.json();
-          if (data && !data.error) {
-            setProfile(data);
-          }
+          setProfile(data);
         }
       } catch (err) {
         console.error("Failed to load Linktree data:", err);
@@ -326,7 +316,6 @@ export default function EditLinktreePage() {
       url: "https://",
       icon: "globe",
       category: "custom",
-      headerTitle: "",
       isEnabled: true,
       orderIndex: profile.links.length,
     };
@@ -1098,20 +1087,6 @@ export default function EditLinktreePage() {
                           ))}
                         </select>
                       </div>
-                    </div>
-
-                    {/* Sub Judul / Header Section Di Atas Tombol Ini */}
-                    <div className="pt-2 border-t border-slate-900">
-                      <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                        Sub Judul Kategori Di Atas Tombol Ini <span className="text-slate-600 font-normal">(Opsional, contoh: "Top Up di sini", "Official Store")</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={link.headerTitle || ""}
-                        onChange={(e) => updateLink(idx, "headerTitle", e.target.value)}
-                        className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500 placeholder-slate-600"
-                        placeholder="Kosongkan jika tombol ini tergabung dengan kelompok sebelumnya"
-                      />
                     </div>
                   </div>
                 ))}

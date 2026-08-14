@@ -7,10 +7,6 @@
     "build": "prisma generate && next build",
     "start": "next start -p 3006",
     "lint": "eslint",
-    "db:sync": "prisma db push",
-    "db:push": "prisma db push",
-    "db:generate": "prisma generate",
-    "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },
   "dependencies": {

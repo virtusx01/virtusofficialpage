@@ -64,7 +64,6 @@ model LinktreeLink {
   url         String
   icon        String          @default("globe") // facebook, instagram, linkedin, youtube, tiktok, twitter, github, globe, message
   category    String          @default("social") // "social" | "custom"
-  headerTitle String          @default("") // Optional section heading above this link (e.g. "Top Up di sini", "Social Media Handles")
   isEnabled   Boolean         @default(true)
   orderIndex  Int             @default(0)
   profileId   String          @default("profile")

@@ -6,9 +6,10 @@ const isUUID = (str: any) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
 const DEFAULT_LINKS = [
-  { title: 'Tiktok', url: 'https://www.tiktok.com/@onlyvirtus', icon: 'tiktok', category: 'social', headerTitle: '', orderIndex: 0 },
-  { title: 'Youtube', url: 'https://youtube.com', icon: 'youtube', category: 'social', headerTitle: '', orderIndex: 1 },
-  { title: 'Astra Points (Top Up)', url: 'https://astrapoints.com', icon: 'globe', category: 'custom', headerTitle: 'Top Up di sini', orderIndex: 2 },
+  { title: 'Facebook', url: 'https://facebook.com', icon: 'facebook', category: 'social', orderIndex: 0 },
+  { title: 'Instagram', url: 'https://instagram.com', icon: 'instagram', category: 'social', orderIndex: 1 },
+  { title: 'LinkedIn', url: 'https://linkedin.com', icon: 'linkedin', category: 'social', orderIndex: 2 },
+  { title: 'Mabar VIP Queue', url: '/mabarvip', icon: 'globe', category: 'custom', orderIndex: 3 },
 ];
 
 const DEFAULT_BANNERS = [
@@ -64,13 +65,11 @@ export async function GET() {
     });
 
     if (!profile) {
-      profile = await prisma.linktreeProfile.upsert({
-        where: { id: 'profile' },
-        update: {},
-        create: {
+      profile = await prisma.linktreeProfile.create({
+        data: {
           id: 'profile',
-          name: 'Virtus Official',
-          bio: 'Streamer & Content Creator',
+          name: 'Jessica Jones',
+          bio: 'Seasoned Senior Marketing Manager, excels in strategic marketing.',
           avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
           avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
           theme: 'ocean',
@@ -201,7 +200,6 @@ export async function PUT(request: Request) {
             url: link.url || '#',
             icon: link.icon || 'globe',
             category: link.category || 'social',
-            headerTitle: link.headerTitle || '',
             isEnabled: link.isEnabled ?? true,
             orderIndex: idx,
             profileId: 'profile',

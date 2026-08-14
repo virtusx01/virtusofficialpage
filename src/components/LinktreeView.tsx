@@ -27,7 +27,6 @@ export interface LinktreeItem {
   url: string;
   icon: string;
   category: string;
-  headerTitle?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -458,37 +457,27 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
               </motion.div>
             )}
 
-            {/* Links List with Section Subheadings */}
+            {/* Links List */}
             <motion.div variants={containerVariants} className="w-full space-y-3.5 px-1">
               {enabledLinks.map((link) => (
-                <div key={link.id} className="w-full space-y-3.5">
-                  {/* Custom Subheader above specific link (e.g. "Top Up di sini") */}
-                  {link.headerTitle && (
-                    <motion.div variants={itemVariants} className="pt-3 pb-0.5 flex justify-center">
-                      <span className={`text-xs uppercase font-bold tracking-widest px-3.5 py-1 rounded-full bg-white/10 ${currentTheme.subColor} border border-white/10 shadow-sm`}>
-                        {link.headerTitle}
-                      </span>
-                    </motion.div>
-                  )}
-
-                  <motion.a
-                    href={link.url}
-                    target={link.url.startsWith('http') ? '_blank' : '_self'}
-                    rel="noopener noreferrer"
-                    variants={itemVariants}
-                    whileHover={{ scale: 1.025, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`w-full py-4 px-6 rounded-full flex items-center justify-between transition-all duration-300 font-semibold text-base ${currentTheme.cardBg}`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner">
-                        {getIconComponent(link.icon)}
-                      </div>
-                      <span className="tracking-wide">{link.title}</span>
+                <motion.a
+                  key={link.id}
+                  href={link.url}
+                  target={link.url.startsWith('http') ? '_blank' : '_self'}
+                  rel="noopener noreferrer"
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.025, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`w-full py-4 px-6 rounded-full flex items-center justify-between transition-all duration-300 font-semibold text-base ${currentTheme.cardBg}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner">
+                      {getIconComponent(link.icon)}
                     </div>
-                    <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
-                  </motion.a>
-                </div>
+                    <span className="tracking-wide">{link.title}</span>
+                  </div>
+                  <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                </motion.a>
               ))}
             </motion.div>
 
