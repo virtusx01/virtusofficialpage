@@ -402,13 +402,11 @@ export default function MabarVipPage() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${player.vipType === "END_LIVE"
+                      <span className={`text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${player.vipType === "END_LIVE"
                         ? "bg-purple-950/30 text-purple-400 border border-purple-900/30"
                         : "bg-fuchsia-950/30 text-fuchsia-400 border border-fuchsia-900/30"
                         }`}>
-                        {player.vipType === "END_LIVE"
-                          ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x End Live` : "Sisa 1x End Live")
-                          : `Match: ${player.matchesTotal}`}
+                        {`Sisa ${Math.max(0, player.matchesTotal - player.matchesPlayed)}x ${player.vipType === "END_LIVE" ? "End Live" : "Match"}`}
                       </span>
                     </div>
                   </div>

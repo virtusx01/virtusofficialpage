@@ -161,19 +161,41 @@ export default function AdminDashboard() {
     setIsModalOpen(true);
   };
 
-  // Move completed player back to active queue directly (No duplicate record created)
-  const handleReorderClick = async (player: Player) => {
+  // Reorder Modal State
+  const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+  const [reorderPlayer, setReorderPlayer] = useState<Player | null>(null);
+  const [reorderCount, setReorderCount] = useState<number>(1);
+
+  // Trigger Reorder Modal
+  const handleReorderClick = (player: Player) => {
+    setReorderPlayer(player);
+    // Default count to add
+    setReorderCount(player.vipType === "END_LIVE" ? 1 : 3);
+    setIsReorderModalOpen(true);
+  };
+
+  // Submit Reorder with added VIP count
+  const handleConfirmReorder = async () => {
+    if (!reorderPlayer) return;
+    setActionLoading(true);
     try {
-      const res = await fetch(`/api/players/${player.id}`, {
+      const added = Math.max(1, Number(reorderCount) || 1);
+      const currentRemaining = Math.max(0, reorderPlayer.matchesTotal - reorderPlayer.matchesPlayed);
+      const newTotal = currentRemaining + added;
+
+      const res = await fetch(`/api/players/${reorderPlayer.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "QUEUE",
           matchesPlayed: 0,
-          matchesTotal: player.matchesTotal || (player.vipType === "PER_MATCH" ? 3 : 0),
+          matchesTotal: newTotal,
         })
       });
+
       if (res.ok) {
+        setIsReorderModalOpen(false);
+        setReorderPlayer(null);
         fetchData();
       } else {
         const err = await res.json();
@@ -182,6 +204,8 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Reorder error:", error);
       alert("Terjadi kesalahan koneksi.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -194,13 +218,16 @@ export default function AdminDashboard() {
       const url = editingPlayer ? `/api/players/${editingPlayer.id}` : "/api/players";
       const method = editingPlayer ? "PUT" : "POST";
 
+      const totalVal = Math.max(1, Number(formData.matchesTotal) || 1);
+      const playedVal = Math.max(0, Number(formData.matchesPlayed) || 0);
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          matchesTotal: Number(formData.matchesTotal),
-          matchesPlayed: Number(formData.matchesPlayed),
+          matchesTotal: totalVal,
+          matchesPlayed: playedVal,
         })
       });
 
@@ -235,14 +262,48 @@ export default function AdminDashboard() {
     }
   };
 
+  // Selesai VIP Button Click (Drop / Decrement 1 from remaining count)
+  const handleSelesaiVIP = async (player: Player) => {
+    const currentRemaining = Math.max(0, player.matchesTotal - player.matchesPlayed);
+    const newPlayed = player.matchesPlayed + 1;
+    const newRemaining = player.matchesTotal - newPlayed;
+
+    try {
+      // If no remaining sessions left (0), mark as COMPLETED
+      // If sessions still remain (> 0), move back to QUEUE for next round
+      const newStatus = newRemaining <= 0 ? "COMPLETED" : "QUEUE";
+
+      const res = await fetch(`/api/players/${player.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matchesPlayed: newPlayed,
+          status: newStatus,
+        })
+      });
+
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (error) {
+      console.error("Selesai VIP error:", error);
+    }
+  };
+
   // Quick increment/decrement matches played
   const handleMatchCountChange = async (player: Player, delta: number) => {
-    const newPlayed = Math.max(0, player.matchesPlayed + delta);
+    const newPlayed = Math.max(0, Math.min(player.matchesTotal, player.matchesPlayed + delta));
+    const newRemaining = player.matchesTotal - newPlayed;
+    const newStatus = (newRemaining <= 0 && delta > 0) ? "COMPLETED" : player.status;
+
     try {
       const res = await fetch(`/api/players/${player.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matchesPlayed: newPlayed })
+        body: JSON.stringify({
+          matchesPlayed: newPlayed,
+          status: newStatus
+        })
       });
       if (res.ok) {
         fetchData();
@@ -558,19 +619,15 @@ export default function AdminDashboard() {
                     <div>
                       <div className="flex justify-between items-start">
                         <h4 className="font-bold text-slate-200 text-base">{player.name}</h4>
-                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
-                          {player.vipType === "END_LIVE"
-                            ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x Live` : "Live")
-                            : "Per Match"}
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-purple-950/40 text-purple-300 border border-purple-800/50">
+                          {`Sisa ${Math.max(0, player.matchesTotal - player.matchesPlayed)}x ${player.vipType === "END_LIVE" ? "Live" : "Match"}`}
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 font-mono mt-0.5">IGN: {player.gameId || "-"}</p>
 
-                      {player.vipType === "END_LIVE" && player.matchesTotal > 0 && (
-                        <p className="text-[10px] font-bold text-purple-400 mt-1">
-                          Tersisa {player.matchesTotal - player.matchesPlayed}x mabar VIP end live
-                        </p>
-                      )}
+                      <p className="text-[11px] font-bold text-purple-400 mt-1">
+                        Tersisa {Math.max(0, player.matchesTotal - player.matchesPlayed)}x mabar VIP {player.vipType === "END_LIVE" ? "end live" : "match"}
+                      </p>
 
                       {player.vipType === "PER_MATCH" ? (
                         <div className="mt-3 flex items-center justify-between bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900">
@@ -594,28 +651,26 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       ) : (
-                        player.matchesTotal > 0 && (
-                          <div className="mt-3 flex items-center justify-between bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900">
-                            <span className="text-xs text-slate-450">Live Tracker:</span>
-                            <div className="flex items-center gap-2.5">
-                              <button
-                                onClick={() => handleMatchCountChange(player, -1)}
-                                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                              >
-                                <MinusCircle className="h-4.5 w-4.5" />
-                              </button>
-                              <span className="text-xs font-bold text-purple-400">
-                                {player.matchesPlayed} <span className="text-slate-600">/</span> {player.matchesTotal}
-                              </span>
-                              <button
-                                onClick={() => handleMatchCountChange(player, 1)}
-                                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                              >
-                                <PlusCircle className="h-4.5 w-4.5" />
-                              </button>
-                            </div>
+                        <div className="mt-3 flex items-center justify-between bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900">
+                          <span className="text-xs text-slate-450">Live Tracker:</span>
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              onClick={() => handleMatchCountChange(player, -1)}
+                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                            >
+                              <MinusCircle className="h-4.5 w-4.5" />
+                            </button>
+                            <span className="text-xs font-bold text-purple-400">
+                              {player.matchesPlayed} <span className="text-slate-600">/</span> {player.matchesTotal}
+                            </span>
+                            <button
+                              onClick={() => handleMatchCountChange(player, 1)}
+                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                            >
+                              <PlusCircle className="h-4.5 w-4.5" />
+                            </button>
                           </div>
-                        )
+                        </div>
                       )}
 
                       {player.notes && (
@@ -641,9 +696,9 @@ export default function AdminDashboard() {
                         Pause (AFK)
                       </button>
                       <button
-                        onClick={() => handleStatusChange(player.id, "COMPLETED")}
+                        onClick={() => handleSelesaiVIP(player)}
                         className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/25 px-2 py-1 rounded border border-emerald-500/20 transition-colors cursor-pointer"
-                        title="Selesai VIP"
+                        title="Selesai 1x VIP (Kurangi kuota dan pindahkan jika habis)"
                       >
                         <Check className="h-3 w-3" />
                         Selesai VIP
@@ -703,9 +758,7 @@ export default function AdminDashboard() {
                               ? "bg-purple-950/40 border-purple-900/40 text-purple-400"
                               : "bg-fuchsia-950/40 border-fuchsia-900/40 text-fuchsia-400"
                             }`}>
-                            {player.vipType === "END_LIVE"
-                              ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x End Live` : "Sisa 1x End Live")
-                              : `Match: ${player.matchesTotal}`}
+                            {`Sisa ${Math.max(0, player.matchesTotal - player.matchesPlayed)}x ${player.vipType === "END_LIVE" ? "End Live" : "Match"}`}
                           </span>
                         </td>
                         <td className="py-3 px-3">
@@ -1087,6 +1140,80 @@ export default function AdminDashboard() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* REORDER COUNT MODAL */}
+      {isReorderModalOpen && reorderPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-600 to-fuchsia-600"></div>
+
+            <div className="flex items-center justify-between border-b border-slate-900 pb-3 mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-100">Reorder / Tambah VIP</h3>
+                <p className="text-xs text-slate-400 mt-0.5">{reorderPlayer.name}</p>
+              </div>
+              <button
+                onClick={() => setIsReorderModalOpen(false)}
+                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Jumlah {reorderPlayer.vipType === "END_LIVE" ? "End Live" : "Match"} Baru yang Ditambahkan
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReorderCount(c => Math.max(1, c - 1))}
+                    className="h-10 w-10 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 font-bold flex items-center justify-center cursor-pointer transition-colors"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    value={reorderCount}
+                    onChange={(e) => setReorderCount(Math.max(1, Number(e.target.value) || 1))}
+                    className="flex-1 h-10 text-center bg-slate-900 border border-slate-800 rounded-xl text-slate-100 font-bold outline-none focus:border-violet-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setReorderCount(c => c + 1)}
+                    className="h-10 w-10 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 font-bold flex items-center justify-center cursor-pointer transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[11px] text-purple-400 mt-1.5 font-medium">
+                  {reorderPlayer.name} akan masuk kembali ke antrean dengan total <strong>{reorderCount}x {reorderPlayer.vipType === "END_LIVE" ? "End Live" : "Match"}</strong>.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsReorderModalOpen(false)}
+                  className="flex-1 py-2.5 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-sm font-semibold rounded-xl text-slate-300 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmReorder}
+                  disabled={actionLoading}
+                  className="flex-1 py-2.5 px-4 bg-violet-600 hover:bg-violet-500 text-sm font-semibold rounded-xl text-white cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Tambahkan ke Antrean"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
