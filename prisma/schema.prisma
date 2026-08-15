@@ -59,17 +59,18 @@ model LinktreeProfile {
 }
 
 model LinktreeLink {
-  id          String          @id @default(uuid())
-  title       String
-  url         String
-  icon        String          @default("globe") // facebook, instagram, linkedin, youtube, tiktok, twitter, github, globe, message
-  category    String          @default("social") // "social" | "custom"
-  isEnabled   Boolean         @default(true)
-  orderIndex  Int             @default(0)
-  profileId   String          @default("profile")
-  profile     LinktreeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id           String          @id @default(uuid())
+  title        String
+  url          String
+  icon         String          @default("globe") // facebook, instagram, linkedin, youtube, tiktok, twitter, github, globe, message, topup, store, coins
+  category     String          @default("social") // "social" | "custom"
+  sectionTitle String          @default("") // Sub-judul grup (misal: "Top Up", "Social Media", dll)
+  isEnabled    Boolean         @default(true)
+  orderIndex   Int             @default(0)
+  profileId    String          @default("profile")
+  profile      LinktreeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 }
 
 model LinktreeBanner {

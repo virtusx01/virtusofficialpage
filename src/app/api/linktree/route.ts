@@ -6,10 +6,10 @@ const isUUID = (str: any) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
 const DEFAULT_LINKS = [
-  { title: 'Facebook', url: 'https://facebook.com', icon: 'facebook', category: 'social', orderIndex: 0 },
-  { title: 'Instagram', url: 'https://instagram.com', icon: 'instagram', category: 'social', orderIndex: 1 },
-  { title: 'LinkedIn', url: 'https://linkedin.com', icon: 'linkedin', category: 'social', orderIndex: 2 },
-  { title: 'Mabar VIP Queue', url: '/mabarvip', icon: 'globe', category: 'custom', orderIndex: 3 },
+  { title: 'Tiktok', url: 'https://tiktok.com/@onlyvirtus', icon: 'tiktok', category: 'social', sectionTitle: '', orderIndex: 0 },
+  { title: 'Youtube', url: 'https://www.youtube.com/channel/UCS4s9c5ADSshIhr3BnlTlVg', icon: 'youtube', category: 'social', sectionTitle: '', orderIndex: 1 },
+  { title: 'Astra Points', url: 'https://astrapoints.com', icon: 'coins', category: 'custom', sectionTitle: 'Top Up', orderIndex: 2 },
+  { title: 'Mabar VIP Queue', url: '/mabarvip', icon: 'gamepad', category: 'custom', sectionTitle: '', orderIndex: 3 },
 ];
 
 const DEFAULT_BANNERS = [
@@ -68,9 +68,9 @@ export async function GET() {
       profile = await prisma.linktreeProfile.create({
         data: {
           id: 'profile',
-          name: 'Jessica Jones',
-          bio: 'Seasoned Senior Marketing Manager, excels in strategic marketing.',
-          avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
+          name: 'Virtus Official',
+          bio: 'Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥',
+          avatarUrl: '/logo.png',
           avatarBorderColor: 'from-cyan-400 via-indigo-500 to-purple-500',
           theme: 'ocean',
           socialHeaderTitle: 'Social Media Handles',
@@ -79,6 +79,9 @@ export async function GET() {
           liveBannerSub: 'Galeri album foto eksklusif dua kucing kesayangan Virtus',
           liveBannerUrl: '/fanbase-cupidut-dudud',
           liveBannerImage: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
+          siteTitle: 'Virtus Official',
+          siteSubtitle: 'Streamer TIDAK KIKIR',
+          footerDesc: 'Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.',
           links: { create: DEFAULT_LINKS },
           banners: { create: DEFAULT_BANNERS },
           topButtons: { create: DEFAULT_TOP_BUTTONS },
@@ -200,6 +203,7 @@ export async function PUT(request: Request) {
             url: link.url || '#',
             icon: link.icon || 'globe',
             category: link.category || 'social',
+            sectionTitle: typeof link.sectionTitle === 'string' ? link.sectionTitle : '',
             isEnabled: link.isEnabled ?? true,
             orderIndex: idx,
             profileId: 'profile',

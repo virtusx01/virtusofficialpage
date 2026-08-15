@@ -35,6 +35,7 @@ interface LinkItem {
   url: string;
   icon: string;
   category: string;
+  sectionTitle?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -92,16 +93,20 @@ interface ProfileData {
 }
 
 const AVAILABLE_ICONS = [
+  { id: "topup", label: "Top Up / Diamond (Amber)" },
+  { id: "store", label: "Toko / Store (Cyan)" },
+  { id: "coins", label: "Points / Astra Points (Gold)" },
+  { id: "shopping-bag", label: "Belanja / Shopping" },
+  { id: "tiktok", label: "TikTok" },
+  { id: "youtube", label: "YouTube" },
   { id: "whatsapp", label: "WhatsApp (Green)" },
   { id: "whatsapp-dark", label: "WhatsApp (Dark Mode)" },
   { id: "telegram", label: "Telegram" },
   { id: "facebook", label: "Facebook" },
   { id: "instagram", label: "Instagram" },
   { id: "linkedin", label: "LinkedIn" },
-  { id: "youtube", label: "YouTube" },
   { id: "twitter", label: "Twitter / X" },
   { id: "github", label: "GitHub" },
-  { id: "tiktok", label: "TikTok" },
   { id: "message", label: "Discord / Chat" },
   { id: "gamepad", label: "Gaming / Mabar" },
   { id: "stream", label: "Stream / Live" },
@@ -127,16 +132,16 @@ export default function EditLinktreePage() {
 
   const [profile, setProfile] = useState<ProfileData>({
     id: "profile",
-    name: "Jessica Jones",
-    bio: "Seasoned Senior Marketing Manager, excels in strategic marketing.",
-    avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
+    name: "Virtus Official",
+    bio: "Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥",
+    avatarUrl: "/logo.png",
     avatarBorderColor: "from-cyan-400 via-indigo-500 to-purple-500",
     theme: "ocean",
     socialHeaderTitle: "Social Media Handles",
     showLiveBanner: true,
-    liveBannerTitle: "Contact Me",
-    liveBannerSub: "Join Mabar VIP Queue & Exclusive Stream",
-    liveBannerUrl: "/mabarvip",
+    liveBannerTitle: "Cupidut & Dudud Lovers",
+    liveBannerSub: "Galeri album foto eksklusif dua kucing kesayangan Virtus",
+    liveBannerUrl: "/fanbase-cupidut-dudud",
     liveBannerImage: "https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80",
     siteTitle: "Virtus Official",
     siteSubtitle: "Streamer TIDAK KIKIR",
@@ -1061,7 +1066,20 @@ export default function EditLinktreePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">
+                          Sub-Judul / Kategori <span className="text-slate-500 font-normal">(opsional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={link.sectionTitle || ""}
+                          onChange={(e) => updateLink(idx, "sectionTitle", e.target.value)}
+                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500 placeholder-slate-600 font-medium"
+                          placeholder="Misal: Top Up, Social Media, dll"
+                        />
+                      </div>
+
                       <div className="sm:col-span-2">
                         <label className="block text-[11px] text-slate-400 mb-1">URL Tujuan</label>
                         <input
