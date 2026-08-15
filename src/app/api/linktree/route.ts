@@ -200,7 +200,6 @@ export async function PUT(request: Request) {
             url: link.url || '#',
             icon: link.icon || 'globe',
             category: link.category || 'social',
-            sectionTitle: typeof link.sectionTitle === 'string' ? link.sectionTitle : '',
             isEnabled: link.isEnabled ?? true,
             orderIndex: idx,
             profileId: 'profile',

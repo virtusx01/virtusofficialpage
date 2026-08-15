@@ -35,7 +35,6 @@ interface LinkItem {
   url: string;
   icon: string;
   category: string;
-  sectionTitle?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -74,7 +73,7 @@ interface ProfileData {
   name: string;
   bio: string;
   avatarUrl: string;
-  avatarBorderColor?: string;
+  avatarBorderColor: string;
   theme: string;
   socialHeaderTitle: string;
   showLiveBanner: boolean;
@@ -93,20 +92,16 @@ interface ProfileData {
 }
 
 const AVAILABLE_ICONS = [
-  { id: "topup", label: "Top Up / Diamond (Amber)" },
-  { id: "store", label: "Toko / Store (Cyan)" },
-  { id: "coins", label: "Points / Astra Points (Gold)" },
-  { id: "shopping-bag", label: "Belanja / Shopping" },
-  { id: "tiktok", label: "TikTok" },
-  { id: "youtube", label: "YouTube" },
   { id: "whatsapp", label: "WhatsApp (Green)" },
   { id: "whatsapp-dark", label: "WhatsApp (Dark Mode)" },
   { id: "telegram", label: "Telegram" },
   { id: "facebook", label: "Facebook" },
   { id: "instagram", label: "Instagram" },
   { id: "linkedin", label: "LinkedIn" },
+  { id: "youtube", label: "YouTube" },
   { id: "twitter", label: "Twitter / X" },
   { id: "github", label: "GitHub" },
+  { id: "tiktok", label: "TikTok" },
   { id: "message", label: "Discord / Chat" },
   { id: "gamepad", label: "Gaming / Mabar" },
   { id: "stream", label: "Stream / Live" },
@@ -1066,20 +1061,7 @@ export default function EditLinktreePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                      <div>
-                        <label className="block text-[11px] text-slate-400 mb-1">
-                          Sub-Judul / Kategori <span className="text-slate-500 font-normal">(opsional)</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={link.sectionTitle || ""}
-                          onChange={(e) => updateLink(idx, "sectionTitle", e.target.value)}
-                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500 placeholder-slate-600 font-medium"
-                          placeholder="Misal: Top Up, Media Sosial, dll"
-                        />
-                      </div>
-
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-2">
                         <label className="block text-[11px] text-slate-400 mb-1">URL Tujuan</label>
                         <input
