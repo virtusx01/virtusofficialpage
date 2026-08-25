@@ -32,6 +32,9 @@ export interface LinktreeItem {
   icon: string;
   category: string;
   sectionTitle?: string;
+  sectionBgColor?: string;
+  sectionTextColor?: string;
+  waCustomMessage?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -73,6 +76,8 @@ export interface LinktreeProfileData {
   avatarBorderColor?: string;
   theme: string;
   socialHeaderTitle: string;
+  categoryBgColor?: string;
+  categoryTextColor?: string;
   showLiveBanner: boolean;
   liveBannerTitle: string;
   liveBannerSub: string;
@@ -475,19 +480,44 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                   (idx === 0 && !link.sectionTitle && profile.socialHeaderTitle);
                 const headerText = link.sectionTitle || (idx === 0 ? profile.socialHeaderTitle : '');
 
+                // Category custom styling
+                const sectionBg = link.sectionBgColor || profile.categoryBgColor;
+                const sectionText = link.sectionTextColor || profile.categoryTextColor;
+
+                // Process WhatsApp custom default message if applicable
+                const isWa =
+                  link.icon?.toLowerCase().includes('whatsapp') ||
+                  link.icon?.toLowerCase() === 'wa' ||
+                  link.url.includes('wa.me') ||
+                  link.url.includes('whatsapp.com');
+                
+                let targetUrl = link.url;
+                if (isWa && link.waCustomMessage && link.waCustomMessage.trim() && !targetUrl.includes('text=')) {
+                  const separator = targetUrl.includes('?') ? '&' : '?';
+                  targetUrl = `${targetUrl}${separator}text=${encodeURIComponent(link.waCustomMessage.trim())}`;
+                }
+
                 return (
                   <div key={link.id} className="w-full space-y-3.5">
                     {showHeader && headerText && (
                       <motion.div variants={itemVariants} className="pt-3 pb-1 text-center">
-                        <span className={`text-xs uppercase font-bold tracking-widest px-3.5 py-1 rounded-full bg-white/10 ${currentTheme.subColor} border border-white/10 shadow-sm inline-block`}>
+                        <span
+                          style={{
+                            ...(sectionBg ? { backgroundColor: sectionBg } : {}),
+                            ...(sectionText ? { color: sectionText } : {}),
+                          }}
+                          className={`text-xs uppercase font-bold tracking-widest px-3.5 py-1 rounded-full ${
+                            !sectionBg ? 'bg-white/10' : ''
+                          } ${!sectionText ? currentTheme.subColor : ''} border border-white/10 shadow-sm inline-block`}
+                        >
                           {headerText}
                         </span>
                       </motion.div>
                     )}
 
                     <motion.a
-                      href={link.url}
-                      target={link.url.startsWith('http') ? '_blank' : '_self'}
+                      href={targetUrl}
+                      target={targetUrl.startsWith('http') ? '_blank' : '_self'}
                       rel="noopener noreferrer"
                       variants={itemVariants}
                       whileHover={{ scale: 1.025, y: -2 }}

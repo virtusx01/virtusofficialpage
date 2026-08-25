@@ -36,6 +36,9 @@ interface LinkItem {
   icon: string;
   category: string;
   sectionTitle?: string;
+  sectionBgColor?: string;
+  sectionTextColor?: string;
+  waCustomMessage?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -77,6 +80,8 @@ interface ProfileData {
   avatarBorderColor: string;
   theme: string;
   socialHeaderTitle: string;
+  categoryBgColor?: string;
+  categoryTextColor?: string;
   showLiveBanner: boolean;
   liveBannerTitle: string;
   liveBannerSub: string;
@@ -138,6 +143,8 @@ export default function EditLinktreePage() {
     avatarBorderColor: "from-cyan-400 via-indigo-500 to-purple-500",
     theme: "ocean",
     socialHeaderTitle: "Social Media Handles",
+    categoryBgColor: "",
+    categoryTextColor: "",
     showLiveBanner: true,
     liveBannerTitle: "Cupidut & Dudud Lovers",
     liveBannerSub: "Galeri album foto eksklusif dua kucing kesayangan Virtus",
@@ -321,6 +328,10 @@ export default function EditLinktreePage() {
       url: "https://",
       icon: "globe",
       category: "custom",
+      sectionTitle: "",
+      sectionBgColor: "",
+      sectionTextColor: "",
+      waCustomMessage: "",
       isEnabled: true,
       orderIndex: profile.links.length,
     };
@@ -735,7 +746,7 @@ export default function EditLinktreePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Judul Header Sosial Media</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Judul Header Sosial Media (Default Sub-Judul)</label>
                 <input
                   type="text"
                   value={profile.socialHeaderTitle}
@@ -743,6 +754,120 @@ export default function EditLinktreePage() {
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
                   placeholder="Contoh: Social Media Handles"
                 />
+              </div>
+
+              {/* Sub-Judul / Kategori Styling (Warna Background & Font) */}
+              <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-200">
+                    Kostumisasi Warna Sub-Judul / Kategori (Default)
+                  </label>
+                  {/* Live Preview Badge */}
+                  <span
+                    style={{
+                      ...(profile.categoryBgColor ? { backgroundColor: profile.categoryBgColor } : {}),
+                      ...(profile.categoryTextColor ? { color: profile.categoryTextColor } : {}),
+                    }}
+                    className={`text-[10px] uppercase font-extrabold tracking-wider px-3 py-1 rounded-full ${
+                      !profile.categoryBgColor ? "bg-white/10" : ""
+                    } ${!profile.categoryTextColor ? "text-blue-100" : ""} border border-white/15 shadow-sm inline-block`}
+                  >
+                    {profile.socialHeaderTitle || "PREVIEW KATEGORI"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Warna Background Sub-Judul
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={profile.categoryBgColor?.startsWith("#") ? profile.categoryBgColor : "#1e293b"}
+                        onChange={(e) => setProfile({ ...profile, categoryBgColor: e.target.value })}
+                        className="h-9 w-10 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer shrink-0"
+                      />
+                      <input
+                        type="text"
+                        value={profile.categoryBgColor || ""}
+                        onChange={(e) => setProfile({ ...profile, categoryBgColor: e.target.value })}
+                        placeholder="Default (Transparan) / #1e293b"
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 outline-none focus:border-violet-500"
+                      />
+                      {profile.categoryBgColor && (
+                        <button
+                          type="button"
+                          onClick={() => setProfile({ ...profile, categoryBgColor: "" })}
+                          className="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg shrink-0"
+                          title="Reset ke Default"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Warna Font / Teks Sub-Judul
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={profile.categoryTextColor?.startsWith("#") ? profile.categoryTextColor : "#93c5fd"}
+                        onChange={(e) => setProfile({ ...profile, categoryTextColor: e.target.value })}
+                        className="h-9 w-10 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer shrink-0"
+                      />
+                      <input
+                        type="text"
+                        value={profile.categoryTextColor || ""}
+                        onChange={(e) => setProfile({ ...profile, categoryTextColor: e.target.value })}
+                        placeholder="Default / #ffffff / #93c5fd"
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 outline-none focus:border-violet-500"
+                      />
+                      {profile.categoryTextColor && (
+                        <button
+                          type="button"
+                          onClick={() => setProfile({ ...profile, categoryTextColor: "" })}
+                          className="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg shrink-0"
+                          title="Reset ke Default"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preset Sub-Judul Color Combinations */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] text-slate-500 font-medium">Preset Warna:</span>
+                  {[
+                    { label: "Dark Slate", bg: "#1e293b", text: "#94a3b8" },
+                    { label: "Midnight Blue", bg: "#0f172a", text: "#38bdf8" },
+                    { label: "Violet Dark", bg: "#2e1065", text: "#c084fc" },
+                    { label: "Emerald Dark", bg: "#022c22", text: "#34d399" },
+                    { label: "Amber Dark", bg: "#451a03", text: "#fbbf24" },
+                    { label: "Ruby Red", bg: "#4c0519", text: "#fb7185" },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() =>
+                        setProfile({
+                          ...profile,
+                          categoryBgColor: preset.bg,
+                          categoryTextColor: preset.text,
+                        })
+                      }
+                      style={{ backgroundColor: preset.bg, color: preset.text }}
+                      className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 hover:scale-105 transition-all cursor-pointer shadow-sm"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -1106,6 +1231,79 @@ export default function EditLinktreePage() {
                         </select>
                       </div>
                     </div>
+
+                    {/* Optional Custom Colors for this Sub-Judul */}
+                    {link.sectionTitle && (
+                      <div className="pt-2 border-t border-slate-900 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-900/30 p-2.5 rounded-lg">
+                        <div>
+                          <label className="block text-[10px] text-slate-400 mb-1">
+                            Override Warna BG Sub-Judul "{link.sectionTitle}" <span className="text-slate-500">(opsional)</span>
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="color"
+                              value={link.sectionBgColor?.startsWith("#") ? link.sectionBgColor : "#1e293b"}
+                              onChange={(e) => updateLink(idx, "sectionBgColor", e.target.value)}
+                              className="h-7 w-8 rounded bg-slate-950 border border-slate-800 cursor-pointer shrink-0"
+                            />
+                            <input
+                              type="text"
+                              value={link.sectionBgColor || ""}
+                              onChange={(e) => updateLink(idx, "sectionBgColor", e.target.value)}
+                              placeholder="Default tema / #1e293b"
+                              className="w-full px-2.5 py-1 bg-slate-900 border border-slate-800 rounded text-[11px] font-mono text-slate-200 outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] text-slate-400 mb-1">
+                            Override Warna Font Sub-Judul "{link.sectionTitle}" <span className="text-slate-500">(opsional)</span>
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="color"
+                              value={link.sectionTextColor?.startsWith("#") ? link.sectionTextColor : "#93c5fd"}
+                              onChange={(e) => updateLink(idx, "sectionTextColor", e.target.value)}
+                              className="h-7 w-8 rounded bg-slate-950 border border-slate-800 cursor-pointer shrink-0"
+                            />
+                            <input
+                              type="text"
+                              value={link.sectionTextColor || ""}
+                              onChange={(e) => updateLink(idx, "sectionTextColor", e.target.value)}
+                              placeholder="Default tema / #ffffff"
+                              className="w-full px-2.5 py-1 bg-slate-900 border border-slate-800 rounded text-[11px] font-mono text-slate-200 outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* WhatsApp Custom Default Message Box */}
+                    {(link.icon?.toLowerCase().includes("whatsapp") ||
+                      link.icon?.toLowerCase() === "wa" ||
+                      link.url?.includes("wa.me") ||
+                      link.url?.includes("whatsapp.com")) && (
+                      <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-800/40 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>Pesan Otomatis WhatsApp (Default Message Chat)</span>
+                          </label>
+                          <span className="text-[10px] text-emerald-500 font-medium">Auto Pre-filled Text</span>
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={link.waCustomMessage || ""}
+                          onChange={(e) => updateLink(idx, "waCustomMessage", e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-950 border border-emerald-900/50 rounded-lg text-xs text-slate-100 outline-none focus:border-emerald-500 resize-none placeholder-slate-600"
+                          placeholder="Contoh: Halo Admin Astra Points, saya mau tanya order Top Up / Mabar VIP..."
+                        />
+                        <p className="text-[10px] text-slate-400">
+                          Pesan ini akan langsung otomatis terisi di kolom chat WhatsApp pengunjung saat mereka mengeklik tombol ini.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

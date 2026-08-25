@@ -46,6 +46,8 @@ model LinktreeProfile {
   liveBannerSub    String         @default("Join our exclusive gaming stream & VIP queue")
   liveBannerUrl    String         @default("/mabarvip")
   liveBannerImage  String         @default("https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80")
+  categoryBgColor  String         @default("")
+  categoryTextColor String        @default("")
   siteTitle        String         @default("Virtus Official")
   siteSubtitle     String         @default("Streamer TIDAK KIKIR")
   siteLogoUrl      String         @default("")
@@ -65,6 +67,9 @@ model LinktreeLink {
   icon         String          @default("globe") // facebook, instagram, linkedin, youtube, tiktok, twitter, github, globe, message, topup, store, coins
   category     String          @default("social") // "social" | "custom"
   sectionTitle String          @default("") // Sub-judul grup (misal: "Top Up", "Social Media", dll)
+  sectionBgColor String        @default("")
+  sectionTextColor String      @default("")
+  waCustomMessage String       @default("")
   isEnabled    Boolean         @default(true)
   orderIndex   Int             @default(0)
   profileId    String          @default("profile")

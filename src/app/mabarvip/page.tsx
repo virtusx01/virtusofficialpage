@@ -55,12 +55,13 @@ export default function MabarVipPage() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"ALL" | "END_LIVE" | "PER_MATCH">("ALL");
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchData = async (silent = false) => {
-    if (!silent) setLoading(true);
+    if (!silent && !initialLoading) setLoading(true);
     try {
       // Fetch players with no-store
       const playerRes = await fetch("/api/players", { cache: "no-store" });
@@ -85,6 +86,7 @@ export default function MabarVipPage() {
       console.error("Failed to load live data:", err);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   };
 
@@ -132,6 +134,40 @@ export default function MabarVipPage() {
   const filteredPending = pending.filter(filterFn);
   const filteredCompleted = completed.filter(filterFn);
 
+  // Full-page luxury loading animation until initial data is completely ready
+  if (initialLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 font-sans">
+        <Header />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
+          <div className="relative">
+            <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 opacity-40 blur-xl animate-pulse" />
+            <div className="relative h-24 w-24 rounded-2xl bg-slate-900 border border-violet-500/40 p-2 flex items-center justify-center shadow-2xl overflow-hidden">
+              <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover rounded-xl" />
+            </div>
+            <div className="absolute -bottom-2 -right-2 h-7 w-7 rounded-full bg-violet-600 border-2 border-slate-950 flex items-center justify-center shadow-md">
+              <RotateCw className="h-4 w-4 text-white animate-spin" />
+            </div>
+          </div>
+
+          <div className="space-y-2 max-w-sm">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-white via-violet-200 to-fuchsia-300 bg-clip-text text-transparent">
+              Memuat Data Mabar VIP
+            </h2>
+            <p className="text-xs text-slate-400">
+              Menghubungkan ke antrean real-time Virtus Official...
+            </p>
+          </div>
+
+          <div className="w-48 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+            <div className="h-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500 rounded-full animate-pulse w-full" />
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 font-sans">
       <Header />
@@ -155,7 +191,7 @@ export default function MabarVipPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold uppercase tracking-wider text-red-400 bg-red-500/15 px-2 py-0.5 rounded-full border border-red-500/20">
-                      LIVE NOW
+                      SEDANG LIVE
                     </span>
                     <h2 className="text-sm font-semibold text-slate-400">Streaming Active</h2>
                   </div>
@@ -291,23 +327,18 @@ export default function MabarVipPage() {
               </span>
             </div>
 
-            {loading ? (
-              <div className="glass-panel p-6 rounded-2xl border border-slate-800/80 flex flex-col items-center justify-center h-48">
-                <RotateCw className="h-8 w-8 text-violet-500 animate-spin mb-2" />
-                <p className="text-xs text-slate-400">Loading data player...</p>
-              </div>
-            ) : filteredPlaying.length === 0 ? (
+            {filteredPlaying.length === 0 ? (
               <div className="glass-panel p-8 rounded-2xl border border-slate-800/50 flex flex-col items-center justify-center text-center h-48">
                 <Gamepad2 className="h-10 w-10 text-slate-600 mb-3" />
                 <p className="text-sm font-semibold text-slate-400">Belum ada yang bermain</p>
                 <p className="text-xs text-slate-500 mt-1">Admin akan memperbarui status di dashboard.</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3 max-h-[395px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {filteredPlaying.map((player) => (
                   <div
                     key={player.id}
-                    className="relative overflow-hidden glass-panel rounded-2xl border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-800 p-5 glow-green transform hover:-translate-y-0.5 transition-all duration-300"
+                    className="relative overflow-hidden glass-panel rounded-2xl border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-800 p-4 glow-green transform hover:-translate-y-0.5 transition-all duration-300 shrink-0"
                   >
                     <div className="absolute top-0 right-0 h-24 w-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
                     <div className="flex items-start justify-between">
@@ -315,17 +346,17 @@ export default function MabarVipPage() {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                           Active Match
                         </span>
-                        <h3 className="text-xl font-bold text-slate-100 mt-2 truncate max-w-[180px]">
+                        <h3 className="text-base font-bold text-slate-100 mt-1.5 truncate max-w-[170px]">
                           {player.name}
                         </h3>
                         {player.gameId && (
-                          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                          <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
                             <Users className="h-3.5 w-3.5 text-slate-500" />
                             IGN: <span className="text-slate-300 font-mono">{player.gameId}</span>
                           </p>
                         )}
                       </div>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border ${player.vipType === "END_LIVE"
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${player.vipType === "END_LIVE"
                         ? "bg-purple-950/40 border-purple-800/50 text-purple-400"
                         : "bg-fuchsia-950/40 border-fuchsia-800/50 text-fuchsia-400"
                         }`}>
@@ -335,7 +366,7 @@ export default function MabarVipPage() {
 
                     {/* Match counter if PER_MATCH */}
                     {player.vipType === "PER_MATCH" && (
-                      <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between">
+                      <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between">
                         <span className="text-xs text-slate-400">Match Played:</span>
                         <div className="flex items-center gap-1">
                           <span className="text-sm font-bold text-fuchsia-400">{player.matchesPlayed}</span>
@@ -346,7 +377,7 @@ export default function MabarVipPage() {
                     )}
 
                     {player.notes && (
-                      <div className="mt-3 bg-slate-950/50 border border-slate-900 px-3 py-2 rounded-xl text-xs text-slate-400 font-medium italic">
+                      <div className="mt-2.5 bg-slate-950/50 border border-slate-900 px-3 py-1.5 rounded-xl text-xs text-slate-400 font-medium italic">
                         "{player.notes}"
                       </div>
                     )}
@@ -368,27 +399,22 @@ export default function MabarVipPage() {
               </span>
             </div>
 
-            {loading ? (
-              <div className="glass-panel p-6 rounded-2xl border border-slate-800/80 flex flex-col items-center justify-center h-48">
-                <RotateCw className="h-8 w-8 text-violet-500 animate-spin mb-2" />
-                <p className="text-xs text-slate-400">Loading antrean...</p>
-              </div>
-            ) : filteredQueue.length === 0 ? (
+            {filteredQueue.length === 0 ? (
               <div className="glass-panel p-8 rounded-2xl border border-slate-800/50 flex flex-col items-center justify-center text-center h-48">
                 <Clock className="h-10 w-10 text-slate-600 mb-3" />
                 <p className="text-sm font-semibold text-slate-400">Antrean kosong</p>
                 <p className="text-xs text-slate-500 mt-1">Daftar VIP sekarang untuk masuk antrean!</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 max-h-[395px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {filteredQueue.map((player, idx) => (
                   <div
                     key={player.id}
-                    className="glass-panel rounded-xl border border-slate-850 p-4 flex items-center justify-between gap-4 hover:border-slate-700/60 transition-all duration-300"
+                    className="glass-panel rounded-xl border border-slate-850 p-3.5 flex items-center justify-between gap-3 hover:border-slate-700/60 transition-all duration-300 shrink-0"
                   >
                     <div className="flex items-center gap-3 truncate">
                       {/* Position Queue Indicator */}
-                      <div className="h-9 w-9 shrink-0 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center font-bold text-sm text-violet-400 shadow-inner">
+                      <div className="h-8 w-8 shrink-0 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center font-bold text-xs text-violet-400 shadow-inner">
                         #{idx + 1}
                       </div>
                       <div className="truncate">
@@ -429,23 +455,18 @@ export default function MabarVipPage() {
               </span>
             </div>
 
-            {loading ? (
-              <div className="glass-panel p-6 rounded-2xl border border-slate-800/80 flex flex-col items-center justify-center h-48">
-                <RotateCw className="h-8 w-8 text-violet-500 animate-spin mb-2" />
-                <p className="text-xs text-slate-400">Loading...</p>
-              </div>
-            ) : filteredPending.length === 0 ? (
+            {filteredPending.length === 0 ? (
               <div className="glass-panel p-8 rounded-2xl border border-slate-800/50 flex flex-col items-center justify-center text-center h-48">
                 <PauseCircle className="h-10 w-10 text-slate-600 mb-3" />
                 <p className="text-sm font-semibold text-slate-400">Tidak ada player tertunda</p>
                 <p className="text-xs text-slate-500 mt-1">Semua player aktif di antrean atau sedang bermain.</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 max-h-[395px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {filteredPending.map((player) => (
                   <div
                     key={player.id}
-                    className="glass-panel rounded-xl border border-slate-850 p-4 flex items-center justify-between gap-4 opacity-70 hover:opacity-100 hover:border-slate-800 transition-all duration-300"
+                    className="glass-panel rounded-xl border border-slate-850 p-3.5 flex items-center justify-between gap-3 opacity-70 hover:opacity-100 hover:border-slate-800 transition-all duration-300 shrink-0"
                   >
                     <div className="truncate">
                       <h3 className="font-semibold text-slate-300 text-sm truncate">
@@ -486,23 +507,18 @@ export default function MabarVipPage() {
               </span>
             </div>
 
-            {loading ? (
-              <div className="glass-panel p-6 rounded-2xl border border-slate-800/80 flex flex-col items-center justify-center h-48">
-                <RotateCw className="h-8 w-8 text-violet-500 animate-spin mb-2" />
-                <p className="text-xs text-slate-400">Loading...</p>
-              </div>
-            ) : filteredCompleted.length === 0 ? (
+            {filteredCompleted.length === 0 ? (
               <div className="glass-panel p-8 rounded-2xl border border-slate-800/50 flex flex-col items-center justify-center text-center h-48">
                 <CheckCircle className="h-10 w-10 text-slate-700 mb-3" />
                 <p className="text-sm font-semibold text-slate-400">Belum ada player selesai</p>
                 <p className="text-xs text-slate-500 mt-1">Daftar player selesai akan tampil di sini.</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 max-h-[395px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {filteredCompleted.map((player) => (
                   <div
                     key={player.id}
-                    className="glass-panel rounded-xl border border-slate-850 p-4 flex items-center justify-between gap-4 opacity-60 hover:opacity-100 hover:border-slate-800 transition-all duration-300"
+                    className="glass-panel rounded-xl border border-slate-850 p-3.5 flex items-center justify-between gap-3 opacity-60 hover:opacity-100 hover:border-slate-800 transition-all duration-300 shrink-0"
                   >
                     <div className="truncate">
                       <h3 className="font-semibold text-slate-300 text-sm truncate line-through decoration-slate-600">
