@@ -155,7 +155,7 @@ export default function AdminDashboard() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
+        throw new Error(errData.detail || errData.error || `HTTP ${res.status}`);
       }
 
       const { nickname, gameId } = await res.json();
