@@ -237,17 +237,17 @@ export default function AdminDashboard() {
         }
       }
 
-      // 2. Extract Nickname
+      // 2. Extract Full Nickname (Supporting symbols like <3, _, ., -, emojis, letters, kanji, etc.)
       const blacklistedTerms = [
         "总览", "战绩", "数据", "战力", "编号", "当前段位", "赛季", "通行证", "成就",
         "成就殿堂", "皮肤", "人气", "动态", "视频", "主页", "无畏时刻", "瓦谷展示",
-        "文明先锋", "名片", "徽章", "精英保镖", "钻石", "黄金", "白银", "青铜", "超凡",
+        "文明先锋", "名片", "徽章", "精英保镖", "精英权益", "钻石", "黄金", "白银", "青铜", "超凡",
         "神话", "radiant", "immortal", "diamond", "platinum", "gold", "silver", "bronze",
         "rank", "tier", "level", "lv", "exp", "vip", "prayforkalimantan", "prayfor", "kalimantan",
-        "在线", "离线", "游戏中", "组队中", "b&h", "b h"
+        "在线", "离线", "游戏中", "组队中"
       ];
 
-      // Parse every line from all recognition results
+      // Strategy: Parse line by line to preserve intact nicknames with symbols (e.g. "aoicantik<3", "cupidut", "Zhret")
       const lines = combinedText
         .split("\n")
         .map(l => l.trim())
@@ -258,27 +258,42 @@ export default function AdminDashboard() {
       for (const rawLine of lines) {
         if (extractedId && rawLine.includes(extractedId)) continue;
 
-        // Split line into words or tokens
-        const tokens = rawLine
-          .split(/[\s|/\\:：]+/g)
-          .map(t => t.replace(/^[0-9()\[\]{}<>_\-+=!@#$%^&*~`.,;'"•◊❖◆▲▼★☆♀♂\u4e00-\u9fa5]+/gu, ""))
-          .map(t => t.replace(/[0-9()\[\]{}<>_\-+=!@#$%^&*~`.,;'"•◊❖◆▲▼★☆♀♂]+$/gu, ""))
-          .filter(t => t.length >= 2);
+        // Clean out Chinese UI labels attached to the right/left
+        let cleaned = rawLine;
+        blacklistedTerms.forEach(term => {
+          cleaned = cleaned.replace(new RegExp(term, "gi"), " ");
+        });
 
-        for (const token of tokens) {
-          const lower = token.toLowerCase();
-          if (blacklistedTerms.some(b => lower === b || lower.includes(b))) continue;
-          if (/^\d+$/.test(token)) continue;
+        // Strip known noise words
+        cleaned = cleaned.replace(/\b(B&H|BH|VN|LV|EXP)\b/gi, " ");
 
-          // Score: pure alphabetic word / player nickname gets highest priority
+        // Remove gender/rank badge symbols ONLY from the extreme left/right edges, but KEEP interior symbols like <3, _, -, ., etc.
+        // Strips leading badge symbols: ◊, ❖, ◆, ▲, ▼, ★, ☆, ♀, ♂, [V], (128)
+        cleaned = cleaned.replace(/^[\s0-9()\[\]{}•◊❖◆▲▼★☆♀♂|\\/]+/gu, "").trim();
+        cleaned = cleaned.replace(/[\s|\\/]+$/gu, "").trim();
+
+        // Split into chunks if there are multiple separated blocks
+        const chunks = cleaned.split(/\s{2,}|\t+/).filter(c => c.trim().length >= 2);
+
+        for (const chunk of chunks) {
+          const trimmedChunk = chunk.trim();
+          const lower = trimmedChunk.toLowerCase();
+
+          if (!trimmedChunk || /^\d+$/.test(trimmedChunk)) continue;
+          if (blacklistedTerms.some(b => lower === b)) continue;
+
+          // Must contain at least one letter/character
+          if (!/[\p{L}\p{N}]/u.test(trimmedChunk)) continue;
+
           let score = 10;
-          if (/^[A-Za-z0-9_]{3,16}$/.test(token)) score += 50; // Clean English IGN like "Zhret", "cupidut"
-          if (token.length >= 4 && token.length <= 14) score += 20;
+          // High score for nicknames (length 2 - 20)
+          if (trimmedChunk.length >= 3 && trimmedChunk.length <= 20) score += 40;
+          // Bonus if contains letters
+          if (/[A-Za-z\u4e00-\u9fa5]/.test(trimmedChunk)) score += 30;
+          // Handles symbols like <3, _, -, etc. perfectly
+          if (/[<3_\-.]/.test(trimmedChunk)) score += 15;
 
-          // Avoid common misrecognitions
-          if (lower === "b&h" || lower === "bh" || lower === "vn" || lower === "lv") continue;
-
-          candidateNicks.push({ word: token, score });
+          candidateNicks.push({ word: trimmedChunk, score });
         }
       }
 
