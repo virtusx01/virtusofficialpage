@@ -133,8 +133,8 @@ export default function AdminDashboard() {
     }
   }, [formData.gameId, players, editingPlayer]);
 
-  // Crop ROI (Region of Interest) specifically for Game Profile Header (Nickname) and Top Right (Game ID)
-  const cropImageRegions = (file: File): Promise<{ nicknameImg: string; idImg: string; fullImg: string }> => {
+  // Create multiple image variations for OCR to catch all font types (standard contrast, grayscale, inverted)
+  const generateOcrVariants = (file: File): Promise<string[]> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -142,72 +142,54 @@ export default function AdminDashboard() {
         img.onload = () => {
           const w = img.width;
           const h = img.height;
+          const variants: string[] = [];
 
-          // Helper to enhance canvas contrast for sharp text recognition
-          const enhanceContrast = (canvas: HTMLCanvasElement) => {
-            const ctx = canvas.getContext("2d");
-            if (!ctx) return canvas.toDataURL("image/png");
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          // 1. Variant 1: Enhanced Grayscale with 2x scale
+          const c1 = document.createElement("canvas");
+          const ctx1 = c1.getContext("2d");
+          c1.width = w * 2;
+          c1.height = h * 2;
+          if (ctx1) {
+            ctx1.imageSmoothingEnabled = true;
+            ctx1.imageSmoothingQuality = "high";
+            ctx1.drawImage(img, 0, 0, c1.width, c1.height);
+            const imgData = ctx1.getImageData(0, 0, c1.width, c1.height);
             const d = imgData.data;
             for (let i = 0; i < d.length; i += 4) {
-              const avg = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-              // High contrast text filter (white text on dark background)
-              const threshold = avg > 115 ? 255 : 0;
-              d[i] = threshold;
-              d[i + 1] = threshold;
-              d[i + 2] = threshold;
+              const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+              // Stretch dynamic range
+              const val = lum < 90 ? 0 : lum > 160 ? 255 : (lum - 90) * (255 / 70);
+              d[i] = val;
+              d[i + 1] = val;
+              d[i + 2] = val;
             }
-            ctx.putImageData(imgData, 0, 0);
-            return canvas.toDataURL("image/png");
-          };
-
-          // 1. Nickname Region: usually top header, between 25% to 65% width and 0% to 30% height (or relative to avatar)
-          // Also covers full-width cropped avatar area if image is already a crop
-          const nickCanvas = document.createElement("canvas");
-          const nickCtx = nickCanvas.getContext("2d");
-          
-          const isAlreadyCropped = w < 800 && h < 500;
-          const nickX = isAlreadyCropped ? 0 : Math.floor(w * 0.25);
-          const nickY = 0;
-          const nickW = isAlreadyCropped ? w : Math.floor(w * 0.50);
-          const nickH = isAlreadyCropped ? h : Math.floor(h * 0.35);
-
-          nickCanvas.width = nickW * 2;
-          nickCanvas.height = nickH * 2;
-          if (nickCtx) {
-            nickCtx.imageSmoothingEnabled = true;
-            nickCtx.drawImage(img, nickX, nickY, nickW, nickH, 0, 0, nickCanvas.width, nickCanvas.height);
+            ctx1.putImageData(imgData, 0, 0);
+            variants.push(c1.toDataURL("image/png"));
           }
 
-          // 2. ID Region: top right area (55% to 100% width, top 25% height)
-          const idCanvas = document.createElement("canvas");
-          const idCtx = idCanvas.getContext("2d");
-          const idX = isAlreadyCropped ? 0 : Math.floor(w * 0.55);
-          const idY = 0;
-          const idW = isAlreadyCropped ? w : Math.floor(w * 0.45);
-          const idH = isAlreadyCropped ? h : Math.floor(h * 0.30);
-
-          idCanvas.width = idW * 2;
-          idCanvas.height = idH * 2;
-          if (idCtx) {
-            idCtx.imageSmoothingEnabled = true;
-            idCtx.drawImage(img, idX, idY, idW, idH, 0, 0, idCanvas.width, idCanvas.height);
+          // 2. Variant 2: Normal 2x scale (preserves anti-aliasing for font edges)
+          const c2 = document.createElement("canvas");
+          const ctx2 = c2.getContext("2d");
+          c2.width = w * 2;
+          c2.height = h * 2;
+          if (ctx2) {
+            ctx2.imageSmoothingEnabled = true;
+            ctx2.drawImage(img, 0, 0, c2.width, c2.height);
+            variants.push(c2.toDataURL("image/png"));
           }
 
-          // Full enhanced
-          const fullCanvas = document.createElement("canvas");
-          const fullCtx = fullCanvas.getContext("2d");
-          fullCanvas.width = w * 1.5;
-          fullCanvas.height = h * 1.5;
-          if (fullCtx) {
-            fullCtx.drawImage(img, 0, 0, fullCanvas.width, fullCanvas.height);
+          // 3. Variant 3: Focused Header Crop (top 35% of image, where Nick & Game ID live)
+          const c3 = document.createElement("canvas");
+          const ctx3 = c3.getContext("2d");
+          c3.width = w * 2;
+          c3.height = Math.floor(h * 0.40 * 2);
+          if (ctx3) {
+            ctx3.imageSmoothingEnabled = true;
+            ctx3.drawImage(img, 0, 0, w, Math.floor(h * 0.40), 0, 0, c3.width, c3.height);
+            variants.push(c3.toDataURL("image/png"));
           }
 
-          resolve({
-            nicknameImg: enhanceContrast(nickCanvas),
-            idImg: enhanceContrast(idCanvas),
-            fullImg: fullCanvas.toDataURL("image/png")
-          });
+          resolve(variants);
         };
         img.src = e.target?.result as string;
       };
@@ -227,88 +209,84 @@ export default function AdminDashboard() {
     setOcrErrorMsg(null);
 
     try {
-      // 1. Crop regions
-      const { nicknameImg, idImg, fullImg } = await cropImageRegions(file);
+      // 1. Generate image variants
+      const variants = await generateOcrVariants(file);
 
-      // 2. Dynamic import Tesseract
+      // 2. Dynamic import Tesseract with multi-engine
       const { createWorker } = await import("tesseract.js");
       const worker = await createWorker(["eng", "chi_sim"]);
 
-      // Run recognition on Nickname focused area and ID focused area
-      const [nickRet, idRet, fullRet] = await Promise.all([
-        worker.recognize(nicknameImg),
-        worker.recognize(idImg),
-        worker.recognize(fullImg)
-      ]);
+      // Run OCR across variants
+      const results = await Promise.all(variants.map(v => worker.recognize(v)));
       await worker.terminate();
 
-      const nickText = nickRet.data.text || "";
-      const idText = idRet.data.text || "";
-      const fullText = fullRet.data.text || "";
-
-      console.log("ROI Nick Text:", nickText);
-      console.log("ROI ID Text:", idText);
-      console.log("Full Text:", fullText);
+      const combinedText = results.map(r => r.data.text || "").join("\n");
+      console.log("Multi-Variant OCR Combined:\n", combinedText);
 
       let extractedId = "";
       let extractedNick = "";
 
-      // 1. Extract Game ID (8 - 20 digit)
-      const combinedIdText = `${idText}\n${fullText}`;
-      const idMatches = combinedIdText.match(/(?:编号|ID|No|#|Uid|UID)?\s*[:：]?\s*(\d{8,20})/i);
+      // 1. Extract Game ID (8 to 20 digits, after 编号, ID, No, or standalone)
+      const idMatches = combinedText.match(/(?:编号|ID|No|#|Uid|UID)?\s*[:：]?\s*(\d{8,20})/i);
       if (idMatches && idMatches[1]) {
         extractedId = idMatches[1].trim();
       } else {
-        const genericDigits = combinedIdText.match(/\b\d{8,20}\b/);
+        const genericDigits = combinedText.match(/\b\d{8,20}\b/);
         if (genericDigits) {
           extractedId = genericDigits[0].trim();
         }
       }
 
-      // 2. Extract Nickname from Nickname ROI area and Full text
+      // 2. Extract Nickname
       const blacklistedTerms = [
         "总览", "战绩", "数据", "战力", "编号", "当前段位", "赛季", "通行证", "成就",
         "成就殿堂", "皮肤", "人气", "动态", "视频", "主页", "无畏时刻", "瓦谷展示",
         "文明先锋", "名片", "徽章", "精英保镖", "钻石", "黄金", "白银", "青铜", "超凡",
         "神话", "radiant", "immortal", "diamond", "platinum", "gold", "silver", "bronze",
         "rank", "tier", "level", "lv", "exp", "vip", "prayforkalimantan", "prayfor", "kalimantan",
-        "在线", "离线", "游戏中", "组队中"
+        "在线", "离线", "游戏中", "组队中", "b&h", "b h"
       ];
 
-      // Parse line candidates from nickText first, then fallback to fullText
-      const allLines = `${nickText}\n${fullText}`
+      // Parse every line from all recognition results
+      const lines = combinedText
         .split("\n")
         .map(l => l.trim())
         .filter(l => l.length > 0);
 
-      for (const line of allLines) {
-        // Skip if contains ID
-        if (extractedId && line.includes(extractedId)) continue;
+      const candidateNicks: { word: string; score: number }[] = [];
 
-        // Strip gender symbols, rank marks, badge symbols, level numbers like "(128)" or "[V]" or "◊" or "♀" or "♂"
-        let clean = line
-          .replace(/^[0-9\s()\[\]{}<>\/\\\|\-_+*&^%$#@!~`=;:,"'•◊❖◆▲▼★☆♀♂\u4e00-\u9fa5]+/gu, "") // strip leading symbols & chinese UI
-          .replace(/[0-9\s()\[\]{}<>\/\\\|\-_+*&^%$#@!~`=;:,"'•◊❖◆▲▼★☆♀♂]+$/gu, "") // strip trailing symbols
-          .trim();
+      for (const rawLine of lines) {
+        if (extractedId && rawLine.includes(extractedId)) continue;
 
-        // If after stripping it's empty, try generic unicode letter match
-        if (!clean) {
-          const matchLetters = line.match(/[\p{L}\p{N}_\-.]{2,24}/u);
-          if (matchLetters) {
-            clean = matchLetters[0].trim();
-          }
+        // Split line into words or tokens
+        const tokens = rawLine
+          .split(/[\s|/\\:：]+/g)
+          .map(t => t.replace(/^[0-9()\[\]{}<>_\-+=!@#$%^&*~`.,;'"•◊❖◆▲▼★☆♀♂\u4e00-\u9fa5]+/gu, ""))
+          .map(t => t.replace(/[0-9()\[\]{}<>_\-+=!@#$%^&*~`.,;'"•◊❖◆▲▼★☆♀♂]+$/gu, ""))
+          .filter(t => t.length >= 2);
+
+        for (const token of tokens) {
+          const lower = token.toLowerCase();
+          if (blacklistedTerms.some(b => lower === b || lower.includes(b))) continue;
+          if (/^\d+$/.test(token)) continue;
+
+          // Score: pure alphabetic word / player nickname gets highest priority
+          let score = 10;
+          if (/^[A-Za-z0-9_]{3,16}$/.test(token)) score += 50; // Clean English IGN like "Zhret", "cupidut"
+          if (token.length >= 4 && token.length <= 14) score += 20;
+
+          // Avoid common misrecognitions
+          if (lower === "b&h" || lower === "bh" || lower === "vn" || lower === "lv") continue;
+
+          candidateNicks.push({ word: token, score });
         }
+      }
 
-        const lowerClean = clean.toLowerCase();
-        if (
-          clean.length >= 2 &&
-          clean.length <= 24 &&
-          !/^\d+$/.test(clean) &&
-          !blacklistedTerms.some(t => lowerClean.includes(t))
-        ) {
-          extractedNick = clean;
-          break;
-        }
+      // Sort candidate nicknames by highest score
+      candidateNicks.sort((a, b) => b.score - a.score);
+
+      if (candidateNicks.length > 0) {
+        extractedNick = candidateNicks[0].word;
       }
 
       // Apply to form
