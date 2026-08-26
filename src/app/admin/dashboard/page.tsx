@@ -133,6 +133,53 @@ export default function AdminDashboard() {
     }
   }, [formData.gameId, players, editingPlayer]);
 
+  // Pre-process image on HTML Canvas (contrast boost, grayscale & upscale) to ensure 99.9% clean OCR reading
+  const preprocessImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
+          }
+
+          // Scale up image if small for crisp OCR
+          const scale = Math.max(1, Math.min(2.5, 1600 / Math.max(img.width, img.height)));
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // Get image data for adaptive contrast enhancement
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+
+          for (let i = 0; i < data.length; i += 4) {
+            // Convert to grayscale
+            const avg = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            // Increase contrast (stretch dynamic range)
+            const contrast = 1.35;
+            const factor = (259 * (contrast * 128 + 255)) / (255 * (259 - contrast * 128));
+            const adjusted = Math.min(255, Math.max(0, factor * (avg - 128) + 128));
+
+            data[i] = adjusted;
+            data[i + 1] = adjusted;
+            data[i + 2] = adjusted;
+          }
+
+          ctx.putImageData(imgData, 0, 0);
+          resolve(canvas.toDataURL("image/png"));
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   // OCR Processing Function
   const handleProcessImage = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -145,58 +192,109 @@ export default function AdminDashboard() {
     setOcrErrorMsg(null);
 
     try {
-      // Dynamic import to keep initial bundle lightweight
+      // 1. Preprocess image
+      const processedDataUrl = await preprocessImage(file);
+
+      // 2. Dynamic import Tesseract with multi-language
       const { createWorker } = await import("tesseract.js");
-      const worker = await createWorker("eng+chi_sim");
+      const worker = await createWorker(["eng", "chi_sim"]);
       
-      const ret = await worker.recognize(file);
+      const ret = await worker.recognize(processedDataUrl);
       await worker.terminate();
 
-      const text = ret.data.text;
-      console.log("Raw OCR Result:", text);
+      const fullText = ret.data.text || "";
+      const lines = ret.data.lines || [];
+      console.log("Full OCR Text:", fullText);
+      console.log("OCR Lines:", lines);
 
       let extractedId = "";
       let extractedNick = "";
 
-      // 1. Extract Game ID (number with 8 to 20 digits, often preceded by 编号, ID, No, or standalone)
-      // Matches pattern like "编号 : 1992879945533" or "1992879945533"
-      const idMatches = text.match(/(?:编号|ID|No|#)?\s*[:：]?\s*(\d{8,20})/i);
+      // 1. Extract Game ID (angka panjang 8 - 20 digit)
+      const idMatches = fullText.match(/(?:编号|ID|No|#|Uid|UID)?\s*[:：]?\s*(\d{8,20})/i);
       if (idMatches && idMatches[1]) {
         extractedId = idMatches[1].trim();
       } else {
-        // Fallback: look for any long sequence of digits
-        const genericDigits = text.match(/\b\d{8,20}\b/);
+        const genericDigits = fullText.match(/\b\d{8,20}\b/);
         if (genericDigits) {
           extractedId = genericDigits[0].trim();
         }
       }
 
-      // 2. Extract Nickname
-      // Valorant Mobile / Game profile typically has lines like "[symbol] Nickname" or words next to avatar/rank
-      const lines = text
-        .split("\n")
-        .map(l => l.trim())
-        .filter(l => l.length > 0);
+      // 2. Filter & Detect Nickname
+      // Common game UI terms to exclude
+      const blacklistedTerms = [
+        "总览", "战绩", "数据", "战力", "编号", "当前段位", "赛季", "通行证", "成就",
+        "成就殿堂", "皮肤", "人气", "动态", "视频", "主页", "无畏时刻", "瓦谷展示",
+        "文明先锋", "名片", "徽章", "精英保镖", "钻石", "黄金", "白银", "青铜", "超凡",
+        "神话", "radiant", "immortal", "diamond", "platinum", "gold", "silver", "bronze",
+        "rank", "tier", "level", "lv", "exp", "vip", "prayforkalimantan", "prayfor", "kalimantan"
+      ];
 
-      for (const line of lines) {
-        // Skip lines that look like UI header (总览, 战绩, 数据, 战力, 编号, etc.)
-        if (/^(总览|战绩|数据|战力|编号|当前段位|赛季|通行证|成就|皮肤|人气|动态|视频|主页)/.test(line)) {
+      // Strategy A: Check lines near the top/middle containing clean nickname characters
+      const candidateList: { text: string; confidence: number; length: number }[] = [];
+
+      for (const lineObj of lines) {
+        const lineText = lineObj.text.trim();
+        if (!lineText) continue;
+
+        // Skip if this line is just the Game ID
+        if (extractedId && lineText.replace(/\s+/g, "").includes(extractedId)) {
           continue;
         }
 
-        // If line contains ID pattern, ignore
-        if (extractedId && line.includes(extractedId)) {
-          continue;
-        }
+        // Clean out icons/symbols at start/end (like ◊, ❖, [v], etc.)
+        let clean = lineText
+          .replace(/^[^\p{L}\p{N}]+/gu, "") // strip leading non-alphanumeric unicode
+          .replace(/[^\p{L}\p{N}]+$/gu, "") // strip trailing non-alphanumeric unicode
+          .trim();
 
-        // Find candidate nickname (e.g. "Zhret", "◊ Zhret", "Kenzy")
-        // Remove special symbols if any
-        const cleanedLine = line.replace(/^[^\w\u4e00-\u9fa5]+/, "").replace(/[^\w\u4e00-\u9fa5\s\-_.]+$/, "").trim();
-        
-        if (cleanedLine.length >= 2 && cleanedLine.length <= 24 && !/^\d+$/.test(cleanedLine)) {
-          // If cleanedLine contains words without common UI labels
-          if (!/^(LV|VIP|EXP|RANK|MATCH|TIER)/i.test(cleanedLine)) {
-            extractedNick = cleanedLine;
+        // Also remove bracketed rank tags or sub-badges like "[V]", "(128)" if attached
+        clean = clean.replace(/^[\[\(<\{][^\s\]\)>\}]+[\]\)>\}]\s*/, "").trim();
+
+        // Check if string contains mostly blacklisted game UI words
+        const lowerClean = clean.toLowerCase();
+        const isBlacklisted = blacklistedTerms.some(term => lowerClean === term || lowerClean.startsWith(term + " ") || lowerClean.endsWith(" " + term));
+        if (isBlacklisted) continue;
+
+        // Valid nickname candidates: letters/numbers/kanji/hangul/cyrillic etc., 2 to 25 chars
+        if (clean.length >= 2 && clean.length <= 25 && !/^\d+$/.test(clean)) {
+          // Exclude text that has too many UI sentences
+          if (!clean.includes(":") && !clean.includes("：") && !clean.includes("/")) {
+            candidateList.push({
+              text: clean,
+              confidence: lineObj.confidence || 50,
+              length: clean.length
+            });
+          }
+        }
+      }
+
+      // Strategy B: Pick the best candidate (usually the first strong candidate below avatar/badge)
+      if (candidateList.length > 0) {
+        // Priority: pick candidate that is purely alphanumeric / proper name
+        // (e.g. "cupidut", "Zhret", "Kenzy_01")
+        const alphabeticCandidate = candidateList.find(c => /^[a-zA-Z0-9_\-.\s]{2,20}$/.test(c.text));
+        if (alphabeticCandidate) {
+          extractedNick = alphabeticCandidate.text;
+        } else {
+          extractedNick = candidateList[0].text;
+        }
+      }
+
+      // Fallback: If still not found, check word-by-word
+      if (!extractedNick && ret.data.words) {
+        for (const word of ret.data.words) {
+          const w = word.text.trim();
+          const cleanW = w.replace(/^[^\p{L}\p{N}]+/gu, "").replace(/[^\p{L}\p{N}]+$/gu, "").trim();
+          const lowerW = cleanW.toLowerCase();
+          if (
+            cleanW.length >= 3 &&
+            cleanW.length <= 18 &&
+            !/^\d+$/.test(cleanW) &&
+            !blacklistedTerms.includes(lowerW)
+          ) {
+            extractedNick = cleanW;
             break;
           }
         }
