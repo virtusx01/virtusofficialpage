@@ -133,7 +133,7 @@ export default function AdminDashboard() {
     }
   }, [formData.gameId, players, editingPlayer]);
 
-  // Isolate pure WHITE bold text (Valorant Mobile nickname is bold solid white #FFFFFF text on dark/blue gradient)
+  // Isolate pure WHITE bold text in the Left Header Profile area (where Nickname strictly resides)
   const isolateWhiteNicknameCanvas = (file: File): Promise<{ whiteMaskImg: string; idMaskImg: string }> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -143,15 +143,24 @@ export default function AdminDashboard() {
           const w = img.width;
           const h = img.height;
 
-          // 1. Nickname Mask: Focus on high-brightness text (white text has R>180, G>180, B>180 and low color saturation)
+          // 1. Nickname Mask: Crop exclusively the Left Profile Header (X: 0 to 52% width, Y: 0 to 35% height)
+          // This completely cuts off any right-side elements (like 菁英权益, friends, gifts, buttons, etc.)
           const nickCanvas = document.createElement("canvas");
           const nickCtx = nickCanvas.getContext("2d");
-          nickCanvas.width = w * 2;
-          nickCanvas.height = h * 2;
+          
+          const isSmallCrop = w < 800 && h < 450;
+          const cropX = 0;
+          const cropY = 0;
+          const cropW = isSmallCrop ? w : Math.floor(w * 0.55);
+          const cropH = isSmallCrop ? h : Math.floor(h * 0.38);
+
+          nickCanvas.width = cropW * 3; // 3x upscale for needle-sharp OCR
+          nickCanvas.height = cropH * 3;
 
           if (nickCtx) {
             nickCtx.imageSmoothingEnabled = true;
-            nickCtx.drawImage(img, 0, 0, nickCanvas.width, nickCanvas.height);
+            nickCtx.imageSmoothingQuality = "high";
+            nickCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, nickCanvas.width, nickCanvas.height);
             const imgData = nickCtx.getImageData(0, 0, nickCanvas.width, nickCanvas.height);
             const d = imgData.data;
 
@@ -167,7 +176,7 @@ export default function AdminDashboard() {
               const isWhiteText = r > 165 && g > 165 && b > 165 && saturation < 0.28;
 
               if (isWhiteText) {
-                // Black text on white canvas for maximum OCR accuracy
+                // Black text on pure white canvas for maximum OCR accuracy
                 d[i] = 0;
                 d[i + 1] = 0;
                 d[i + 2] = 0;
@@ -182,7 +191,7 @@ export default function AdminDashboard() {
             nickCtx.putImageData(imgData, 0, 0);
           }
 
-          // 2. ID Mask: Normal high-contrast canvas
+          // 2. ID Mask: Normal canvas for top-right Game ID
           const idCanvas = document.createElement("canvas");
           const idCtx = idCanvas.getContext("2d");
           idCanvas.width = w * 2;
@@ -214,7 +223,7 @@ export default function AdminDashboard() {
     setOcrErrorMsg(null);
 
     try {
-      // 1. Isolate white font layer (filters out all red/gold/blue badges & background noise)
+      // 1. Isolate left header white font layer
       const { whiteMaskImg, idMaskImg } = await isolateWhiteNicknameCanvas(file);
 
       // 2. Dynamic import Tesseract
@@ -229,7 +238,7 @@ export default function AdminDashboard() {
 
       const nickText = nickRet.data.text || "";
       const idText = idRet.data.text || "";
-      console.log("White Mask OCR Text:\n", nickText);
+      console.log("Left Header White Mask OCR Text:\n", nickText);
       console.log("ID OCR Text:\n", idText);
 
       let extractedId = "";
@@ -247,7 +256,7 @@ export default function AdminDashboard() {
         }
       }
 
-      // 2. Extract Nickname from Isolated White Text Layer
+      // 2. Extract strictly the FIRST (leftmost) Nickname encountered
       const blacklistedTerms = [
         "总览", "战绩", "数据", "战力", "编号", "当前段位", "赛季", "通行证", "成就",
         "成就殿堂", "皮肤", "人气", "动态", "视频", "主页", "无畏时刻", "瓦谷展示",
@@ -257,12 +266,10 @@ export default function AdminDashboard() {
         "在线", "离线", "游戏中", "组队中"
       ];
 
-      const lines = `${nickText}\n${idText}`
+      const lines = nickText
         .split("\n")
         .map(l => l.trim())
         .filter(l => l.length > 0);
-
-      const candidateNicks: { word: string; score: number }[] = [];
 
       for (const rawLine of lines) {
         if (extractedId && rawLine.includes(extractedId)) continue;
@@ -278,28 +285,20 @@ export default function AdminDashboard() {
 
         if (!lineClean || /^\d+$/.test(lineClean)) continue;
 
-        // Candidate blocks (space separated)
-        const parts = lineClean.split(/\s{2,}|\t+/);
-        for (const part of parts) {
-          const trimmed = part.trim();
+        // Split into chunks if there are multiple separated blocks
+        const chunks = lineClean.split(/\s{2,}|\t+/);
+        for (const chunk of chunks) {
+          const trimmed = chunk.trim();
           const lower = trimmed.toLowerCase();
           if (trimmed.length < 2) continue;
           if (blacklistedTerms.some(b => lower.includes(b))) continue;
 
-          let score = 10;
-          if (trimmed.length >= 3 && trimmed.length <= 18) score += 30;
-          if (/[A-Za-z]/.test(trimmed)) score += 30;
-          // Exact nickname matches like "aoicantik<3", "cupidut", "Zhret"
-          if (trimmed.includes("<3") || trimmed.includes("_") || trimmed.includes("-")) score += 25;
-
-          candidateNicks.push({ word: trimmed, score });
+          // Found the leftmost valid nickname in the header!
+          extractedNick = trimmed;
+          break;
         }
-      }
 
-      candidateNicks.sort((a, b) => b.score - a.score);
-
-      if (candidateNicks.length > 0) {
-        extractedNick = candidateNicks[0].word;
+        if (extractedNick) break;
       }
 
       // Apply to form
