@@ -49,6 +49,27 @@ export async function PUT(
 
     const updateData = { ...result.data };
 
+    // Check duplicate gameId if changed
+    if (updateData.gameId && updateData.gameId.trim() !== "") {
+      const trimmedGameId = updateData.gameId.trim();
+      const duplicatePlayer = await prisma.player.findFirst({
+        where: {
+          id: { not: id },
+          gameId: {
+            equals: trimmedGameId,
+            mode: "insensitive"
+          }
+        }
+      });
+
+      if (duplicatePlayer) {
+        return NextResponse.json(
+          { error: `Game ID '${trimmedGameId}' sudah terdaftar atas nama '${duplicatePlayer.name}' (Status: ${duplicatePlayer.status}).` },
+          { status: 409 }
+        );
+      }
+    }
+
     // Smart queueOrder adjustment:
     // If the status is changed to QUEUE, and it wasn't QUEUE before
     if (updateData.status === "QUEUE" && existingPlayer.status !== "QUEUE") {

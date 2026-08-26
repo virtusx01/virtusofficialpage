@@ -27,7 +27,13 @@ import {
   Radio,
   ExternalLink,
   Flame,
-  Cat
+  Cat,
+  Camera,
+  Image as ImageIcon,
+  Sparkles,
+  AlertCircle,
+  Scan,
+  Copy
 } from "lucide-react";
 
 interface Player {
@@ -100,6 +106,147 @@ export default function AdminDashboard() {
     announcement: ""
   });
 
+  // OCR Screenshot Scanner State
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrSuccessMsg, setOcrSuccessMsg] = useState<string | null>(null);
+  const [ocrErrorMsg, setOcrErrorMsg] = useState<string | null>(null);
+
+  // Real-time Duplicate Game ID check
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+
+  // Check duplicate gameId against players list
+  useEffect(() => {
+    if (!formData.gameId || formData.gameId.trim() === "") {
+      setDuplicateWarning(null);
+      return;
+    }
+
+    const currentId = formData.gameId.trim().toLowerCase();
+    const match = players.find(
+      p => p.gameId && p.gameId.trim().toLowerCase() === currentId && (!editingPlayer || p.id !== editingPlayer.id)
+    );
+
+    if (match) {
+      setDuplicateWarning(`⚠️ Game ID '${match.gameId}' sudah terdaftar atas nama "${match.name}" (Status: ${match.status})!`);
+    } else {
+      setDuplicateWarning(null);
+    }
+  }, [formData.gameId, players, editingPlayer]);
+
+  // OCR Processing Function
+  const handleProcessImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setOcrErrorMsg("File harus berupa gambar (PNG, JPG, JPEG, WEBP).");
+      return;
+    }
+
+    setOcrLoading(true);
+    setOcrSuccessMsg(null);
+    setOcrErrorMsg(null);
+
+    try {
+      // Dynamic import to keep initial bundle lightweight
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker("eng+chi_sim");
+      
+      const ret = await worker.recognize(file);
+      await worker.terminate();
+
+      const text = ret.data.text;
+      console.log("Raw OCR Result:", text);
+
+      let extractedId = "";
+      let extractedNick = "";
+
+      // 1. Extract Game ID (number with 8 to 20 digits, often preceded by 编号, ID, No, or standalone)
+      // Matches pattern like "编号 : 1992879945533" or "1992879945533"
+      const idMatches = text.match(/(?:编号|ID|No|#)?\s*[:：]?\s*(\d{8,20})/i);
+      if (idMatches && idMatches[1]) {
+        extractedId = idMatches[1].trim();
+      } else {
+        // Fallback: look for any long sequence of digits
+        const genericDigits = text.match(/\b\d{8,20}\b/);
+        if (genericDigits) {
+          extractedId = genericDigits[0].trim();
+        }
+      }
+
+      // 2. Extract Nickname
+      // Valorant Mobile / Game profile typically has lines like "[symbol] Nickname" or words next to avatar/rank
+      const lines = text
+        .split("\n")
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
+
+      for (const line of lines) {
+        // Skip lines that look like UI header (总览, 战绩, 数据, 战力, 编号, etc.)
+        if (/^(总览|战绩|数据|战力|编号|当前段位|赛季|通行证|成就|皮肤|人气|动态|视频|主页)/.test(line)) {
+          continue;
+        }
+
+        // If line contains ID pattern, ignore
+        if (extractedId && line.includes(extractedId)) {
+          continue;
+        }
+
+        // Find candidate nickname (e.g. "Zhret", "◊ Zhret", "Kenzy")
+        // Remove special symbols if any
+        const cleanedLine = line.replace(/^[^\w\u4e00-\u9fa5]+/, "").replace(/[^\w\u4e00-\u9fa5\s\-_.]+$/, "").trim();
+        
+        if (cleanedLine.length >= 2 && cleanedLine.length <= 24 && !/^\d+$/.test(cleanedLine)) {
+          // If cleanedLine contains words without common UI labels
+          if (!/^(LV|VIP|EXP|RANK|MATCH|TIER)/i.test(cleanedLine)) {
+            extractedNick = cleanedLine;
+            break;
+          }
+        }
+      }
+
+      // Apply to form
+      if (extractedId || extractedNick) {
+        setFormData(prev => ({
+          ...prev,
+          name: extractedNick || prev.name,
+          gameId: extractedId || prev.gameId
+        }));
+
+        const details = [];
+        if (extractedNick) details.push(`Nickname: "${extractedNick}"`);
+        if (extractedId) details.push(`Game ID: "${extractedId}"`);
+
+        setOcrSuccessMsg(`✅ Berhasil scan screenshot! (${details.join(", ")})`);
+      } else {
+        setOcrErrorMsg("Tidak dapat mendeteksi Nickname / Game ID dari gambar. Silakan isi manual.");
+      }
+    } catch (err: any) {
+      console.error("OCR Scan Error:", err);
+      setOcrErrorMsg("Gagal memproses gambar. Pastikan gambar jelas dan coba lagi.");
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleProcessImage(e.target.files[0]);
+    }
+  };
+
+  const handlePasteImage = (e: React.ClipboardEvent) => {
+    if (e.clipboardData.items) {
+      for (let i = 0; i < e.clipboardData.items.length; i++) {
+        const item = e.clipboardData.items[i];
+        if (item.type.indexOf("image") !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            handleProcessImage(file);
+            break;
+          }
+        }
+      }
+    }
+  };
+
   const fetchData = async () => {
     try {
       const playerRes = await fetch("/api/players");
@@ -134,6 +281,9 @@ export default function AdminDashboard() {
   // Open modal for adding
   const handleAddClick = () => {
     setEditingPlayer(null);
+    setOcrSuccessMsg(null);
+    setOcrErrorMsg(null);
+    setDuplicateWarning(null);
     setFormData({
       name: "",
       gameId: "",
@@ -149,6 +299,9 @@ export default function AdminDashboard() {
   // Open modal for editing
   const handleEditClick = (player: Player) => {
     setEditingPlayer(player);
+    setOcrSuccessMsg(null);
+    setOcrErrorMsg(null);
+    setDuplicateWarning(null);
     setFormData({
       name: player.name,
       gameId: player.gameId,
@@ -958,6 +1111,65 @@ export default function AdminDashboard() {
               </button>
             </div>
 
+            {/* Screenshot OCR Scanner Box */}
+            <div
+              onPaste={handlePasteImage}
+              tabIndex={0}
+              className="group relative overflow-hidden bg-gradient-to-br from-violet-950/40 via-slate-900 to-fuchsia-950/30 border border-violet-800/40 hover:border-violet-500/60 p-4 rounded-xl mb-4 transition-all focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+            >
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-violet-300">
+                  <Sparkles className="h-4 w-4 text-fuchsia-400 animate-pulse" />
+                  <span>Auto-Fill via Screenshot Profil Game</span>
+                </div>
+                <span className="text-[10px] bg-violet-900/60 text-violet-200 border border-violet-700/50 px-2 py-0.5 rounded-full font-medium">
+                  OCR Cerdas
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
+                Upload atau <strong className="text-violet-300">Paste (Ctrl+V)</strong> screenshot profil game (Valorant Mobile dll). Nickname & Game ID otomatis terbaca!
+              </p>
+
+              {/* Upload Input Button */}
+              <label className="flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-slate-900/80 hover:bg-slate-800 border border-dashed border-violet-600/50 hover:border-violet-400 rounded-lg text-xs font-semibold text-slate-200 transition-all cursor-pointer">
+                {ocrLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 text-violet-400 animate-spin" />
+                    <span className="text-violet-300">Membaca data screenshot...</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-4 w-4 text-violet-400" />
+                    <span>Pilih Foto Screenshot / Tempel di Sini</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileInputChange}
+                  disabled={ocrLoading}
+                  className="hidden"
+                />
+              </label>
+
+              {/* Success Notification */}
+              {ocrSuccessMsg && (
+                <div className="mt-2.5 p-2 bg-emerald-950/40 border border-emerald-800/60 rounded-lg text-[11px] text-emerald-300 flex items-start gap-1.5">
+                  <Check className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
+                  <span>{ocrSuccessMsg}</span>
+                </div>
+              )}
+
+              {/* Error Notification */}
+              {ocrErrorMsg && (
+                <div className="mt-2.5 p-2 bg-red-950/40 border border-red-800/60 rounded-lg text-[11px] text-red-300 flex items-start gap-1.5">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+                  <span>{ocrErrorMsg}</span>
+                </div>
+              )}
+            </div>
+
             <form onSubmit={handleSavePlayer} className="space-y-4">
 
               {/* Player Name */}
@@ -977,16 +1189,33 @@ export default function AdminDashboard() {
 
               {/* Game ID */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  Game ID / IGN (Optional)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Game ID / IGN (Angka Akun)
+                  </label>
+                  {formData.gameId && !duplicateWarning && (
+                    <span className="text-[10px] font-medium text-emerald-400 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> Game ID Tersedia
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   value={formData.gameId}
                   onChange={(e) => setFormData(prev => ({ ...prev, gameId: e.target.value }))}
-                  placeholder="e.g. 12345678 (2012)"
-                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all"
+                  placeholder="e.g. 1992879945533"
+                  className={`w-full bg-slate-900 border px-3 py-2.5 text-sm rounded-xl outline-none text-slate-100 placeholder-slate-600 transition-all ${
+                    duplicateWarning
+                      ? "border-red-500 focus:border-red-400 focus:ring-1 focus:ring-red-500"
+                      : "border-slate-800 focus:border-violet-500"
+                  }`}
                 />
+                {duplicateWarning && (
+                  <div className="mt-1.5 p-2 bg-red-950/50 border border-red-800/60 rounded-lg text-xs text-red-300 flex items-start gap-1.5 animate-shake">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+                    <span>{duplicateWarning}</span>
+                  </div>
+                )}
               </div>
 
               {/* Row Grid: Type & Status */}
@@ -1075,8 +1304,8 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   id="modal-submit-btn"
-                  disabled={actionLoading}
-                  className="flex-1 py-2.5 px-4 bg-violet-600 hover:bg-violet-500 text-sm font-semibold rounded-xl text-white transition-all cursor-pointer text-center disabled:opacity-50"
+                  disabled={actionLoading || !!duplicateWarning}
+                  className="flex-1 py-2.5 px-4 bg-violet-600 hover:bg-violet-500 text-sm font-semibold rounded-xl text-white transition-all cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {actionLoading ? (
                     <Loader2 className="h-5 w-5 animate-spin mx-auto" />

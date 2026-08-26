@@ -62,6 +62,26 @@ export async function POST(request: Request) {
 
     const data = result.data;
 
+    // Check if gameId is already registered (if gameId is provided)
+    if (data.gameId && data.gameId.trim() !== "") {
+      const trimmedGameId = data.gameId.trim();
+      const duplicatePlayer = await prisma.player.findFirst({
+        where: {
+          gameId: {
+            equals: trimmedGameId,
+            mode: "insensitive"
+          }
+        }
+      });
+
+      if (duplicatePlayer) {
+        return NextResponse.json(
+          { error: `Game ID '${trimmedGameId}' sudah terdaftar atas nama '${duplicatePlayer.name}' (Status: ${duplicatePlayer.status}).` },
+          { status: 409 }
+        );
+      }
+    }
+
     // Get max queueOrder for queue sorting
     const maxQueueOrder = await prisma.player.aggregate({
       _max: {
