@@ -133,85 +133,7 @@ export default function AdminDashboard() {
     }
   }, [formData.gameId, players, editingPlayer]);
 
-  // Isolate pure WHITE bold text in the Left Header Profile area (where Nickname strictly resides)
-  const isolateWhiteNicknameCanvas = (file: File): Promise<{ whiteMaskImg: string; idMaskImg: string }> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const w = img.width;
-          const h = img.height;
-
-          // 1. Nickname Mask: Crop exclusively the Left Profile Header (X: 0 to 52% width, Y: 0 to 35% height)
-          // This completely cuts off any right-side elements (like 菁英权益, friends, gifts, buttons, etc.)
-          const nickCanvas = document.createElement("canvas");
-          const nickCtx = nickCanvas.getContext("2d");
-          
-          const isSmallCrop = w < 800 && h < 450;
-          const cropX = 0;
-          const cropY = 0;
-          const cropW = isSmallCrop ? w : Math.floor(w * 0.55);
-          const cropH = isSmallCrop ? h : Math.floor(h * 0.38);
-
-          nickCanvas.width = cropW * 3; // 3x upscale for needle-sharp OCR
-          nickCanvas.height = cropH * 3;
-
-          if (nickCtx) {
-            nickCtx.imageSmoothingEnabled = true;
-            nickCtx.imageSmoothingQuality = "high";
-            nickCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, nickCanvas.width, nickCanvas.height);
-            const imgData = nickCtx.getImageData(0, 0, nickCanvas.width, nickCanvas.height);
-            const d = imgData.data;
-
-            for (let i = 0; i < d.length; i += 4) {
-              const r = d[i];
-              const g = d[i + 1];
-              const b = d[i + 2];
-              const max = Math.max(r, g, b);
-              const min = Math.min(r, g, b);
-              const saturation = max === 0 ? 0 : (max - min) / max;
-
-              // White font condition: bright and neutral color (low saturation, eliminates red gender icon, gold rank badge, etc.)
-              const isWhiteText = r > 165 && g > 165 && b > 165 && saturation < 0.28;
-
-              if (isWhiteText) {
-                // Black text on pure white canvas for maximum OCR accuracy
-                d[i] = 0;
-                d[i + 1] = 0;
-                d[i + 2] = 0;
-                d[i + 3] = 255;
-              } else {
-                d[i] = 255;
-                d[i + 1] = 255;
-                d[i + 2] = 255;
-                d[i + 3] = 255;
-              }
-            }
-            nickCtx.putImageData(imgData, 0, 0);
-          }
-
-          // 2. ID Mask: Normal canvas for top-right Game ID
-          const idCanvas = document.createElement("canvas");
-          const idCtx = idCanvas.getContext("2d");
-          idCanvas.width = w * 2;
-          idCanvas.height = h * 2;
-          if (idCtx) {
-            idCtx.drawImage(img, 0, 0, idCanvas.width, idCanvas.height);
-          }
-
-          resolve({
-            whiteMaskImg: nickCanvas.toDataURL("image/png"),
-            idMaskImg: idCanvas.toDataURL("image/png")
-          });
-        };
-        img.src = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // OCR Processing Function
+  // Gemini Vision API — scan screenshot for nickname & game ID
   const handleProcessImage = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       setOcrErrorMsg("File harus berupa gambar (PNG, JPG, JPEG, WEBP).");
@@ -223,103 +145,39 @@ export default function AdminDashboard() {
     setOcrErrorMsg(null);
 
     try {
-      // 1. Isolate left header white font layer
-      const { whiteMaskImg, idMaskImg } = await isolateWhiteNicknameCanvas(file);
+      const body = new FormData();
+      body.append("image", file);
 
-      // 2. Dynamic import Tesseract
-      const { createWorker } = await import("tesseract.js");
-      const worker = await createWorker(["eng", "chi_sim"]);
+      const res = await fetch("/api/scan-screenshot", {
+        method: "POST",
+        body
+      });
 
-      const [nickRet, idRet] = await Promise.all([
-        worker.recognize(whiteMaskImg),
-        worker.recognize(idMaskImg)
-      ]);
-      await worker.terminate();
-
-      const nickText = nickRet.data.text || "";
-      const idText = idRet.data.text || "";
-      console.log("Left Header White Mask OCR Text:\n", nickText);
-      console.log("ID OCR Text:\n", idText);
-
-      let extractedId = "";
-      let extractedNick = "";
-
-      // 1. Extract Game ID (8 to 20 digits, after 编号, ID, No, or standalone)
-      const combinedIdText = `${idText}\n${nickText}`;
-      const idMatches = combinedIdText.match(/(?:编号|ID|No|#|Uid|UID)?\s*[:：]?\s*(\d{8,20})/i);
-      if (idMatches && idMatches[1]) {
-        extractedId = idMatches[1].trim();
-      } else {
-        const genericDigits = combinedIdText.match(/\b\d{8,20}\b/);
-        if (genericDigits) {
-          extractedId = genericDigits[0].trim();
-        }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
       }
 
-      // 2. Extract strictly the FIRST (leftmost) Nickname encountered
-      const blacklistedTerms = [
-        "总览", "战绩", "数据", "战力", "编号", "当前段位", "赛季", "通行证", "成就",
-        "成就殿堂", "皮肤", "人气", "动态", "视频", "主页", "无畏时刻", "瓦谷展示",
-        "文明先锋", "名片", "徽章", "精英保镖", "精英权益", "钻石", "黄金", "白银", "青铜", "超凡",
-        "神话", "radiant", "immortal", "diamond", "platinum", "gold", "silver", "bronze",
-        "rank", "tier", "level", "lv", "exp", "vip", "prayforkalimantan", "prayfor", "kalimantan",
-        "在线", "离线", "游戏中", "组队中"
-      ];
+      const { nickname, gameId } = await res.json();
 
-      const lines = nickText
-        .split("\n")
-        .map(l => l.trim())
-        .filter(l => l.length > 0);
-
-      for (const rawLine of lines) {
-        if (extractedId && rawLine.includes(extractedId)) continue;
-
-        let lineClean = rawLine;
-        blacklistedTerms.forEach(b => {
-          lineClean = lineClean.replace(new RegExp(b, "gi"), " ");
-        });
-
-        // Strip badge symbols & noise at start/end
-        lineClean = lineClean.replace(/^[\s0-9()\[\]{}•◊❖◆▲▼★☆♀♂|\\/»«<>]+/gu, "").trim();
-        lineClean = lineClean.replace(/[\s|\\/»«]+$/gu, "").trim();
-
-        if (!lineClean || /^\d+$/.test(lineClean)) continue;
-
-        // Split into chunks if there are multiple separated blocks
-        const chunks = lineClean.split(/\s{2,}|\t+/);
-        for (const chunk of chunks) {
-          const trimmed = chunk.trim();
-          const lower = trimmed.toLowerCase();
-          if (trimmed.length < 2) continue;
-          if (blacklistedTerms.some(b => lower.includes(b))) continue;
-
-          // Found the leftmost valid nickname in the header!
-          extractedNick = trimmed;
-          break;
-        }
-
-        if (extractedNick) break;
-      }
-
-      // Apply to form
-      if (extractedId || extractedNick) {
+      if (nickname || gameId) {
         setFormData(prev => ({
           ...prev,
-          name: extractedNick || prev.name,
-          gameId: extractedId || prev.gameId
+          name: nickname || prev.name,
+          gameId: gameId || prev.gameId
         }));
 
-        const details = [];
-        if (extractedNick) details.push(`Nickname: "${extractedNick}"`);
-        if (extractedId) details.push(`Game ID: "${extractedId}"`);
-
+        const details: string[] = [];
+        if (nickname) details.push(`Nickname: "${nickname}"`);
+        if (gameId) details.push(`Game ID: "${gameId}"`);
         setOcrSuccessMsg(`✅ Berhasil scan screenshot! (${details.join(", ")})`);
       } else {
         setOcrErrorMsg("Tidak dapat mendeteksi Nickname / Game ID dari gambar. Silakan isi manual.");
       }
-    } catch (err: any) {
-      console.error("OCR Scan Error:", err);
-      setOcrErrorMsg("Gagal memproses gambar. Pastikan gambar jelas dan coba lagi.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      console.error("Scan Screenshot Error:", message);
+      setOcrErrorMsg(`Gagal memproses gambar: ${message}. Pastikan gambar jelas dan coba lagi.`);
     } finally {
       setOcrLoading(false);
     }
