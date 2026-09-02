@@ -157,18 +157,19 @@ export default function TextBerjalanClient({ initialPlayers, initialConfig }: Pr
     const raw = cfg.text || DEFAULT_CONFIG.text;
     let playingStr: string;
     if (players.length > 0) {
-      playingStr = "🎮 SEDANG BERMAIN: " + players.map(p => {
-        const matchInfo = p.vipType === "PER_MATCH"
-          ? ` (${p.matchesPlayed}/${p.matchesTotal} Match)`
-          : " (End Live)";
-        const idInfo = p.gameId ? ` [ID: ${p.gameId}]` : "";
-        return `${p.name}${idInfo}${matchInfo}`;
-      }).join(" • ");
+      playingStr = players.map(p => {
+        return p.gameId ? `${p.name} (${p.gameId})` : p.name;
+      }).join(", ");
     } else {
-      playingStr = "🎮 SEDANG BERMAIN: Belum ada player di room saat ini";
+      playingStr = "Belum ada player di room saat ini";
     }
-    if (raw.includes("{PLAYING_PLAYERS}")) return raw.replace(/{PLAYING_PLAYERS}/g, playingStr);
-    if (cfg.showPlaying) return `${playingStr} || ${raw}`;
+
+    if (raw.includes("{PLAYING_PLAYERS}")) {
+      return raw.replace(/{PLAYING_PLAYERS}/g, playingStr);
+    }
+    if (cfg.showPlaying) {
+      return `🎮 SEDANG BERMAIN: ${playingStr} || ${raw}`;
+    }
     return raw;
   }, []);
 

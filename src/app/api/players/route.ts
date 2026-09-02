@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 const playerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   gameId: z.string().default(""),
-  vipType: z.enum(["END_LIVE", "PER_MATCH"]),
+  vipType: z.enum(["END_LIVE", "PER_MATCH", "PER_HOUR"]),
   status: z.enum(["PLAYING", "PENDING", "QUEUE", "COMPLETED"]),
   matchesTotal: z.number().int().nonnegative().default(0),
   matchesPlayed: z.number().int().nonnegative().default(0),

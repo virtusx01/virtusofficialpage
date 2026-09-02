@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   gameId: z.string().optional(),
-  vipType: z.enum(["END_LIVE", "PER_MATCH"]).optional(),
+  vipType: z.enum(["END_LIVE", "PER_MATCH", "PER_HOUR"]).optional(),
   status: z.enum(["PLAYING", "PENDING", "QUEUE", "COMPLETED"]).optional(),
   matchesPlayed: z.number().int().nonnegative().optional(),
   matchesTotal: z.number().int().nonnegative().optional(),

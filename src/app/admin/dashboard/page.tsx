@@ -33,14 +33,17 @@ import {
   Sparkles,
   AlertCircle,
   Scan,
-  Copy
+  Copy,
+  Timer,
+  RotateCcw
 } from "lucide-react";
+import { parsePlayerTimer, updateNotesWithTimer, formatRemainingTime, formatCompactTime } from "@/lib/timerHelpers";
 
 interface Player {
   id: string;
   name: string;
   gameId: string;
-  vipType: "END_LIVE" | "PER_MATCH";
+  vipType: "END_LIVE" | "PER_MATCH" | "PER_HOUR";
   status: "PLAYING" | "PENDING" | "QUEUE" | "COMPLETED";
   matchesPlayed: number;
   matchesTotal: number;
@@ -91,12 +94,30 @@ export default function AdminDashboard() {
   const [formData, setFormData] = useState({
     name: "",
     gameId: "",
-    vipType: "END_LIVE" as "END_LIVE" | "PER_MATCH",
+    vipType: "END_LIVE" as "END_LIVE" | "PER_MATCH" | "PER_HOUR",
     status: "QUEUE" as "PLAYING" | "PENDING" | "QUEUE" | "COMPLETED",
     matchesTotal: 3,
     matchesPlayed: 0,
     notes: ""
   });
+
+  // Reorder Modal State
+  const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+  const [reorderingPlayer, setReorderingPlayer] = useState<Player | null>(null);
+  const [reorderFormData, setReorderFormData] = useState({
+    vipType: "PER_HOUR" as "END_LIVE" | "PER_MATCH" | "PER_HOUR",
+    matchesTotal: 2,
+    notes: ""
+  });
+
+  // Live Timer tick state (forces re-render every second for live countdowns)
+  const [, setTimerTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimerTick(t => t + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const [settingsFormData, setSettingsFormData] = useState<Settings>({
     isLive: false,
@@ -244,9 +265,9 @@ export default function AdminDashboard() {
     setFormData({
       name: "",
       gameId: "",
-      vipType: "END_LIVE",
+      vipType: "PER_HOUR",
       status: "QUEUE",
-      matchesTotal: 3,
+      matchesTotal: 2,
       matchesPlayed: 0,
       notes: ""
     });
@@ -271,27 +292,105 @@ export default function AdminDashboard() {
     setIsModalOpen(true);
   };
 
-  // Move completed player back to active queue directly (No duplicate record created)
-  const handleReorderClick = async (player: Player) => {
+  // Open modal for reordering completed player
+  const handleReorderClick = (player: Player) => {
+    setReorderingPlayer(player);
+    setReorderFormData({
+      vipType: player.vipType || "PER_HOUR",
+      matchesTotal: player.matchesTotal || (player.vipType === "PER_HOUR" ? 2 : player.vipType === "PER_MATCH" ? 3 : 1),
+      notes: player.notes || ""
+    });
+    setIsReorderModalOpen(true);
+  };
+
+  // Submit Reorder with custom VIP type, count, and notes
+  const handleConfirmReorder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reorderingPlayer) return;
+
+    setActionLoading(true);
     try {
-      const res = await fetch(`/api/players/${player.id}`, {
+      const res = await fetch(`/api/players/${reorderingPlayer.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "QUEUE",
+          vipType: reorderFormData.vipType,
           matchesPlayed: 0,
-          matchesTotal: player.matchesTotal || (player.vipType === "PER_MATCH" ? 3 : 0),
+          matchesTotal: Number(reorderFormData.matchesTotal),
+          notes: reorderFormData.notes,
         })
       });
+
       if (res.ok) {
+        setIsReorderModalOpen(false);
+        setReorderingPlayer(null);
         fetchData();
       } else {
         const err = await res.json();
-        alert(err.error || "Gagal memindahkan player ke antrean.");
+        alert(err.error || "Gagal memproses reorder.");
       }
     } catch (error) {
       console.error("Reorder error:", error);
       alert("Terjadi kesalahan koneksi.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Countdown timer controls for PER_HOUR
+  const handleStartTimer = async (player: Player) => {
+    const timer = parsePlayerTimer(player.notes, player.matchesTotal);
+    const now = Date.now();
+    // If paused, start from remaining
+    let startTimestamp = now;
+    if (timer.isPaused) {
+      const elapsed = timer.totalSeconds - timer.remainingSeconds;
+      startTimestamp = now - (elapsed * 1000);
+    }
+    const updatedNotes = updateNotesWithTimer(player.notes, "RUNNING", startTimestamp, timer.totalSeconds);
+
+    try {
+      const res = await fetch(`/api/players/${player.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: updatedNotes })
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error("Failed to start timer:", err);
+    }
+  };
+
+  const handlePauseTimer = async (player: Player) => {
+    const timer = parsePlayerTimer(player.notes, player.matchesTotal);
+    const updatedNotes = updateNotesWithTimer(player.notes, "PAUSED", timer.remainingSeconds, timer.totalSeconds);
+
+    try {
+      const res = await fetch(`/api/players/${player.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: updatedNotes })
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error("Failed to pause timer:", err);
+    }
+  };
+
+  const handleResetTimer = async (player: Player) => {
+    const timer = parsePlayerTimer(player.notes, player.matchesTotal);
+    const updatedNotes = updateNotesWithTimer(player.notes, "STOPPED", 0, timer.totalSeconds);
+
+    try {
+      const res = await fetch(`/api/players/${player.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: updatedNotes })
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error("Failed to reset timer:", err);
     }
   };
 
@@ -668,8 +767,16 @@ export default function AdminDashboard() {
                     <div>
                       <div className="flex justify-between items-start">
                         <h4 className="font-bold text-slate-200 text-base">{player.name}</h4>
-                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
-                          {player.vipType === "END_LIVE"
+                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${
+                          player.vipType === "PER_HOUR"
+                            ? "bg-amber-950/40 border-amber-800/50 text-amber-400"
+                            : player.vipType === "END_LIVE"
+                            ? "bg-purple-950/40 border-purple-800/50 text-purple-400"
+                            : "bg-fuchsia-950/40 border-fuchsia-800/50 text-fuchsia-400"
+                        }`}>
+                          {player.vipType === "PER_HOUR"
+                            ? `${player.matchesTotal} Jam`
+                            : player.vipType === "END_LIVE"
                             ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x Live` : "Live")
                             : "Per Match"}
                         </span>
@@ -681,6 +788,59 @@ export default function AdminDashboard() {
                           Tersisa {player.matchesTotal - player.matchesPlayed}x mabar VIP end live
                         </p>
                       )}
+
+                      {/* VIP PER JAM (PER_HOUR) TIMER TRACKER */}
+                      {player.vipType === "PER_HOUR" && (() => {
+                        const timer = parsePlayerTimer(player.notes, player.matchesTotal);
+                        return (
+                          <div className="mt-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                                <Timer className="h-3.5 w-3.5 text-amber-400" />
+                                Countdown Timer:
+                              </span>
+                              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                                timer.isRunning
+                                  ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 animate-pulse"
+                                  : timer.isPaused
+                                  ? "bg-amber-950/60 text-amber-400 border border-amber-800/50"
+                                  : "bg-slate-900 text-slate-400 border border-slate-800"
+                              }`}>
+                                {formatRemainingTime(timer.remainingSeconds)}
+                              </span>
+                            </div>
+
+                            {/* Timer Action Buttons */}
+                            <div className="flex items-center gap-1.5 pt-1">
+                              {!timer.isRunning ? (
+                                <button
+                                  onClick={() => handleStartTimer(player)}
+                                  className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow cursor-pointer"
+                                >
+                                  <Play className="h-3.5 w-3.5 fill-current" />
+                                  {timer.isPaused ? "Lanjutkan Countdown" : "Mulai Countdown"}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handlePauseTimer(player)}
+                                  className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition-all shadow cursor-pointer"
+                                >
+                                  <Pause className="h-3.5 w-3.5 fill-current" />
+                                  Pause Countdown
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() => handleResetTimer(player)}
+                                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded-lg text-xs transition-all border border-slate-700 cursor-pointer"
+                                title="Reset Timer ke Jam Awal"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {player.vipType === "PER_MATCH" ? (
                         <div className="mt-3 flex items-center justify-between bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900">
@@ -703,34 +863,32 @@ export default function AdminDashboard() {
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        player.matchesTotal > 0 && (
-                          <div className="mt-3 flex items-center justify-between bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900">
-                            <span className="text-xs text-slate-450">Live Tracker:</span>
-                            <div className="flex items-center gap-2.5">
-                              <button
-                                onClick={() => handleMatchCountChange(player, -1)}
-                                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                              >
-                                <MinusCircle className="h-4.5 w-4.5" />
-                              </button>
-                              <span className="text-xs font-bold text-purple-400">
-                                {player.matchesPlayed} <span className="text-slate-600">/</span> {player.matchesTotal}
-                              </span>
-                              <button
-                                onClick={() => handleMatchCountChange(player, 1)}
-                                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                              >
-                                <PlusCircle className="h-4.5 w-4.5" />
-                              </button>
-                            </div>
+                      ) : player.vipType === "END_LIVE" && player.matchesTotal > 0 ? (
+                        <div className="mt-3 flex items-center justify-between bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900">
+                          <span className="text-xs text-slate-450">Live Tracker:</span>
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              onClick={() => handleMatchCountChange(player, -1)}
+                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                            >
+                              <MinusCircle className="h-4.5 w-4.5" />
+                            </button>
+                            <span className="text-xs font-bold text-purple-400">
+                              {player.matchesPlayed} <span className="text-slate-600">/</span> {player.matchesTotal}
+                            </span>
+                            <button
+                              onClick={() => handleMatchCountChange(player, 1)}
+                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                            >
+                              <PlusCircle className="h-4.5 w-4.5" />
+                            </button>
                           </div>
-                        )
-                      )}
+                        </div>
+                      ) : null}
 
-                      {player.notes && (
+                      {player.notes && parsePlayerTimer(player.notes).cleanNotes && (
                         <p className="text-xs text-slate-400 italic bg-slate-900/20 p-2 rounded-lg border border-slate-900/30 mt-2">
-                          "{player.notes}"
+                          "{parsePlayerTimer(player.notes).cleanNotes}"
                         </p>
                       )}
                     </div>
@@ -809,11 +967,16 @@ export default function AdminDashboard() {
                           {player.gameId && <div className="text-[10px] text-slate-500 font-mono mt-0.5">{player.gameId}</div>}
                         </td>
                         <td className="py-3 px-3">
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${player.vipType === "END_LIVE"
-                              ? "bg-purple-950/40 border-purple-900/40 text-purple-400"
-                              : "bg-fuchsia-950/40 border-fuchsia-900/40 text-fuchsia-400"
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+                              player.vipType === "PER_HOUR"
+                                ? "bg-amber-950/40 border-amber-900/40 text-amber-400"
+                                : player.vipType === "END_LIVE"
+                                ? "bg-purple-950/40 border-purple-900/40 text-purple-400"
+                                : "bg-fuchsia-950/40 border-fuchsia-900/40 text-fuchsia-400"
                             }`}>
-                            {player.vipType === "END_LIVE"
+                            {player.vipType === "PER_HOUR"
+                              ? `Per Jam: ${player.matchesTotal} Jam`
+                              : player.vipType === "END_LIVE"
                               ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x End Live` : "Sisa 1x End Live")
                               : `Match: ${player.matchesTotal}`}
                           </span>
@@ -1001,17 +1164,24 @@ export default function AdminDashboard() {
                       <td className="py-3 px-3 font-bold text-slate-350">{player.name}</td>
                       <td className="py-3 px-3 font-mono text-xs text-slate-500">{player.gameId || "-"}</td>
                       <td className="py-3 px-3">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${player.vipType === "END_LIVE"
-                            ? "bg-purple-950/20 border-purple-900/30 text-purple-400"
-                            : "bg-fuchsia-950/20 border-fuchsia-900/30 text-fuchsia-400"
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+                            player.vipType === "PER_HOUR"
+                              ? "bg-amber-950/20 border-amber-900/30 text-amber-400"
+                              : player.vipType === "END_LIVE"
+                              ? "bg-purple-950/20 border-purple-900/30 text-purple-400"
+                              : "bg-fuchsia-950/20 border-fuchsia-900/30 text-fuchsia-400"
                           }`}>
-                          {player.vipType === "END_LIVE"
+                          {player.vipType === "PER_HOUR"
+                            ? `Per Jam: ${player.matchesTotal} Jam`
+                            : player.vipType === "END_LIVE"
                             ? (player.matchesTotal > 0 ? `Live: ${player.matchesTotal}` : "Until End Live")
                             : `Match: ${player.matchesTotal}`}
                         </span>
                       </td>
                       <td className="py-3 px-3 text-xs text-slate-450">
-                        {player.vipType === "END_LIVE"
+                        {player.vipType === "PER_HOUR"
+                          ? `${player.matchesTotal} Jam Selesai`
+                          : player.vipType === "END_LIVE"
                           ? `${player.matchesPlayed}/${player.matchesTotal} Live Selesai`
                           : `${player.matchesPlayed}/${player.matchesTotal} Match Selesai`}
                       </td>
@@ -1186,8 +1356,9 @@ export default function AdminDashboard() {
                     onChange={(e) => setFormData(prev => ({ ...prev, vipType: e.target.value as any }))}
                     className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all cursor-pointer"
                   >
-                    <option value="END_LIVE">Until End Live</option>
+                    <option value="PER_HOUR">Per Jam</option>
                     <option value="PER_MATCH">Per Match</option>
+                    <option value="END_LIVE">Until End Live</option>
                   </select>
                 </div>
                 <div>
@@ -1207,11 +1378,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Matches played / total - For PER_MATCH or END_LIVE remaining tracker */}
+              {/* Matches played / total - For PER_HOUR, PER_MATCH or END_LIVE */}
               <div className="grid grid-cols-2 gap-4 bg-slate-900/40 p-3 rounded-xl border border-slate-900">
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    {formData.vipType === "END_LIVE" ? "Sudah Live (x)" : "Mainkan Match"}
+                    {formData.vipType === "PER_HOUR" ? "Jam Selesai" : formData.vipType === "END_LIVE" ? "Sudah Live (x)" : "Mainkan Match"}
                   </label>
                   <input
                     type="number"
@@ -1223,7 +1394,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    {formData.vipType === "END_LIVE" ? "Total Live (x)" : "Total Match"}
+                    {formData.vipType === "PER_HOUR" ? "Total Jam (Durasi)" : formData.vipType === "END_LIVE" ? "Total Live (x)" : "Total Match"}
                   </label>
                   <input
                     type="number"
@@ -1272,6 +1443,129 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* REORDER MODAL DIALOG */}
+      {isReorderModalOpen && reorderingPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 via-violet-600 to-fuchsia-600"></div>
+
+            <div className="flex items-center justify-between border-b border-slate-900 pb-3 mb-5">
+              <div>
+                <h3 className="text-lg font-black text-slate-100">
+                  Konfirmasi Reorder VIP
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Player: <span className="text-violet-400 font-bold">{reorderingPlayer.name}</span> {reorderingPlayer.gameId && `(${reorderingPlayer.gameId})`}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsReorderModalOpen(false);
+                  setReorderingPlayer(null);
+                }}
+                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmReorder} className="space-y-4">
+              {/* Order Tipe VIP apa? */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  1. Order Tipe VIP Apa?
+                </label>
+                <select
+                  value={reorderFormData.vipType}
+                  onChange={(e) => {
+                    const newType = e.target.value as "END_LIVE" | "PER_MATCH" | "PER_HOUR";
+                    setReorderFormData(prev => ({
+                      ...prev,
+                      vipType: newType,
+                      matchesTotal: newType === "PER_HOUR" ? 2 : newType === "PER_MATCH" ? 3 : 1
+                    }));
+                  }}
+                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all cursor-pointer font-semibold"
+                >
+                  <option value="PER_HOUR">Per Jam (VIP Durasi Jam)</option>
+                  <option value="PER_MATCH">Per Match (VIP Hitungan Match)</option>
+                  <option value="END_LIVE">Until End Live (VIP Sampai Selesai Live)</option>
+                </select>
+              </div>
+
+              {/* Totalnya berapa? */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  2. Totalnya Berapa? (
+                  {reorderFormData.vipType === "PER_HOUR"
+                    ? "Berapa Jam"
+                    : reorderFormData.vipType === "PER_MATCH"
+                    ? "Berapa Match"
+                    : "Berapa Kali Live"}
+                  )
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    value={reorderFormData.matchesTotal}
+                    onChange={(e) => setReorderFormData(prev => ({ ...prev, matchesTotal: Number(e.target.value) }))}
+                    placeholder={reorderFormData.vipType === "PER_HOUR" ? "Contoh: 2 (untuk 2 Jam)" : "Contoh: 3"}
+                    className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all font-bold"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-semibold">
+                    {reorderFormData.vipType === "PER_HOUR" ? "Jam" : reorderFormData.vipType === "PER_MATCH" ? "Match" : "x Live"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Catatan tambahan */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  3. Catatan Tambahan (Opsional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={reorderFormData.notes}
+                  onChange={(e) => setReorderFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="e.g. Request Hero / Req Core / Catatan Khusus"
+                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all resize-none"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-3 border-t border-slate-900">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsReorderModalOpen(false);
+                    setReorderingPlayer(null);
+                  }}
+                  className="flex-1 py-2.5 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-sm font-semibold rounded-xl text-slate-300 transition-all cursor-pointer text-center"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-sm font-bold rounded-xl text-white transition-all cursor-pointer text-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                >
+                  {actionLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      Masukkan Antrean
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
           </div>
         </div>
