@@ -13,8 +13,9 @@ export interface ParsedTimer {
   totalSeconds: number;
 }
 
-export function parsePlayerTimer(notes: string = "", totalHours: number = 1): ParsedTimer {
-  const defaultTotalSeconds = Math.max(1, totalHours) * 3600;
+export function parsePlayerTimer(notes: string = "", totalHours: number = 1, playedHours: number = 0): ParsedTimer {
+  const remainingHours = Math.max(0, totalHours - playedHours);
+  const defaultTotalSeconds = remainingHours * 3600;
   
   // Format tag: [TIMER:status:timestampOrRemaining:totalSeconds]
   // status: "RUNNING" | "PAUSED" | "STOPPED"
@@ -31,7 +32,8 @@ export function parsePlayerTimer(notes: string = "", totalHours: number = 1): Pa
   }
 
   const [, status, valStr, totalStr] = timerMatch;
-  const total = parseInt(totalStr, 10) || defaultTotalSeconds;
+  const storedTotal = parseInt(totalStr, 10);
+  const total = storedTotal > 0 ? storedTotal : defaultTotalSeconds;
   const val = parseInt(valStr, 10) || 0;
   const cleanNotes = notes.replace(/\[TIMER:[^\]]+\]/g, "").trim();
 
@@ -48,11 +50,12 @@ export function parsePlayerTimer(notes: string = "", totalHours: number = 1): Pa
       totalSeconds: total,
     };
   } else if (status === "PAUSED") {
+    const remaining = Math.min(val, total);
     return {
       cleanNotes,
       isRunning: false,
       isPaused: true,
-      remainingSeconds: Math.max(0, val),
+      remainingSeconds: Math.max(0, remaining),
       totalSeconds: total,
     };
   } else {
@@ -60,8 +63,8 @@ export function parsePlayerTimer(notes: string = "", totalHours: number = 1): Pa
       cleanNotes,
       isRunning: false,
       isPaused: false,
-      remainingSeconds: total,
-      totalSeconds: total,
+      remainingSeconds: defaultTotalSeconds,
+      totalSeconds: defaultTotalSeconds,
     };
   }
 }

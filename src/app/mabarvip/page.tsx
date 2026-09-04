@@ -377,19 +377,24 @@ export default function MabarVipPage() {
                           ? "bg-purple-950/40 border-purple-800/50 text-purple-400"
                           : "bg-fuchsia-950/40 border-fuchsia-800/50 text-fuchsia-400"
                         }`}>
-                        {player.vipType === "PER_HOUR" ? "Per Jam" : player.vipType === "END_LIVE" ? "Until End Live" : "Per Match"}
+                        {player.vipType === "PER_HOUR"
+                          ? (player.matchesPlayed > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed} Jam` : `${player.matchesTotal} Jam`)
+                          : player.vipType === "END_LIVE"
+                          ? "Until End Live"
+                          : "Per Match"}
                       </span>
                     </div>
 
                     {/* Countdown / Duration for PER_HOUR */}
                     {player.vipType === "PER_HOUR" && (() => {
-                      const timer = parsePlayerTimer(player.notes, player.matchesTotal);
+                      const timer = parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed);
+                      const remainingHours = Math.max(0, player.matchesTotal - player.matchesPlayed);
                       return (
                         <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex flex-col gap-1">
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-slate-400 flex items-center gap-1">
                               <Timer className="h-3.5 w-3.5 text-amber-400" />
-                              Durasi VIP ({player.matchesTotal} Jam):
+                              Durasi VIP ({player.matchesPlayed > 0 ? `Sisa ${remainingHours} dari ${player.matchesTotal} Jam` : `${player.matchesTotal} Jam`}):
                             </span>
                             <span className={`font-mono font-bold text-xs ${timer.isRunning ? "text-emerald-400 animate-pulse" : "text-amber-400"}`}>
                               {formatRemainingTime(timer.remainingSeconds)}
@@ -411,9 +416,9 @@ export default function MabarVipPage() {
                       </div>
                     )}
 
-                    {player.notes && parsePlayerTimer(player.notes).cleanNotes && (
+                    {player.notes && parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed).cleanNotes && (
                       <div className="mt-2.5 bg-slate-950/50 border border-slate-900 px-3 py-1.5 rounded-xl text-xs text-slate-400 font-medium italic">
-                        "{parsePlayerTimer(player.notes).cleanNotes}"
+                        "{parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed).cleanNotes}"
                       </div>
                     )}
                   </div>
@@ -471,7 +476,7 @@ export default function MabarVipPage() {
                           : "bg-fuchsia-950/30 text-fuchsia-400 border border-fuchsia-900/30"
                         }`}>
                         {player.vipType === "PER_HOUR"
-                          ? `${player.matchesTotal} Jam`
+                          ? (player.matchesPlayed > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed} dari ${player.matchesTotal} Jam` : `${player.matchesTotal} Jam`)
                           : player.vipType === "END_LIVE"
                           ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x End Live` : "Sisa 1x End Live")
                           : `Match: ${player.matchesTotal}`}
@@ -525,7 +530,7 @@ export default function MabarVipPage() {
                       </span>
                       <span className="text-[8px] text-slate-500 font-medium">
                         {player.vipType === "PER_HOUR"
-                          ? `${player.matchesTotal} Jam`
+                          ? (player.matchesPlayed > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}/${player.matchesTotal} Jam` : `${player.matchesTotal} Jam`)
                           : player.vipType === "END_LIVE"
                           ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x End Live` : "Sisa 1x End Live")
                           : `${player.matchesPlayed}/${player.matchesTotal} M`}
@@ -579,7 +584,7 @@ export default function MabarVipPage() {
                       </span>
                       <span className="text-[8px] text-slate-500 font-medium">
                         {player.vipType === "PER_HOUR"
-                          ? `${player.matchesTotal} Jam`
+                          ? `${player.matchesTotal} Jam Selesai`
                           : player.vipType === "END_LIVE"
                           ? `${player.matchesPlayed}/${player.matchesTotal} Live`
                           : `${player.matchesPlayed}/${player.matchesTotal} Match`}
