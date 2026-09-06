@@ -27,6 +27,11 @@ import {
   Image as ImageIcon,
   CheckCircle,
   Upload,
+  AlignLeft,
+  AlignCenter,
+  Rows3,
+  Columns3,
+  Maximize2,
 } from "lucide-react";
 
 interface LinkItem {
@@ -34,6 +39,11 @@ interface LinkItem {
   title: string;
   url: string;
   icon: string;
+  customIconUrl?: string;
+  layout?: "row" | "column";
+  textAlign?: "left" | "center";
+  itemAlign?: "left" | "center";
+  iconWidth?: number;
   category: string;
   sectionTitle?: string;
   sectionBgColor?: string;
@@ -98,6 +108,7 @@ interface ProfileData {
 }
 
 const AVAILABLE_ICONS = [
+  { id: "custom", label: "✨ Kustom (Upload / URL Icon Sendiri)" },
   { id: "topup", label: "Top Up / Diamond (Amber)" },
   { id: "store", label: "Toko / Store (Cyan)" },
   { id: "coins", label: "Points / Astra Points (Gold)" },
@@ -321,12 +332,51 @@ export default function EditLinktreePage() {
     }
   };
 
+  const handleLinkIconUpload = async (file: File, index: number) => {
+    setUploadingField(`link-icon-${index}`);
+    try {
+      const compressedBlob = await compressImage(file, 800, 800, 0.9);
+      const formData = new FormData();
+      formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".png");
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        const updatedLinks = [...profile.links];
+        updatedLinks[index] = {
+          ...updatedLinks[index],
+          icon: "custom",
+          customIconUrl: data.url,
+        };
+        setProfile({ ...profile, links: updatedLinks });
+        setSaveSuccess(false);
+      } else {
+        alert(`Gagal mengunggah icon: ${data.error || "Server error"}`);
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      alert(`Terjadi kesalahan saat mengunggah icon: ${err?.message || err}`);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
   const addLink = () => {
     const newLink: LinkItem = {
       id: `new-${Date.now()}`,
       title: "Link Baru",
       url: "https://",
       icon: "globe",
+      customIconUrl: "",
+      layout: "row",
+      textAlign: "left",
+      itemAlign: "left",
+      iconWidth: 48,
       category: "custom",
       sectionTitle: "",
       sectionBgColor: "",
@@ -1220,8 +1270,14 @@ export default function EditLinktreePage() {
                         <label className="block text-[11px] text-slate-400 mb-1">Ikon</label>
                         <select
                           value={link.icon}
-                          onChange={(e) => updateLink(idx, "icon", e.target.value)}
-                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500"
+                          onChange={(e) => {
+                            const newIcon = e.target.value;
+                            updateLink(idx, "icon", newIcon);
+                            if (newIcon === "custom" && !link.iconWidth) {
+                              updateLink(idx, "iconWidth", link.layout === "column" ? 80 : 48);
+                            }
+                          }}
+                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-violet-500 font-medium"
                         >
                           {AVAILABLE_ICONS.map((ic) => (
                             <option key={ic.id} value={ic.id}>
@@ -1229,6 +1285,320 @@ export default function EditLinktreePage() {
                             </option>
                           ))}
                         </select>
+                      </div>
+                    </div>
+
+                    {/* Custom Icon Upload & URL (Jika pilih icon kustom atau ada customIconUrl) */}
+                    {(link.icon === "custom" || Boolean(link.customIconUrl)) && (
+                      <div className="p-3 rounded-xl bg-violet-950/20 border border-violet-800/40 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-violet-300 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                            <span>Kustomisasi Ikon / Gambar Sendiri</span>
+                          </label>
+                          <span className="text-[10px] text-violet-400 font-mono">PNG / SVG / JPG / WebP</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                          <div className="sm:col-span-2 space-y-2">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={link.customIconUrl || ""}
+                                onChange={(e) => {
+                                  updateLink(idx, "customIconUrl", e.target.value);
+                                  if (e.target.value) updateLink(idx, "icon", "custom");
+                                }}
+                                className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none focus:border-violet-500 placeholder-slate-600 font-mono"
+                                placeholder="Masukkan URL gambar icon (https://...)"
+                              />
+                              <label
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm ${
+                                  uploadingField === `link-icon-${idx}`
+                                    ? "bg-violet-800 text-violet-200 cursor-not-allowed"
+                                    : "bg-violet-600 hover:bg-violet-500 text-white"
+                                }`}
+                              >
+                                {uploadingField === `link-icon-${idx}` ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Upload...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>Upload Icon</span>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  disabled={uploadingField === `link-icon-${idx}`}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleLinkIconUpload(file, idx);
+                                  }}
+                                />
+                              </label>
+                            </div>
+                            <p className="text-[10px] text-slate-400">
+                              Unggah icon kustom atau paste URL gambar. Icon ini akan menggantikan icon standar.
+                            </p>
+                          </div>
+
+                          {/* Mini Preview of the Custom Icon */}
+                          <div className="flex items-center justify-center p-2 rounded-lg bg-slate-950 border border-slate-800 h-16">
+                            {link.customIconUrl ? (
+                              <img
+                                src={link.customIconUrl}
+                                alt="Preview Icon"
+                                className="max-h-full max-w-full object-contain drop-shadow"
+                              />
+                            ) : (
+                              <span className="text-[11px] text-slate-500 italic">Belum ada icon kustom</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Section Kontrol: Tata Letak & Perataan (Layout, Item Align, Text Align) */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 space-y-3">
+                      <div className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                        <Layout className="w-4 h-4 text-cyan-400" />
+                        <span>Tata Letak & Perataan (Layout & Alignment)</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {/* 1. Tata Letak (Row vs Column) */}
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-semibold text-slate-300">
+                            Tata Letak (Layout)
+                          </label>
+                          <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                            <button
+                              type="button"
+                              onClick={() => updateLink(idx, "layout", "row")}
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition-all ${
+                                link.layout !== "column"
+                                  ? "bg-cyan-600 text-white font-bold shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              <Rows3 className="w-3.5 h-3.5" />
+                              <span>Baris</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateLink(idx, "layout", "column");
+                                if (!link.iconWidth) updateLink(idx, "iconWidth", 80);
+                              }}
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition-all ${
+                                link.layout === "column"
+                                  ? "bg-cyan-600 text-white font-bold shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                              title="Icon di atas, Nama link di bawah (rata tengah)"
+                            >
+                              <Columns3 className="w-3.5 h-3.5" />
+                              <span>Kolom (Atas)</span>
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-slate-500">
+                            {link.layout === "column"
+                              ? "Icon di atas & nama di bawah (rata tengah)"
+                              : "Icon di kiri & teks di kanan"}
+                          </p>
+                        </div>
+
+                        {/* 2. Perataan Item (Item Align) */}
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-semibold text-slate-300">
+                            Perataan Konten (Item Align)
+                          </label>
+                          <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                            <button
+                              type="button"
+                              disabled={link.layout === "column"}
+                              onClick={() => updateLink(idx, "itemAlign", "left")}
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition-all ${
+                                link.layout === "column"
+                                  ? "opacity-30 cursor-not-allowed text-slate-500"
+                                  : link.itemAlign !== "center"
+                                  ? "bg-indigo-600 text-white font-bold shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              <AlignLeft className="w-3.5 h-3.5" />
+                              <span>Kiri</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateLink(idx, "itemAlign", "center")}
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition-all ${
+                                link.layout === "column" || link.itemAlign === "center"
+                                  ? "bg-indigo-600 text-white font-bold shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              <AlignCenter className="w-3.5 h-3.5" />
+                              <span>Tengah</span>
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-slate-500">
+                            {link.layout === "column"
+                              ? "Otomatis rata tengah di mode kolom"
+                              : "Posisi elemen dalam tombol"}
+                          </p>
+                        </div>
+
+                        {/* 3. Perataan Teks (Text Align) */}
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-semibold text-slate-300">
+                            Perataan Teks (Text Align)
+                          </label>
+                          <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                            <button
+                              type="button"
+                              onClick={() => updateLink(idx, "textAlign", "left")}
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition-all ${
+                                link.textAlign !== "center" && link.layout !== "column"
+                                  ? "bg-emerald-600 text-white font-bold shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              <AlignLeft className="w-3.5 h-3.5" />
+                              <span>Rata Kiri</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateLink(idx, "textAlign", "center")}
+                              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition-all ${
+                                link.textAlign === "center" || link.layout === "column"
+                                  ? "bg-emerald-600 text-white font-bold shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              <AlignCenter className="w-3.5 h-3.5" />
+                              <span>Rata Tengah</span>
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-slate-500">
+                            Format perataan nama link
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Slider Pengatur Lebar Horizontal Ikon (Tinggi Vertikal Fixed 56px) */}
+                      <div className="pt-3 border-t border-slate-800/80 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                            <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Panjang Horizontal Ikon (Lebar)</span>
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/50">
+                              {link.iconWidth ?? (link.layout === "column" ? (link.customIconUrl ? 80 : 48) : 48)}px
+                            </span>
+                            <span className="text-[10px] text-slate-500">(Batas: 32px s/d 280px)</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="range"
+                            min={32}
+                            max={280}
+                            step={2}
+                            value={link.iconWidth ?? (link.layout === "column" ? (link.customIconUrl ? 80 : 48) : 48)}
+                            onChange={(e) => updateLink(idx, "iconWidth", parseInt(e.target.value))}
+                            className="flex-1 accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                          />
+                          <input
+                            type="number"
+                            min={32}
+                            max={280}
+                            value={link.iconWidth ?? (link.layout === "column" ? (link.customIconUrl ? 80 : 48) : 48)}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (!isNaN(val)) {
+                                updateLink(idx, "iconWidth", Math.max(24, Math.min(val, 280)));
+                              }
+                            }}
+                            className="w-16 px-2 py-1 bg-slate-950 border border-slate-800 rounded text-xs font-mono text-center text-amber-300 outline-none focus:border-amber-500"
+                          />
+                        </div>
+
+                        <p className="text-[10px] text-slate-400">
+                          ✨ <strong>Tinggi vertikal otomatis dikunci 56px</strong> agar bentuk kartu tetap proporsional dan rapi. Lebar horizontal dapat disesuaikan untuk icon logo memanjang/lebar dengan batas maksimal 280px.
+                        </p>
+                      </div>
+
+                      {/* Mini Live Preview of this button */}
+                      <div className="pt-2 border-t border-slate-800/60">
+                        <span className="text-[10px] font-semibold text-slate-400 block mb-1.5">
+                          Pratinjau Tombol Link ({link.layout === "column" ? "Mode Kolom / Kartu" : "Mode Baris"}):
+                        </span>
+                        <div
+                          className={`w-full p-3 rounded-2xl bg-slate-900 border border-slate-700/60 shadow-md flex ${
+                            link.layout === "column"
+                              ? "flex-col items-center justify-center text-center gap-2"
+                              : link.itemAlign === "center"
+                              ? "items-center justify-center gap-3"
+                              : "items-center justify-between"
+                          }`}
+                        >
+                          <div
+                            className={`flex items-center gap-3 ${
+                              link.layout === "column"
+                                ? "flex-col"
+                                : link.textAlign === "center"
+                                ? "justify-center text-center"
+                                : "text-left"
+                            }`}
+                          >
+                            {/* Icon Preview */}
+                            <div
+                              style={{
+                                width: `${Math.max(
+                                  24,
+                                  Math.min(
+                                    link.iconWidth ?? (link.layout === "column" ? (link.customIconUrl ? 80 : 48) : 40),
+                                    280
+                                  )
+                                )}px`,
+                                height: link.layout === "column" ? "56px" : "36px",
+                              }}
+                              className="flex items-center justify-center overflow-hidden rounded bg-slate-950 border border-slate-800 shrink-0 p-1"
+                            >
+                              {link.customIconUrl ? (
+                                <img
+                                  src={link.customIconUrl}
+                                  alt=""
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : (
+                                <Globe className="w-5 h-5 text-cyan-400" />
+                              )}
+                            </div>
+
+                            <span
+                              className={`text-xs font-bold text-slate-100 ${
+                                link.textAlign === "center" || link.layout === "column"
+                                  ? "text-center"
+                                  : "text-left"
+                              }`}
+                            >
+                              {link.title || "Judul Tombol"}
+                            </span>
+                          </div>
+
+                          {link.layout !== "column" && link.itemAlign !== "center" && (
+                            <span className="text-slate-600 text-xs">•••</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 

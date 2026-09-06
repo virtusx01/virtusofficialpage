@@ -30,6 +30,11 @@ export interface LinktreeItem {
   title: string;
   url: string;
   icon: string;
+  customIconUrl?: string;
+  layout?: 'row' | 'column' | string;
+  textAlign?: 'left' | 'center' | string;
+  itemAlign?: 'left' | 'center' | string;
+  iconWidth?: number;
   category: string;
   sectionTitle?: string;
   sectionBgColor?: string;
@@ -183,6 +188,64 @@ const getIconComponent = (iconName: string) => {
     default:
       return <Globe className="w-5 h-5 text-blue-400" />;
   }
+};
+
+const renderLinkIcon = (link: LinktreeItem) => {
+  const isCustom = Boolean(link.customIconUrl && link.customIconUrl.trim());
+  const isColumn = link.layout === 'column';
+  const defaultWidth = isColumn ? (isCustom ? 80 : 48) : (isCustom ? 44 : 36);
+  const rawWidth = typeof link.iconWidth === 'number' && !isNaN(link.iconWidth) ? link.iconWidth : defaultWidth;
+  // Clamp width strictly between 24px and 280px for neatness
+  const clampedWidth = Math.max(24, Math.min(Math.round(rawWidth), 280));
+
+  if (isCustom) {
+    if (isColumn) {
+      return (
+        <div
+          style={{ width: `${clampedWidth}px`, height: '56px' }}
+          className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-full"
+        >
+          <img
+            src={link.customIconUrl}
+            alt={link.title}
+            className="w-full h-full object-contain drop-shadow-sm rounded-lg"
+            loading="lazy"
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div
+        style={{ width: `${clampedWidth}px`, height: '36px' }}
+        className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-[120px]"
+      >
+        <img
+          src={link.customIconUrl}
+          alt={link.title}
+          className="w-full h-full object-contain drop-shadow-sm rounded"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+
+  // Predefined SVG icon
+  if (isColumn) {
+    return (
+      <div className="w-14 h-14 rounded-2xl bg-white/10 dark:bg-white/5 border border-white/15 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300 shrink-0">
+        <div className="w-8 h-8 flex items-center justify-center [&>svg]:w-7 [&>svg]:h-7">
+          {getIconComponent(link.icon)}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner shrink-0 group-hover:scale-110 transition-transform duration-300">
+      {getIconComponent(link.icon)}
+    </div>
+  );
 };
 
 const THEMES: Record<string, { bg: string; cardBg: string; textColor: string; subColor: string; accent: string }> = {
@@ -515,23 +578,59 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                       </motion.div>
                     )}
 
-                    <motion.a
-                      href={targetUrl}
-                      target={targetUrl.startsWith('http') ? '_blank' : '_self'}
-                      rel="noopener noreferrer"
-                      variants={itemVariants}
-                      whileHover={{ scale: 1.025, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`w-full py-4 px-6 rounded-full flex items-center justify-between transition-all duration-300 font-semibold text-base ${currentTheme.cardBg}`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner">
-                          {getIconComponent(link.icon)}
+                    {link.layout === 'column' ? (
+                      <motion.a
+                        href={targetUrl}
+                        target={targetUrl.startsWith('http') ? '_blank' : '_self'}
+                        rel="noopener noreferrer"
+                        variants={itemVariants}
+                        whileHover={{ scale: 1.025, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md ${currentTheme.cardBg}`}
+                      >
+                        {renderLinkIcon(link)}
+                        <span className="tracking-wide text-base font-bold block max-w-full break-words text-center">
+                          {link.title}
+                        </span>
+                        <div className="absolute top-3.5 right-4 opacity-30 group-hover:opacity-90 transition-opacity">
+                          <MoreHorizontal className="w-4 h-4" />
                         </div>
-                        <span className="tracking-wide">{link.title}</span>
-                      </div>
-                      <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
-                    </motion.a>
+                      </motion.a>
+                    ) : (
+                      <motion.a
+                        href={targetUrl}
+                        target={targetUrl.startsWith('http') ? '_blank' : '_self'}
+                        rel="noopener noreferrer"
+                        variants={itemVariants}
+                        whileHover={{ scale: 1.025, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`w-full py-4 px-6 rounded-full flex items-center transition-all duration-300 font-semibold text-base relative group shadow-md ${
+                          link.itemAlign === 'center' ? 'justify-center' : 'justify-between'
+                        } ${currentTheme.cardBg}`}
+                      >
+                        {link.itemAlign === 'center' ? (
+                          <>
+                            <div className="flex items-center gap-3.5 max-w-[85%]">
+                              {renderLinkIcon(link)}
+                              <span className={`tracking-wide font-medium ${link.textAlign === 'center' ? 'text-center' : 'text-left'}`}>
+                                {link.title}
+                              </span>
+                            </div>
+                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity absolute right-6" />
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
+                              {renderLinkIcon(link)}
+                              <span className={`tracking-wide font-medium truncate ${link.textAlign === 'center' ? 'text-center flex-1' : 'text-left'}`}>
+                                {link.title}
+                              </span>
+                            </div>
+                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
+                          </>
+                        )}
+                      </motion.a>
+                    )}
                   </div>
                 );
               })}

@@ -6,10 +6,10 @@ const isUUID = (str: any) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
 const DEFAULT_LINKS = [
-  { title: 'Tiktok', url: 'https://tiktok.com/@onlyvirtus', icon: 'tiktok', category: 'social', sectionTitle: '', orderIndex: 0 },
-  { title: 'Youtube', url: 'https://www.youtube.com/channel/UCS4s9c5ADSshIhr3BnlTlVg', icon: 'youtube', category: 'social', sectionTitle: '', orderIndex: 1 },
-  { title: 'Astra Points', url: 'https://astrapoints.com', icon: 'coins', category: 'custom', sectionTitle: 'Top Up', orderIndex: 2 },
-  { title: 'Mabar VIP Queue', url: '/mabarvip', icon: 'gamepad', category: 'custom', sectionTitle: '', orderIndex: 3 },
+  { title: 'Tiktok', url: 'https://tiktok.com/@onlyvirtus', icon: 'tiktok', customIconUrl: '', layout: 'row', textAlign: 'left', itemAlign: 'left', iconWidth: 48, category: 'social', sectionTitle: '', orderIndex: 0 },
+  { title: 'Youtube', url: 'https://www.youtube.com/channel/UCS4s9c5ADSshIhr3BnlTlVg', icon: 'youtube', customIconUrl: '', layout: 'row', textAlign: 'left', itemAlign: 'left', iconWidth: 48, category: 'social', sectionTitle: '', orderIndex: 1 },
+  { title: 'Astra Points', url: 'https://astrapoints.com', icon: 'coins', customIconUrl: '', layout: 'row', textAlign: 'left', itemAlign: 'left', iconWidth: 48, category: 'custom', sectionTitle: 'Top Up', orderIndex: 2 },
+  { title: 'Mabar VIP Queue', url: '/mabarvip', icon: 'gamepad', customIconUrl: '', layout: 'row', textAlign: 'left', itemAlign: 'left', iconWidth: 48, category: 'custom', sectionTitle: '', orderIndex: 3 },
 ];
 
 const DEFAULT_BANNERS = [
@@ -208,6 +208,11 @@ export async function PUT(request: Request) {
             title: link.title || 'Link',
             url: link.url || '#',
             icon: link.icon || 'globe',
+            customIconUrl: typeof link.customIconUrl === 'string' ? link.customIconUrl : '',
+            layout: link.layout === 'column' ? 'column' : 'row',
+            textAlign: link.textAlign === 'center' ? 'center' : 'left',
+            itemAlign: link.itemAlign === 'center' ? 'center' : 'left',
+            iconWidth: typeof link.iconWidth === 'number' && !isNaN(link.iconWidth) ? Math.max(24, Math.min(Math.round(link.iconWidth), 280)) : 48,
             category: link.category || 'social',
             sectionTitle: typeof link.sectionTitle === 'string' ? link.sectionTitle : '',
             sectionBgColor: typeof link.sectionBgColor === 'string' ? link.sectionBgColor : '',
