@@ -56,6 +56,9 @@ interface TextBerjalanConfig {
   borderColor: string;
   loopMode: "continuous" | "full";
   gap: number;
+  wins: number;
+  losses: number;
+  draws: number;
 }
 
 interface Props {
@@ -87,7 +90,10 @@ const DEFAULT_CONFIG: TextBerjalanConfig = {
   borderWidth: 0,
   borderColor: "#ffffff",
   loopMode: "continuous",
-  gap: 120
+  gap: 120,
+  wins: 0,
+  losses: 0,
+  draws: 0,
 };
 
 const FONT_OPTIONS = [
@@ -154,7 +160,7 @@ export default function TextBerjalanClient({ initialPlayers, initialConfig }: Pr
 
   // ── Helper: build display text ──
   const buildDisplayText = useCallback((players: Player[], cfg: TextBerjalanConfig): string => {
-    const raw = cfg.text || DEFAULT_CONFIG.text;
+    let raw = cfg.text || DEFAULT_CONFIG.text;
     let playingStr: string;
     if (players.length > 0) {
       playingStr = players.map(p => {
@@ -163,6 +169,10 @@ export default function TextBerjalanClient({ initialPlayers, initialConfig }: Pr
     } else {
       playingStr = "Belum ada player di room saat ini";
     }
+
+    // Replace {W_L_D} tag
+    const wldStr = `W: ${cfg.wins ?? 0} L: ${cfg.losses ?? 0} D: ${cfg.draws ?? 0}`;
+    raw = raw.replace(/{W_L_D}/g, wldStr);
 
     if (raw.includes("{PLAYING_PLAYERS}")) {
       return raw.replace(/{PLAYING_PLAYERS}/g, playingStr);
@@ -173,39 +183,48 @@ export default function TextBerjalanClient({ initialPlayers, initialConfig }: Pr
     return raw;
   }, []);
 
-  // ── Poll versi ringan: cek satu angka dari server setiap 3 detik ──
-  // Kalau versi berubah → reload. Bekerja sama di OBS, browser, HP, semua platform.
+  // ── Poll versi ringan: cek dua version (players + config) setiap 3 detik ──
+  // Kalau salah satu versi berubah → reload. Bekerja sama di OBS, browser, HP, semua platform.
   useEffect(() => {
-    let currentVersion = 0;
+    let currentPlayerVersion = 0;
+    let currentConfigVersion = 0;
     let timer: ReturnType<typeof setInterval>;
 
     // Ambil versi awal dulu tanpa reload
-    const initVersion = async () => {
+    const initVersions = async () => {
       try {
-        const res = await fetch("/api/players/version", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          currentVersion = data.version ?? 0;
-        }
+        const [pRes, cRes] = await Promise.all([
+          fetch("/api/players/version", { cache: "no-store" }),
+          fetch("/api/textberjalan-config/version", { cache: "no-store" }),
+        ]);
+        if (pRes.ok) currentPlayerVersion = (await pRes.json()).version ?? 0;
+        if (cRes.ok) currentConfigVersion = (await cRes.json()).version ?? 0;
       } catch { /* silent */ }
     };
 
-    const checkVersion = async () => {
+    const checkVersions = async () => {
       try {
-        const res = await fetch("/api/players/version", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          const newVersion = data.version ?? 0;
-          if (currentVersion !== 0 && newVersion !== currentVersion) {
-            window.location.reload();
-          }
-          currentVersion = newVersion;
+        const [pRes, cRes] = await Promise.all([
+          fetch("/api/players/version", { cache: "no-store" }),
+          fetch("/api/textberjalan-config/version", { cache: "no-store" }),
+        ]);
+        let changed = false;
+        if (pRes.ok) {
+          const newV = (await pRes.json()).version ?? 0;
+          if (currentPlayerVersion !== 0 && newV !== currentPlayerVersion) changed = true;
+          currentPlayerVersion = newV;
         }
+        if (cRes.ok) {
+          const newV = (await cRes.json()).version ?? 0;
+          if (currentConfigVersion !== 0 && newV !== currentConfigVersion) changed = true;
+          currentConfigVersion = newV;
+        }
+        if (changed) window.location.reload();
       } catch { /* silent */ }
     };
 
-    initVersion().then(() => {
-      timer = setInterval(checkVersion, 3000);
+    initVersions().then(() => {
+      timer = setInterval(checkVersions, 3000);
     });
 
     return () => clearInterval(timer);
@@ -448,18 +467,97 @@ export default function TextBerjalanClient({ initialPlayers, initialConfig }: Pr
               </div>
             </div>
 
+            {/* W/L/D Counter */}
+            <div style={{ background:"rgba(15,23,42,0.6)", border:"1px solid #1e293b", borderRadius:20, padding:20, display:"flex", flexDirection:"column", gap:14 }}>
+              <div style={{ fontSize:10, fontWeight:900, color:"#10b981", textTransform:"uppercase", display:"flex", alignItems:"center", gap:6 }}>
+                🏆 Statistik W / L / D
+              </div>
+              <div style={{ fontSize:9, color:"#475569" }}>
+                Gunakan tag {"{W_L_D}"} di teks untuk menampilkan skor. Tekan Simpan untuk update widget OBS.
+              </div>
+              {/* Win */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <span style={{ fontSize:11, fontWeight:900, color:"#4ade80", minWidth:40 }}>WIN</span>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <button
+                    onClick={() => setConfig(p => ({ ...p, wins: Math.max(0, (p.wins ?? 0) - 1) }))}
+                    style={{ width:30, height:30, borderRadius:8, border:"1px solid #1e293b", background:"#0f172a",
+                      color:"#94a3b8", fontSize:18, fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                    −
+                  </button>
+                  <span style={{ minWidth:36, textAlign:"center", fontSize:20, fontWeight:900, color:"#4ade80", fontFamily:"monospace" }}>
+                    {config.wins ?? 0}
+                  </span>
+                  <button
+                    onClick={() => setConfig(p => ({ ...p, wins: (p.wins ?? 0) + 1 }))}
+                    style={{ width:30, height:30, borderRadius:8, border:"1px solid #4ade80", background:"rgba(74,222,128,0.15)",
+                      color:"#4ade80", fontSize:18, fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                    +
+                  </button>
+                </div>
+              </div>
+              {/* Lose */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <span style={{ fontSize:11, fontWeight:900, color:"#f87171", minWidth:40 }}>LOSE</span>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <button
+                    onClick={() => setConfig(p => ({ ...p, losses: Math.max(0, (p.losses ?? 0) - 1) }))}
+                    style={{ width:30, height:30, borderRadius:8, border:"1px solid #1e293b", background:"#0f172a",
+                      color:"#94a3b8", fontSize:18, fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                    −
+                  </button>
+                  <span style={{ minWidth:36, textAlign:"center", fontSize:20, fontWeight:900, color:"#f87171", fontFamily:"monospace" }}>
+                    {config.losses ?? 0}
+                  </span>
+                  <button
+                    onClick={() => setConfig(p => ({ ...p, losses: (p.losses ?? 0) + 1 }))}
+                    style={{ width:30, height:30, borderRadius:8, border:"1px solid #f87171", background:"rgba(248,113,113,0.15)",
+                      color:"#f87171", fontSize:18, fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                    +
+                  </button>
+                </div>
+              </div>
+              {/* Draw */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <span style={{ fontSize:11, fontWeight:900, color:"#facc15", minWidth:40 }}>DRAW</span>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <button
+                    onClick={() => setConfig(p => ({ ...p, draws: Math.max(0, (p.draws ?? 0) - 1) }))}
+                    style={{ width:30, height:30, borderRadius:8, border:"1px solid #1e293b", background:"#0f172a",
+                      color:"#94a3b8", fontSize:18, fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                    −
+                  </button>
+                  <span style={{ minWidth:36, textAlign:"center", fontSize:20, fontWeight:900, color:"#facc15", fontFamily:"monospace" }}>
+                    {config.draws ?? 0}
+                  </span>
+                  <button
+                    onClick={() => setConfig(p => ({ ...p, draws: (p.draws ?? 0) + 1 }))}
+                    style={{ width:30, height:30, borderRadius:8, border:"1px solid #facc15", background:"rgba(250,204,21,0.15)",
+                      color:"#facc15", fontSize:18, fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Custom Text with Tag Buttons */}
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <span style={{ fontSize:9, fontWeight:900, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.1em" }}>Isi Teks Berjalan</span>
                 <span style={{ fontSize:8, color:"#a78bfa" }}>Klik tag untuk menambah</span>
               </div>
-              <div style={{ display:"flex", gap:8 }}>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 <button
                   onClick={() => setConfig(p => ({ ...p, text: p.text ? `${p.text} {PLAYING_PLAYERS}` : "{PLAYING_PLAYERS}" }))}
                   style={{ padding:"6px 12px", background:"rgba(139,92,246,0.15)", border:"1px solid rgba(139,92,246,0.4)",
                     color:"#c4b5fd", borderRadius:10, fontSize:10, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
                   <Gamepad2 size={12} /> + Tag Player Playing
+                </button>
+                <button
+                  onClick={() => setConfig(p => ({ ...p, text: p.text ? `${p.text} {W_L_D}` : "{W_L_D}" }))}
+                  style={{ padding:"6px 12px", background:"rgba(16,185,129,0.15)", border:"1px solid rgba(16,185,129,0.4)",
+                    color:"#6ee7b7", borderRadius:10, fontSize:10, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+                  🏆 + Tag W/L/D
                 </button>
               </div>
               <textarea

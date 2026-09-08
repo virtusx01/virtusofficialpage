@@ -27,6 +27,9 @@ const textBerjalanConfigSchema = z.object({
   borderColor: z.string().default("#ffffff"),
   loopMode: z.enum(["continuous", "full"]).default("continuous"),
   gap: z.number().default(120),
+  wins: z.number().int().min(0).default(0),
+  losses: z.number().int().min(0).default(0),
+  draws: z.number().int().min(0).default(0),
 });
 
 export async function GET() {
