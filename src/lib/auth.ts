@@ -10,14 +10,17 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        const adminUser = process.env.ADMIN_USERNAME || "admin_virtus";
-        const adminPass = process.env.ADMIN_PASSWORD || "@Deathready0";
+        const admin1User = process.env.ADMIN_USERNAME || "admin_virtus";
+        const admin1Pass = process.env.ADMIN_PASSWORD || "@Deathready0";
+
+        const admin2User = process.env.ADMIN2_USERNAME || "admin_aoi";
+        const admin2Pass = process.env.ADMIN2_PASSWORD || "@Aoicantik";
 
         if (
-          credentials?.username === adminUser &&
-          credentials?.password === adminPass
+          (credentials?.username === admin1User && credentials?.password === admin1Pass) ||
+          (credentials?.username === admin2User && credentials?.password === admin2Pass)
         ) {
-          return { id: "admin", name: "Administrator", role: "admin" };
+          return { id: credentials?.username || "admin", name: credentials?.username || "Administrator", role: "admin" };
         }
         return null;
       }
