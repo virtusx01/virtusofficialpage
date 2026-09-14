@@ -127,6 +127,13 @@ export default function TextBerjalanClient({ initialPlayers, initialConfig }: Pr
   const [isCopied, setIsCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Auto-open panel if admin logged in
+  useEffect(() => {
+    if (isAdmin) {
+      setShowEditor(true);
+    }
+  }, [isAdmin]);
+
   // ── Transparent body for OBS Browser Source ──
   useEffect(() => {
     const el = document.body;

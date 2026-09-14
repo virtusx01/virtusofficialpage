@@ -70,6 +70,8 @@ export default function AdminDashboard() {
     }
   }, [status, router]);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [players, setPlayers] = useState<Player[]>([]);
   const [playing, setPlaying] = useState<Player[]>([]);
   const [queue, setQueue] = useState<Player[]>([]);
@@ -96,7 +98,7 @@ export default function AdminDashboard() {
     gameId: "",
     vipType: "END_LIVE" as "END_LIVE" | "PER_MATCH" | "PER_HOUR",
     status: "QUEUE" as "PLAYING" | "PENDING" | "QUEUE" | "COMPLETED",
-    matchesTotal: 3,
+    matchesTotal: 1,
     matchesPlayed: 0,
     notes: ""
   });
@@ -105,8 +107,9 @@ export default function AdminDashboard() {
   const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
   const [reorderingPlayer, setReorderingPlayer] = useState<Player | null>(null);
   const [reorderFormData, setReorderFormData] = useState({
-    vipType: "PER_HOUR" as "END_LIVE" | "PER_MATCH" | "PER_HOUR",
-    matchesTotal: 2,
+    vipType: "END_LIVE" as "END_LIVE" | "PER_MATCH" | "PER_HOUR",
+    status: "QUEUE" as "PLAYING" | "PENDING" | "QUEUE" | "COMPLETED",
+    matchesTotal: 1,
     notes: ""
   });
 
@@ -265,9 +268,9 @@ export default function AdminDashboard() {
     setFormData({
       name: "",
       gameId: "",
-      vipType: "PER_HOUR",
+      vipType: "END_LIVE",
       status: "QUEUE",
-      matchesTotal: 2,
+      matchesTotal: 1,
       matchesPlayed: 0,
       notes: ""
     });
@@ -296,14 +299,15 @@ export default function AdminDashboard() {
   const handleReorderClick = (player: Player) => {
     setReorderingPlayer(player);
     setReorderFormData({
-      vipType: player.vipType || "PER_HOUR",
-      matchesTotal: player.matchesTotal || (player.vipType === "PER_HOUR" ? 2 : player.vipType === "PER_MATCH" ? 3 : 1),
+      vipType: "END_LIVE",
+      status: "QUEUE",
+      matchesTotal: 1,
       notes: parsePlayerTimer(player.notes || "").cleanNotes
     });
     setIsReorderModalOpen(true);
   };
 
-  // Submit Reorder with custom VIP type, count, and notes
+  // Submit Reorder with custom VIP type, count, status, and notes
   const handleConfirmReorder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reorderingPlayer) return;
@@ -314,7 +318,7 @@ export default function AdminDashboard() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status: "QUEUE",
+          status: reorderFormData.status,
           vipType: reorderFormData.vipType,
           matchesPlayed: 0,
           matchesTotal: Number(reorderFormData.matchesTotal),
@@ -589,6 +593,20 @@ export default function AdminDashboard() {
     );
   }
 
+  // Helper for filtering players by searchQuery
+  const filterBySearch = (list: Player[]) => {
+    if (!searchQuery || !searchQuery.trim()) return list;
+    const q = searchQuery.trim().toLowerCase();
+    return list.filter(
+      p => (p.name && p.name.toLowerCase().includes(q)) || (p.gameId && p.gameId.toLowerCase().includes(q))
+    );
+  };
+
+  const filteredPlaying = filterBySearch(playing);
+  const filteredQueue = filterBySearch(queue);
+  const filteredPending = filterBySearch(pending);
+  const filteredCompleted = filterBySearch(completed);
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100">
       <Header />
@@ -604,6 +622,26 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            {/* Search input for player name or gameId */}
+            <div className="relative min-w-[220px]">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari nama player / game ID..."
+                className="w-full bg-slate-950 border border-slate-800 focus:border-violet-500 text-xs px-3 py-2.5 rounded-xl outline-none text-slate-100 placeholder-slate-500 transition-all pr-8"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300 transition-colors"
+                  title="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
             <a
               href="/admin/edit-linktree"
               className="flex items-center gap-1.5 text-sm font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all px-4 py-2.5 rounded-xl cursor-pointer"
@@ -790,10 +828,10 @@ export default function AdminDashboard() {
           <div className="lg:col-span-2 glass-panel border border-slate-800 p-6 rounded-2xl flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-slate-900 pb-3">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <h3 className="font-bold text-base text-slate-200">Sedang Bermain ({playing.length})</h3>
+              <h3 className="font-bold text-base text-slate-200">Sedang Bermain ({filteredPlaying.length})</h3>
             </div>
 
-            {playing.length === 0 ? (
+            {filteredPlaying.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center py-8 text-center bg-slate-950/30 border border-dashed border-slate-900 rounded-xl">
                 <Play className="h-8 w-8 text-slate-700 mb-2" />
                 <p className="text-sm font-medium text-slate-500">Tidak ada player yang sedang bermain</p>
@@ -801,7 +839,7 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {playing.map((player) => (
+                {filteredPlaying.map((player) => (
                   <div
                     key={player.id}
                     className="bg-slate-950/60 border border-slate-850 p-4 rounded-xl flex flex-col justify-between"
@@ -1012,12 +1050,12 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between border-b border-slate-900 pb-3">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-violet-400" />
-                <h3 className="font-bold text-base text-slate-200">Daftar Antrean ({queue.length})</h3>
+                <h3 className="font-bold text-base text-slate-200">Daftar Antrean ({filteredQueue.length})</h3>
               </div>
               <span className="text-[10px] text-slate-500">Gunakan panah untuk memindahkan urutan antrean</span>
             </div>
 
-            {queue.length === 0 ? (
+            {filteredQueue.length === 0 ? (
               <div className="py-12 text-center bg-slate-950/30 border border-dashed border-slate-900 rounded-xl">
                 <Users className="h-8 w-8 text-slate-700 mb-2 mx-auto" />
                 <p className="text-sm font-medium text-slate-500">Antrean kosong</p>
@@ -1035,7 +1073,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {queue.map((player, idx) => (
+                    {filteredQueue.map((player, idx) => (
                       <tr
                         key={player.id}
                         className="border-b border-slate-900/60 hover:bg-slate-900/10 transition-colors group"
@@ -1054,7 +1092,7 @@ export default function AdminDashboard() {
                                 : "bg-fuchsia-950/40 border-fuchsia-900/40 text-fuchsia-400"
                             }`}>
                             {player.vipType === "PER_HOUR"
-                              ? (player.matchesPlayed > 0 ? `Per Jam: Sisa ${player.matchesTotal - player.matchesPlayed} dari ${player.matchesTotal} Jam` : `Per Jam: ${player.matchesTotal} Jam`)
+                              ? `Per Jam: Sisa ${formatRemainingTime(parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed).remainingSeconds)}`
                               : player.vipType === "END_LIVE"
                               ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x End Live` : "Sisa 1x End Live")
                               : `Match: ${player.matchesTotal}`}
@@ -1071,7 +1109,7 @@ export default function AdminDashboard() {
                               <ChevronUp className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              disabled={idx === queue.length - 1}
+                              disabled={idx === filteredQueue.length - 1}
                               onClick={() => handleQueueSwap(idx, "DOWN")}
                               className="p-1 bg-slate-950 border border-slate-850 rounded text-slate-400 hover:text-white transition-colors hover:border-slate-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                               title="Pindah ke bawah"
@@ -1142,16 +1180,16 @@ export default function AdminDashboard() {
           <div className="lg:col-span-1 glass-panel border border-slate-800 p-6 rounded-2xl flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-slate-900 pb-3">
               <Pause className="h-5 w-5 text-amber-500" />
-              <h3 className="font-bold text-base text-slate-200">Tertunda / AFK ({pending.length})</h3>
+              <h3 className="font-bold text-base text-slate-200">Tertunda / AFK ({filteredPending.length})</h3>
             </div>
 
-            {pending.length === 0 ? (
+            {filteredPending.length === 0 ? (
               <div className="py-8 text-center bg-slate-950/30 border border-dashed border-slate-900 rounded-xl">
                 <p className="text-sm font-medium text-slate-500">Tidak ada player tertunda</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {pending.map((player) => (
+                {filteredPending.map((player) => (
                   <div
                     key={player.id}
                     className="bg-slate-950/50 border border-slate-850 p-4 rounded-xl flex items-center justify-between gap-3 group"
@@ -1211,12 +1249,12 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between border-b border-slate-900 pb-3">
             <div className="flex items-center gap-2">
               <Check className="h-5 w-5 text-emerald-500" />
-              <h3 className="font-bold text-base text-slate-200">Daftar VIP Selesai ({completed.length})</h3>
+              <h3 className="font-bold text-base text-slate-200">Daftar VIP Selesai ({filteredCompleted.length})</h3>
             </div>
             <span className="text-xs text-slate-500">History player VIP yang sudah selesai bermain</span>
           </div>
 
-          {completed.length === 0 ? (
+          {filteredCompleted.length === 0 ? (
             <div className="py-12 text-center bg-slate-950/30 border border-dashed border-slate-900 rounded-xl">
               <Check className="h-8 w-8 text-slate-700 mb-2 mx-auto" />
               <p className="text-sm font-medium text-slate-500">Belum ada player yang selesai</p>
@@ -1235,7 +1273,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {completed.map((player) => (
+                  {filteredCompleted.map((player) => (
                     <tr
                       key={player.id}
                       className="border-b border-slate-900/60 hover:bg-slate-900/10 transition-colors group opacity-75 hover:opacity-100"
@@ -1446,9 +1484,9 @@ export default function AdminDashboard() {
                     onChange={(e) => setFormData(prev => ({ ...prev, vipType: e.target.value as any }))}
                     className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all cursor-pointer"
                   >
+                    <option value="END_LIVE">Until End Live</option>
                     <option value="PER_HOUR">Per Jam</option>
                     <option value="PER_MATCH">Per Match</option>
-                    <option value="END_LIVE">Until End Live</option>
                   </select>
                 </div>
                 <div>
@@ -1577,21 +1615,38 @@ export default function AdminDashboard() {
                     setReorderFormData(prev => ({
                       ...prev,
                       vipType: newType,
-                      matchesTotal: newType === "PER_HOUR" ? 2 : newType === "PER_MATCH" ? 3 : 1
+                      matchesTotal: 1
                     }));
                   }}
                   className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all cursor-pointer font-semibold"
                 >
+                  <option value="END_LIVE">Until End Live (VIP Sampai Selesai Live)</option>
                   <option value="PER_HOUR">Per Jam (VIP Durasi Jam)</option>
                   <option value="PER_MATCH">Per Match (VIP Hitungan Match)</option>
-                  <option value="END_LIVE">Until End Live (VIP Sampai Selesai Live)</option>
+                </select>
+              </div>
+
+              {/* Status Awal saat Reorder */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  2. Status Awal
+                </label>
+                <select
+                  value={reorderFormData.status}
+                  onChange={(e) => setReorderFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all cursor-pointer font-semibold"
+                >
+                  <option value="QUEUE">Mengantri</option>
+                  <option value="PLAYING">Sedang Bermain</option>
+                  <option value="PENDING">Tertunda (AFK)</option>
+                  <option value="COMPLETED">Selesai VIP</option>
                 </select>
               </div>
 
               {/* Totalnya berapa? */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  2. Totalnya Berapa? (
+                  3. Totalnya Berapa? (
                   {reorderFormData.vipType === "PER_HOUR"
                     ? "Berapa Jam"
                     : reorderFormData.vipType === "PER_MATCH"
@@ -1606,7 +1661,7 @@ export default function AdminDashboard() {
                     required
                     value={reorderFormData.matchesTotal}
                     onChange={(e) => setReorderFormData(prev => ({ ...prev, matchesTotal: Number(e.target.value) }))}
-                    placeholder={reorderFormData.vipType === "PER_HOUR" ? "Contoh: 2 (untuk 2 Jam)" : "Contoh: 3"}
+                    placeholder={reorderFormData.vipType === "PER_HOUR" ? "Contoh: 1 (untuk 1 Jam)" : "Contoh: 1"}
                     className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all font-bold"
                   />
                   <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-semibold">
@@ -1618,7 +1673,7 @@ export default function AdminDashboard() {
               {/* Catatan tambahan */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  3. Catatan Tambahan (Opsional)
+                  4. Catatan Tambahan (Opsional)
                 </label>
                 <textarea
                   rows={2}
