@@ -32,6 +32,7 @@ import {
   Rows3,
   Columns3,
   Maximize2,
+  Trophy,
 } from "lucide-react";
 
 interface LinkItem {
@@ -101,6 +102,15 @@ interface ProfileData {
   siteSubtitle?: string;
   siteLogoUrl?: string;
   footerDesc?: string;
+  showLeaderboard?: boolean;
+  leaderboardTitle?: string;
+  sociabuzzTribeId?: string;
+  leaderboardMode?: string;
+  leaderboardUrl?: string;
+  leaderboardHeaderIcon?: string;
+  leaderboardHeaderColor?: string;
+  leaderboardHeaderFont?: string;
+  leaderboardHeaderSize?: string;
   links: LinkItem[];
   banners: BannerItem[];
   topButtons: TopButtonItem[];
@@ -165,6 +175,15 @@ export default function EditLinktreePage() {
     siteSubtitle: "Streamer TIDAK KIKIR",
     siteLogoUrl: "",
     footerDesc: "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
+    showLeaderboard: true,
+    leaderboardTitle: "TOP SUPPORTERS BULAN INI",
+    sociabuzzTribeId: "8913094574",
+    leaderboardMode: "top3",
+    leaderboardUrl: "https://sociabuzz.com/pro/tribe/topleaderboard/v2/8913094574",
+    leaderboardHeaderIcon: "trophy",
+    leaderboardHeaderColor: "",
+    leaderboardHeaderFont: "sans",
+    leaderboardHeaderSize: "2xl",
     links: [],
     banners: [],
     topButtons: [],
@@ -917,6 +936,272 @@ export default function EditLinktreePage() {
                       {preset.label}
                     </button>
                   ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Section 1.2: Pengaturan Leaderboard (Top Supporters) */}
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-5">
+              <h2 className="text-base font-bold text-slate-100 flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-400" />
+                  <span>Pengaturan Leaderboard (Top Supporters)</span>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={profile.showLeaderboard ?? true}
+                    onChange={(e) => setProfile({ ...profile, showLeaderboard: e.target.checked })}
+                    className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 h-4 w-4"
+                  />
+                  <span>Tampilkan di Halaman Utama</span>
+                </label>
+              </h2>
+
+              {/* URL Leaderboard Input */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  URL Sociabuzz Leaderboard (Bila Expired / Ganti URL)
+                </label>
+                <input
+                  type="text"
+                  value={profile.leaderboardUrl || "https://sociabuzz.com/pro/tribe/topleaderboard/v2/8913094574"}
+                  onChange={(e) => setProfile({ ...profile, leaderboardUrl: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-amber-500 text-xs font-mono outline-none text-slate-100"
+                  placeholder="https://sociabuzz.com/pro/tribe/topleaderboard/v2/8913094574"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Tempel URL lengkap dari Sociabuzz jika sewaktu-waktu tautan/ID leaderboard diperbarui. System akan otomatis mengekstrak ID aktif.
+                </p>
+              </div>
+
+              {/* Header Text & ID */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Isi Teks Header Leaderboard
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.leaderboardTitle || "TOP SUPPORTERS BULAN INI"}
+                    onChange={(e) => setProfile({ ...profile, leaderboardTitle: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-amber-500 text-sm outline-none text-slate-100 font-bold"
+                    placeholder="Contoh: TOP SUPPORTERS BULAN INI"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Sociabuzz Tribe ID (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.sociabuzzTribeId || "8913094574"}
+                    onChange={(e) => setProfile({ ...profile, sociabuzzTribeId: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-amber-500 text-sm font-mono outline-none text-slate-100"
+                    placeholder="8913094574"
+                  />
+                </div>
+              </div>
+
+              {/* Icon / Simbol Header */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-2">
+                  Ikon / Simbol Header Leaderboard
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: "trophy", label: "🏆 Trophy" },
+                    { id: "crown", label: "👑 Crown" },
+                    { id: "flame", label: "🔥 Flame" },
+                    { id: "star", label: "⭐️ Star" },
+                    { id: "sparkles", label: "✨ Sparkles" },
+                    { id: "diamond", label: "💎 Diamond" },
+                    { id: "gamepad", label: "🎮 Gamepad" },
+                    { id: "none", label: "🚫 Tanpa Ikon" },
+                  ].map((ic) => (
+                    <button
+                      key={ic.id}
+                      type="button"
+                      onClick={() => setProfile({ ...profile, leaderboardHeaderIcon: ic.id })}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        (profile.leaderboardHeaderIcon || "trophy") === ic.id
+                          ? "bg-amber-950/60 border-amber-500 text-amber-300 shadow-md"
+                          : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      {ic.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Warna, Font, & Ukuran Header */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Warna Header */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Warna Teks Header
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={profile.leaderboardHeaderColor?.startsWith("#") ? profile.leaderboardHeaderColor : "#34d399"}
+                      onChange={(e) => setProfile({ ...profile, leaderboardHeaderColor: e.target.value })}
+                      className="h-9 w-10 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={profile.leaderboardHeaderColor || ""}
+                      onChange={(e) => setProfile({ ...profile, leaderboardHeaderColor: e.target.value })}
+                      placeholder="Default Gradient / #34d399"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 outline-none focus:border-amber-500"
+                    />
+                    {profile.leaderboardHeaderColor && (
+                      <button
+                        type="button"
+                        onClick={() => setProfile({ ...profile, leaderboardHeaderColor: "" })}
+                        className="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg shrink-0"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Jenis Font Header */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Jenis Font Header
+                  </label>
+                  <select
+                    value={profile.leaderboardHeaderFont || "sans"}
+                    onChange={(e) => setProfile({ ...profile, leaderboardHeaderFont: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 outline-none focus:border-amber-500"
+                  >
+                    <option value="sans">Font Sans (Modern Clean)</option>
+                    <option value="mono">Font Mono (Gaming Code)</option>
+                    <option value="serif">Font Serif (Classic Elegant)</option>
+                  </select>
+                </div>
+
+                {/* Ukuran Font Header */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Ukuran Font Header
+                  </label>
+                  <select
+                    value={profile.leaderboardHeaderSize || "2xl"}
+                    onChange={(e) => setProfile({ ...profile, leaderboardHeaderSize: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 outline-none focus:border-amber-500"
+                  >
+                    <option value="lg">Ukuran Sedang (text-lg)</option>
+                    <option value="xl">Ukuran Besar (text-xl)</option>
+                    <option value="2xl">Ukuran Sangat Besar (text-2xl)</option>
+                    <option value="3xl">Ukuran Super Besar (text-3xl)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Mode Tampilan Halaman Utama */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-2">
+                  Mode Tampilan di Halaman Utama
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setProfile({ ...profile, leaderboardMode: "top3" })}
+                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      (profile.leaderboardMode || "top3") === "top3"
+                        ? "bg-amber-950/30 border-amber-500 text-amber-200 shadow-md"
+                        : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                        🏆 Hanya Top 3 (Podium Juara)
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Menampilkan podium Juara 1, 2, dan 3 secara ringkas dan estetik.
+                      </p>
+                    </div>
+                    {(profile.leaderboardMode || "top3") === "top3" && (
+                      <Check className="w-5 h-5 text-amber-400 shrink-0" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setProfile({ ...profile, leaderboardMode: "top10" })}
+                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      profile.leaderboardMode === "top10"
+                        ? "bg-emerald-950/30 border-emerald-500 text-emerald-200 shadow-md"
+                        : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                        📜 Top 10 Lengkap
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Menampilkan podium Top 3 beserta daftar peringkat 4 hingga 10.
+                      </p>
+                    </div>
+                    {profile.leaderboardMode === "top10" && (
+                      <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Live Preview Box Header */}
+              <div className="pt-3 border-t border-slate-800/80">
+                <label className="block text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">
+                  👁️ Live Preview Header Leaderboard
+                </label>
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                  <h2
+                    style={profile.leaderboardHeaderColor ? { color: profile.leaderboardHeaderColor } : {}}
+                    className={`font-black tracking-wider ${
+                      profile.leaderboardHeaderFont === "mono"
+                        ? "font-mono"
+                        : profile.leaderboardHeaderFont === "serif"
+                        ? "font-serif"
+                        : "font-sans"
+                    } ${
+                      profile.leaderboardHeaderSize === "lg"
+                        ? "text-lg"
+                        : profile.leaderboardHeaderSize === "xl"
+                        ? "text-xl"
+                        : profile.leaderboardHeaderSize === "3xl"
+                        ? "text-3xl"
+                        : "text-2xl"
+                    } ${
+                      !profile.leaderboardHeaderColor
+                        ? "bg-gradient-to-r from-emerald-400 via-teal-200 to-amber-300 bg-clip-text text-transparent"
+                        : ""
+                    } inline-flex items-center justify-center gap-2`}
+                  >
+                    <span>
+                      {profile.leaderboardHeaderIcon === "crown"
+                        ? "👑"
+                        : profile.leaderboardHeaderIcon === "flame"
+                        ? "🔥"
+                        : profile.leaderboardHeaderIcon === "star"
+                        ? "⭐️"
+                        : profile.leaderboardHeaderIcon === "sparkles"
+                        ? "✨"
+                        : profile.leaderboardHeaderIcon === "diamond"
+                        ? "💎"
+                        : profile.leaderboardHeaderIcon === "gamepad"
+                        ? "🎮"
+                        : profile.leaderboardHeaderIcon === "none"
+                        ? ""
+                        : "🏆"}
+                    </span>
+                    <span>{profile.leaderboardTitle || "TOP SUPPORTERS BULAN INI"}</span>
+                  </h2>
                 </div>
               </div>
             </div>

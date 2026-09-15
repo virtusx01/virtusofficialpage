@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { SociabuzzLeaderboard } from '@/components/SociabuzzLeaderboard';
 import {
   Globe,
   MessageCircle,
@@ -92,6 +93,15 @@ export interface LinktreeProfileData {
   siteSubtitle?: string;
   siteLogoUrl?: string;
   footerDesc?: string;
+  showLeaderboard?: boolean;
+  leaderboardTitle?: string;
+  sociabuzzTribeId?: string;
+  leaderboardMode?: string;
+  leaderboardUrl?: string;
+  leaderboardHeaderIcon?: string;
+  leaderboardHeaderColor?: string;
+  leaderboardHeaderFont?: string;
+  leaderboardHeaderSize?: string;
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
   topButtons?: LinktreeTopButtonItem[];
@@ -532,6 +542,22 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                 </div>
               )}
             </motion.div>
+
+            {/* Leaderboard Top Supporters Bulan Ini */}
+            {(profile.showLeaderboard ?? true) && (
+              <motion.div variants={itemVariants} className="w-full my-4">
+                <SociabuzzLeaderboard
+                  tribeId={profile.sociabuzzTribeId || '8913094574'}
+                  leaderboardUrl={profile.leaderboardUrl || 'https://sociabuzz.com/pro/tribe/topleaderboard/v2/8913094574'}
+                  title={profile.leaderboardTitle || 'TOP SUPPORTERS BULAN INI'}
+                  displayMode={(profile.leaderboardMode as 'top3' | 'top10') || 'top3'}
+                  headerIcon={profile.leaderboardHeaderIcon || 'trophy'}
+                  headerColor={profile.leaderboardHeaderColor || ''}
+                  headerFont={profile.leaderboardHeaderFont || 'sans'}
+                  headerSize={profile.leaderboardHeaderSize || '2xl'}
+                />
+              </motion.div>
+            )}
 
             {/* Links List with Dynamic Section Headers */}
             <motion.div variants={containerVariants} className="w-full space-y-3.5 px-1">

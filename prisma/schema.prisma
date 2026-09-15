@@ -53,7 +53,16 @@ model LinktreeProfile {
   siteLogoUrl      String         @default("")
   faviconUrl       String         @default("")
   footerDesc       String         @default("Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.")
-  links            LinktreeLink[]
+  showLeaderboard        Boolean        @default(true)
+  leaderboardTitle       String         @default("TOP SUPPORTERS BULAN INI")
+  sociabuzzTribeId       String         @default("8913094574")
+  leaderboardMode        String         @default("top3") // "top3" | "top10"
+  leaderboardUrl         String         @default("https://sociabuzz.com/pro/tribe/topleaderboard/v2/8913094574")
+  leaderboardHeaderIcon  String         @default("trophy") // "trophy" | "crown" | "flame" | "star" | "sparkles" | "diamond" | "gamepad" | "none"
+  leaderboardHeaderColor String         @default("") // Hex color e.g. #34d399 or empty
+  leaderboardHeaderFont  String         @default("sans") // "sans" | "mono" | "serif"
+  leaderboardHeaderSize  String         @default("2xl") // "lg" | "xl" | "2xl" | "3xl"
+  links                  LinktreeLink[]
   banners          LinktreeBanner[]
   topButtons       LinktreeTopButton[]
   codes            LinktreeCode[]
