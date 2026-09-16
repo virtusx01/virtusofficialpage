@@ -258,6 +258,78 @@ const renderLinkIcon = (link: LinktreeItem) => {
   );
 };
 
+const AutoScrollText = ({
+  text,
+  className = '',
+}: {
+  text: string;
+  className?: string;
+}) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const textRef = React.useRef<HTMLSpanElement>(null);
+  const [overflowDistance, setOverflowDistance] = React.useState(0);
+
+  React.useEffect(() => {
+    const checkOverflow = () => {
+      if (containerRef.current && textRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        const textWidth = textRef.current.scrollWidth;
+        if (textWidth > containerWidth + 2) {
+          setOverflowDistance(textWidth - containerWidth);
+        } else {
+          setOverflowDistance(0);
+        }
+      }
+    };
+
+    checkOverflow();
+    const timer = setTimeout(checkOverflow, 150);
+    window.addEventListener('resize', checkOverflow);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkOverflow);
+    };
+  }, [text]);
+
+  if (overflowDistance > 0) {
+    const scrollDuration = Math.max(3, overflowDistance / 25);
+    return (
+      <div
+        ref={containerRef}
+        className={`overflow-hidden whitespace-nowrap min-w-0 w-full ${className}`}
+      >
+        <motion.div
+          animate={{
+            x: [0, -(overflowDistance + 12), -(overflowDistance + 12), 0, 0],
+          }}
+          transition={{
+            duration: scrollDuration * 2 + 3,
+            times: [0, 0.4, 0.5, 0.9, 1],
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          className="inline-block"
+        >
+          <span ref={textRef} className="inline-block">
+            {text}
+          </span>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className={`overflow-hidden whitespace-nowrap min-w-0 w-full ${className}`}
+    >
+      <span ref={textRef} className="inline-block truncate max-w-full">
+        {text}
+      </span>
+    </div>
+  );
+};
+
 const THEMES: Record<string, { bg: string; cardBg: string; textColor: string; subColor: string; accent: string }> = {
   ocean: {
     bg: 'bg-gradient-to-br from-blue-700 via-indigo-800 to-blue-900',
@@ -615,9 +687,10 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         className={`w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md ${currentTheme.cardBg}`}
                       >
                         {renderLinkIcon(link)}
-                        <span className="tracking-wide text-base font-bold block max-w-full break-words text-center">
-                          {link.title}
-                        </span>
+                        <AutoScrollText
+                          text={link.title}
+                          className="tracking-wide text-base font-bold text-center"
+                        />
                         <div className="absolute top-3.5 right-4 opacity-30 group-hover:opacity-90 transition-opacity">
                           <MoreHorizontal className="w-4 h-4" />
                         </div>
@@ -636,21 +709,27 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                       >
                         {link.itemAlign === 'center' ? (
                           <>
-                            <div className="flex items-center gap-3.5 max-w-[85%]">
+                            <div className="flex items-center gap-3.5 max-w-[85%] min-w-0 flex-1">
                               {renderLinkIcon(link)}
-                              <span className={`tracking-wide font-medium ${link.textAlign === 'center' ? 'text-center' : 'text-left'}`}>
-                                {link.title}
-                              </span>
+                              <AutoScrollText
+                                text={link.title}
+                                className={`tracking-wide font-medium ${
+                                  link.textAlign === 'center' ? 'text-center' : 'text-left'
+                                }`}
+                              />
                             </div>
-                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity absolute right-6" />
+                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity absolute right-6 shrink-0" />
                           </>
                         ) : (
                           <>
                             <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
                               {renderLinkIcon(link)}
-                              <span className={`tracking-wide font-medium truncate ${link.textAlign === 'center' ? 'text-center flex-1' : 'text-left'}`}>
-                                {link.title}
-                              </span>
+                              <AutoScrollText
+                                text={link.title}
+                                className={`tracking-wide font-medium ${
+                                  link.textAlign === 'center' ? 'text-center flex-1' : 'text-left'
+                                }`}
+                              />
                             </div>
                             <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
                           </>
