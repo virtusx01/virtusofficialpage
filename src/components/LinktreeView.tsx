@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { SociabuzzLeaderboard } from '@/components/SociabuzzLeaderboard';
-import { ChromaVideoAd, VideoAdItem } from '@/components/ChromaVideoAd';
+import { ChromaVideoAd } from '@/components/ChromaVideoAd';
 import {
   Globe,
   MessageCircle,
@@ -111,11 +111,13 @@ export interface LinktreeProfileData {
   videoAdChromaSimilarity?: number;
   videoAdChromaSmoothness?: number;
   videoAdWidth?: number;
+  videoAdWidthDesktop?: number;
+  videoAdWidthMobile?: number;
   videoAdPosition?: string;
   videoAdOffsetX?: number;
   videoAdOffsetY?: number;
   videoAdZIndex?: number;
-  videoAds?: VideoAdItem[];
+  videoAds?: any[];
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
   topButtons?: LinktreeTopButtonItem[];
@@ -892,7 +894,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
       />
 
       {/* Chroma Key Video Overlay Ad */}
-      {profile.showVideoAd && (
+      {profile.showVideoAd && ((profile.videoAds && profile.videoAds.length > 0) || profile.videoAdUrl) && (
         <ChromaVideoAd
           ads={profile.videoAds}
           videoUrl={profile.videoAdUrl}
@@ -901,7 +903,8 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
           chromaColor={profile.videoAdChromaColor}
           chromaSimilarity={profile.videoAdChromaSimilarity}
           chromaSmoothness={profile.videoAdChromaSmoothness}
-          width={profile.videoAdWidth}
+          widthDesktop={profile.videoAdWidthDesktop || profile.videoAdWidth || 180}
+          widthMobile={profile.videoAdWidthMobile || 120}
           position={profile.videoAdPosition}
           offsetX={profile.videoAdOffsetX}
           offsetY={profile.videoAdOffsetY}

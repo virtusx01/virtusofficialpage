@@ -12,33 +12,29 @@ export interface VideoAdItem {
   chromaColor?: string;
   chromaSimilarity?: number;
   chromaSmoothness?: number;
-  widthDesktop?: number;
-  widthMobile?: number;
-  position?: string;
-  offsetX?: number;
-  offsetY?: number;
-  zIndex?: number;
   isEnabled?: boolean;
+  orderIndex?: number;
 }
 
 interface ChromaVideoAdProps {
   ads?: VideoAdItem[];
-  // Backwards compatibility single ad props
+  // Legacy single ad fallbacks
   videoUrl?: string;
   targetUrl?: string;
   chromaEnable?: boolean;
   chromaColor?: string;
   chromaSimilarity?: number;
   chromaSmoothness?: number;
-  width?: number;
+  // Responsive Widths
   widthDesktop?: number;
   widthMobile?: number;
-  position?: string;
+  width?: number; // legacy fallback
+  // Position & Layout
+  position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'custom' | string;
   offsetX?: number;
   offsetY?: number;
   zIndex?: number;
   previewMode?: boolean;
-  previewIndex?: number;
 }
 
 // Convert Hex string (#00FF00) to RGB [0-255, 0-255, 0-255]
@@ -53,27 +49,46 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
-  ads = [],
+  ads,
   videoUrl = '',
   targetUrl = '',
   chromaEnable = true,
   chromaColor = '#00FF00',
   chromaSimilarity = 0.35,
   chromaSmoothness = 0.1,
-  width,
-  widthDesktop = 200,
-  widthMobile = 130,
+  widthDesktop = 180,
+  widthMobile = 120,
+  width = 180,
   position = 'bottom-right',
   offsetX = 20,
   offsetY = 20,
   zIndex = 50,
   previewMode = false,
-  previewIndex,
 }) => {
-  // Normalize ads list (support playlist array or single fallback prop)
-  const normalizedAds: VideoAdItem[] = React.useMemo(() => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDismissed, setIsDismissed] = useState(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Calculate active width based on device screen
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const activeWidth = isMobile ? (widthMobile || 120) : (widthDesktop || width || 180);
+
+  // Normalize active ads array
+  const activeAdsList: VideoAdItem[] = React.useMemo(() => {
     if (ads && ads.length > 0) {
-      return ads.filter((ad) => ad.isEnabled !== false && ad.videoUrl);
+      const enabled = ads.filter((a) => (a.isEnabled ?? true) && a.videoUrl);
+      if (enabled.length > 0) return enabled;
     }
     if (videoUrl) {
       return [
@@ -84,98 +99,37 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
           chromaColor,
           chromaSimilarity,
           chromaSmoothness,
-          widthDesktop: widthDesktop || width || 180,
-          widthMobile: widthMobile || 130,
-          position,
-          offsetX,
-          offsetY,
-          zIndex,
           isEnabled: true,
         },
       ];
     }
     return [];
-  }, [
-    ads,
-    videoUrl,
-    targetUrl,
-    chromaEnable,
-    chromaColor,
-    chromaSimilarity,
-    chromaSmoothness,
-    width,
-    widthDesktop,
-    widthMobile,
-    position,
-    offsetX,
-    offsetY,
-    zIndex,
-  ]);
+  }, [ads, videoUrl, targetUrl, chromaEnable, chromaColor, chromaSimilarity, chromaSmoothness]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isDismissed, setIsDismissed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  // Current active video item in loop
+  const currentAd = activeAdsList[currentAdIndex % (activeAdsList.length || 1)];
+  const currentVideoUrl = currentAd?.videoUrl || '';
+  const currentTargetUrl = currentAd?.targetUrl ?? targetUrl;
+  const currentChromaEnable = currentAd?.chromaEnable ?? chromaEnable;
+  const currentChromaColor = currentAd?.chromaColor ?? chromaColor;
+  const currentChromaSimilarity = currentAd?.chromaSimilarity ?? chromaSimilarity;
+  const currentChromaSmoothness = currentAd?.chromaSmoothness ?? chromaSmoothness;
 
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number }>({
-    width: 180,
-    height: 240,
+    width: activeWidth,
+    height: Math.round((activeWidth * 16) / 9),
   });
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Sync preview index if forced in admin
+  // Setup Canvas & Frame Rendering Process Loop
   useEffect(() => {
-    if (previewIndex !== undefined && previewIndex >= 0 && previewIndex < normalizedAds.length) {
-      setCurrentIndex(previewIndex);
-    }
-  }, [previewIndex, normalizedAds.length]);
-
-  // Handle responsive viewport detection
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const currentAd: VideoAdItem | undefined = normalizedAds[currentIndex];
-
-  // Calculate effective responsive width
-  const currentWidth = React.useMemo(() => {
-    if (!currentAd) return 180;
-    if (isMobile) {
-      return currentAd.widthMobile || 130;
-    }
-    return currentAd.widthDesktop || 200;
-  }, [currentAd, isMobile]);
-
-  // Advance to next video in playlist
-  const advanceNextAd = React.useCallback(() => {
-    if (normalizedAds.length <= 1) {
-      // Loop same video
-      const video = videoRef.current;
-      if (video) {
-        video.currentTime = 0;
-        video.play().catch(() => {});
-      }
-      return;
-    }
-    setCurrentIndex((prev) => (prev + 1) % normalizedAds.length);
-  }, [normalizedAds.length]);
-
-  // Setup Canvas and Video Processing loop per frame
-  useEffect(() => {
-    if (!currentAd || !currentAd.videoUrl || isDismissed) return;
+    if (!currentVideoUrl || isDismissed) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
 
     let animationFrameId: number;
-    const keyRgb = hexToRgb(currentAd.chromaColor || '#00FF00');
+    const keyRgb = hexToRgb(currentChromaColor);
 
     const processFrame = () => {
       if (video.paused || video.ended) {
@@ -186,50 +140,47 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
       const vW = video.videoWidth || 300;
       const vH = video.videoHeight || 300;
 
-      const targetHeight = Math.round((currentWidth * vH) / vW);
-      if (canvas.width !== currentWidth || canvas.height !== targetHeight) {
-        canvas.width = currentWidth;
+      // Calculate aspect ratio height
+      const targetHeight = Math.round((activeWidth * vH) / vW);
+      if (canvas.width !== activeWidth || canvas.height !== targetHeight) {
+        canvas.width = activeWidth;
         canvas.height = targetHeight;
-        setVideoDimensions({ width: currentWidth, height: targetHeight });
+        setVideoDimensions({ width: activeWidth, height: targetHeight });
       }
 
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (ctx) {
-        ctx.drawImage(video, 0, 0, currentWidth, targetHeight);
+        ctx.drawImage(video, 0, 0, activeWidth, targetHeight);
 
-        if (currentAd.chromaEnable ?? true) {
-          try {
-            const imgData = ctx.getImageData(0, 0, currentWidth, targetHeight);
-            const data = imgData.data;
-            const len = data.length;
+        if (currentChromaEnable) {
+          const imgData = ctx.getImageData(0, 0, activeWidth, targetHeight);
+          const data = imgData.data;
+          const len = data.length;
 
-            const [keyR, keyG, keyB] = keyRgb;
-            const maxDist = 441.673;
-            const simDist = (currentAd.chromaSimilarity ?? 0.35) * maxDist;
-            const smoothDist = (currentAd.chromaSmoothness ?? 0.1) * maxDist;
+          const [keyR, keyG, keyB] = keyRgb;
+          const maxDist = 441.673; // sqrt(255^2 * 3)
+          const simDist = currentChromaSimilarity * maxDist;
+          const smoothDist = currentChromaSmoothness * maxDist;
 
-            for (let i = 0; i < len; i += 4) {
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
+          for (let i = 0; i < len; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
 
-              const rDiff = r - keyR;
-              const gDiff = g - keyG;
-              const bDiff = b - keyB;
-              const dist = Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
+            const rDiff = r - keyR;
+            const gDiff = g - keyG;
+            const bDiff = b - keyB;
+            const dist = Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
 
-              if (dist < simDist) {
-                data[i + 3] = 0; // Fully transparent
-              } else if (dist < simDist + smoothDist && smoothDist > 0) {
-                const alphaRatio = (dist - simDist) / smoothDist;
-                data[i + 3] = Math.round(alphaRatio * 255);
-              }
+            if (dist < simDist) {
+              data[i + 3] = 0; // Transparent
+            } else if (dist < simDist + smoothDist && smoothDist > 0) {
+              const alphaRatio = (dist - simDist) / smoothDist;
+              data[i + 3] = Math.round(alphaRatio * 255);
             }
-
-            ctx.putImageData(imgData, 0, 0);
-          } catch (corsErr) {
-            // Video from external URL missing CORS header. Plain canvas render remains.
           }
+
+          ctx.putImageData(imgData, 0, 0);
         }
       }
 
@@ -242,16 +193,22 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
     };
 
     const handleEnded = () => {
-      advanceNextAd();
+      if (activeAdsList.length > 1) {
+        setCurrentAdIndex((prev) => (prev + 1) % activeAdsList.length);
+      } else {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      }
     };
 
     const handleError = () => {
       setErrorMsg('Gagal memuat video MP4');
-      // If error, try next video after 3s delay
-      const timer = setTimeout(() => {
-        advanceNextAd();
-      }, 3000);
-      return () => clearTimeout(timer);
+      // If error occurs and multiple ads exist, jump to next ad after 2 seconds
+      if (activeAdsList.length > 1) {
+        setTimeout(() => {
+          setCurrentAdIndex((prev) => (prev + 1) % activeAdsList.length);
+        }, 2000);
+      }
     };
 
     video.addEventListener('play', handlePlay);
@@ -282,153 +239,131 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
       }
     };
   }, [
-    currentAd,
-    currentWidth,
+    currentVideoUrl,
+    currentChromaEnable,
+    currentChromaColor,
+    currentChromaSimilarity,
+    currentChromaSmoothness,
+    activeWidth,
     isDismissed,
-    advanceNextAd,
+    activeAdsList.length,
   ]);
 
-  if (!currentAd || !currentAd.videoUrl || isDismissed) return null;
+  if (!currentVideoUrl || isDismissed || activeAdsList.length === 0) return null;
 
-  // Calculate position styles
+  // Position Styles calculation
   const getPositionStyle = (): React.CSSProperties => {
     if (previewMode) {
       return {
         position: 'relative',
-        width: `${currentWidth}px`,
+        width: `${activeWidth}px`,
         height: `${videoDimensions.height}px`,
       };
     }
 
-    const pos = currentAd.position || position || 'bottom-right';
-    const offX = currentAd.offsetX ?? offsetX ?? 20;
-    const offY = currentAd.offsetY ?? offsetY ?? 20;
-    const zInd = currentAd.zIndex ?? zIndex ?? 50;
-
     const style: React.CSSProperties = {
       position: 'fixed',
-      zIndex: zInd,
-      width: `${currentWidth}px`,
+      zIndex: zIndex,
+      width: `${activeWidth}px`,
       height: `${videoDimensions.height}px`,
     };
 
-    switch (pos) {
+    switch (position) {
       case 'top-left':
-        style.top = `${offY}px`;
-        style.left = `${offX}px`;
+        style.top = `${offsetY}px`;
+        style.left = `${offsetX}px`;
         break;
       case 'top-right':
-        style.top = `${offY}px`;
-        style.right = `${offX}px`;
+        style.top = `${offsetY}px`;
+        style.right = `${offsetX}px`;
         break;
       case 'bottom-left':
-        style.bottom = `${offY}px`;
-        style.left = `${offX}px`;
+        style.bottom = `${offsetY}px`;
+        style.left = `${offsetX}px`;
         break;
       case 'bottom-right':
       default:
-        style.bottom = `${offY}px`;
-        style.right = `${offX}px`;
+        style.bottom = `${offsetY}px`;
+        style.right = `${offsetX}px`;
         break;
     }
 
     return style;
   };
 
+  const adContent = (
+    <div className="relative group select-none pointer-events-auto w-full h-full">
+      {/* Canvas Element for 60fps Chroma Key Video Rendering */}
+      <canvas
+        ref={canvasRef}
+        width={activeWidth}
+        height={videoDimensions.height}
+        className="block rounded-lg drop-shadow-2xl transition-transform duration-200 group-hover:scale-105 cursor-pointer"
+        style={{
+          width: `${activeWidth}px`,
+          height: `${videoDimensions.height}px`,
+        }}
+      />
+
+      {/* Hidden Video Source Element */}
+      <video
+        ref={videoRef}
+        key={currentVideoUrl} // Remount video element on URL change for smooth transition
+        src={currentVideoUrl}
+        autoPlay
+        muted
+        playsInline
+        crossOrigin="anonymous"
+        className="hidden"
+      />
+
+      {/* Target Link Icon Indicator */}
+      {currentTargetUrl && !previewMode && (
+        <div className="absolute bottom-1 right-1 bg-black/60 text-white/90 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm text-[10px] flex items-center gap-1 z-10">
+          <ExternalLink size={10} />
+          <span>Buka</span>
+        </div>
+      )}
+
+      {/* Error notification */}
+      {errorMsg && (
+        <div className="absolute inset-0 flex items-center justify-center bg-red-950/80 text-red-200 text-xs p-2 text-center rounded-lg z-10">
+          {errorMsg}
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div
-      style={getPositionStyle()}
-      className="transition-all duration-300 pointer-events-auto select-none group"
-    >
-      {/* Outer Wrapper Container */}
-      <div className="relative w-full h-full">
-        {/* Fixed Close Button (X) - Position is LOCKED on top-right of wrapper */}
-        {!previewMode && (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsDismissed(true);
-            }}
-            className="absolute -top-3 -right-3 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5 shadow-2xl backdrop-blur-md opacity-90 hover:opacity-100 transition-all z-50 cursor-pointer border-2 border-slate-900"
-            title="Tutup Iklan Video"
-          >
-            <X size={14} className="stroke-[3]" />
-          </button>
-        )}
+    <div style={getPositionStyle()} className="transition-all duration-300 relative">
+      {/* FIXED POSITION CLOSE BUTTON: Positioned consistently at top-right of wrapper */}
+      {!previewMode && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsDismissed(true);
+          }}
+          className="absolute -top-2.5 -right-2.5 bg-black/80 hover:bg-red-600 text-white rounded-full p-1.5 shadow-xl border border-white/20 backdrop-blur-md opacity-90 hover:opacity-100 transition-all z-30 cursor-pointer"
+          title="Tutup Iklan"
+          aria-label="Tutup Iklan"
+        >
+          <X size={14} />
+        </button>
+      )}
 
-        {/* Video Canvas & Link Content */}
-        {currentAd.targetUrl ? (
-          <a
-            href={currentAd.targetUrl}
-            target={currentAd.targetUrl.startsWith('http') ? '_blank' : '_self'}
-            rel="noopener noreferrer"
-            className="block w-full h-full"
-          >
-            <div className="relative w-full h-full">
-              <canvas
-                ref={canvasRef}
-                width={currentWidth}
-                height={videoDimensions.height}
-                className="block rounded-lg drop-shadow-2xl transition-transform duration-200 group-hover:scale-105 cursor-pointer"
-                style={{
-                  width: `${currentWidth}px`,
-                  height: `${videoDimensions.height}px`,
-                }}
-              />
-              <div className="absolute bottom-1 right-1 bg-black/60 text-white/90 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm text-[10px] flex items-center gap-1 z-10">
-                <ExternalLink size={10} />
-                <span>Buka</span>
-              </div>
-            </div>
-          </a>
-        ) : (
-          <div className="relative w-full h-full">
-            <canvas
-              ref={canvasRef}
-              width={currentWidth}
-              height={videoDimensions.height}
-              className="block rounded-lg drop-shadow-2xl"
-              style={{
-                width: `${currentWidth}px`,
-                height: `${videoDimensions.height}px`,
-              }}
-            />
-          </div>
-        )}
-
-        {/* Hidden Video Source */}
-        <video
-          key={currentAd.videoUrl + currentIndex}
-          ref={videoRef}
-          src={currentAd.videoUrl}
-          autoPlay
-          muted
-          playsInline
-          crossOrigin="anonymous"
-          className="hidden"
-        />
-
-        {errorMsg && (
-          <div className="absolute inset-0 flex items-center justify-center bg-red-950/90 text-red-200 text-xs p-2 text-center rounded-lg border border-red-500/30">
-            {errorMsg}
-          </div>
-        )}
-
-        {/* Playlist Indicator Dots (If multiple ads) */}
-        {normalizedAds.length > 1 && !previewMode && (
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-950/80 px-2 py-0.5 rounded-full border border-slate-800 backdrop-blur-md z-30">
-            {normalizedAds.map((_, idx) => (
-              <span
-                key={idx}
-                className={`h-1.5 rounded-full transition-all ${
-                  idx === currentIndex ? 'w-3 bg-purple-400' : 'w-1.5 bg-slate-600'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {currentTargetUrl ? (
+        <a
+          href={currentTargetUrl}
+          target={currentTargetUrl.startsWith('http') ? '_blank' : '_self'}
+          rel="noopener noreferrer"
+          className="block w-full h-full"
+        >
+          {adContent}
+        </a>
+      ) : (
+        adContent
+      )}
     </div>
   );
 };

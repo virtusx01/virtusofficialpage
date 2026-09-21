@@ -84,7 +84,7 @@ interface CodeItem {
   orderIndex: number;
 }
 
-interface VideoAdItem {
+export interface VideoAdItem {
   id: string;
   title: string;
   videoUrl: string;
@@ -93,12 +93,6 @@ interface VideoAdItem {
   chromaColor: string;
   chromaSimilarity: number;
   chromaSmoothness: number;
-  widthDesktop: number;
-  widthMobile: number;
-  position: string;
-  offsetX: number;
-  offsetY: number;
-  zIndex: number;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -139,11 +133,13 @@ interface ProfileData {
   videoAdChromaSimilarity?: number;
   videoAdChromaSmoothness?: number;
   videoAdWidth?: number;
+  videoAdWidthDesktop?: number;
+  videoAdWidthMobile?: number;
   videoAdPosition?: string;
   videoAdOffsetX?: number;
   videoAdOffsetY?: number;
   videoAdZIndex?: number;
-  videoAds: VideoAdItem[];
+  videoAds?: VideoAdItem[];
   links: LinkItem[];
   banners: BannerItem[];
   topButtons: TopButtonItem[];
@@ -225,6 +221,8 @@ export default function EditLinktreePage() {
     videoAdChromaSimilarity: 0.35,
     videoAdChromaSmoothness: 0.1,
     videoAdWidth: 180,
+    videoAdWidthDesktop: 180,
+    videoAdWidthMobile: 120,
     videoAdPosition: "bottom-right",
     videoAdOffsetX: 20,
     videoAdOffsetY: 20,
@@ -343,6 +341,78 @@ export default function EditLinktreePage() {
     } finally {
       setUploadingVideo(false);
     }
+  };
+
+  const handleVideoAdUploadItem = async (file: File, index: number) => {
+    if (!file) return;
+    setUploadingField(`videoAd-${index}`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        updateVideoAd(index, "videoUrl", data.url);
+        setSaveSuccess(false);
+      } else {
+        alert(`Gagal mengunggah video: ${data.error || "Server error"}`);
+      }
+    } catch (err: any) {
+      console.error("Video upload error:", err);
+      alert(`Terjadi kesalahan saat mengunggah video: ${err?.message || err}`);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  const addVideoAd = () => {
+    const newAd: VideoAdItem = {
+      id: `new-${Date.now()}`,
+      title: `Iklan Video ${(profile.videoAds || []).length + 1}`,
+      videoUrl: "",
+      targetUrl: "",
+      chromaEnable: true,
+      chromaColor: "#00FF00",
+      chromaSimilarity: 0.35,
+      chromaSmoothness: 0.1,
+      isEnabled: true,
+      orderIndex: (profile.videoAds || []).length,
+    };
+    setProfile({ ...profile, videoAds: [...(profile.videoAds || []), newAd] });
+  };
+
+  const updateVideoAd = (index: number, key: keyof VideoAdItem, value: any) => {
+    const updated = [...(profile.videoAds || [])];
+    updated[index] = { ...updated[index], [key]: value };
+    setProfile({ ...profile, videoAds: updated });
+  };
+
+  const removeVideoAd = (index: number) => {
+    const updated = (profile.videoAds || []).filter((_, i) => i !== index);
+    setProfile({ ...profile, videoAds: updated });
+  };
+
+  const moveVideoAd = (index: number, direction: "up" | "down") => {
+    const list = profile.videoAds || [];
+    if (
+      (direction === "up" && index === 0) ||
+      (direction === "down" && index === list.length - 1)
+    ) {
+      return;
+    }
+    const targetIdx = direction === "up" ? index - 1 : index + 1;
+    const updated = [...list];
+    const temp = updated[index];
+    updated[index] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    updated.forEach((item, idx) => (item.orderIndex = idx));
+    setProfile({ ...profile, videoAds: updated });
   };
 
   const handleBannerImageUpload = async (file: File, index: number) => {
@@ -634,84 +704,6 @@ export default function EditLinktreePage() {
     setProfile({ ...profile, codes: updated });
   };
 
-  const addVideoAd = () => {
-    const newAd: VideoAdItem = {
-      id: `new-${Date.now()}`,
-      title: `Iklan Video ${(profile.videoAds || []).length + 1}`,
-      videoUrl: "",
-      targetUrl: "",
-      chromaEnable: true,
-      chromaColor: "#00FF00",
-      chromaSimilarity: 0.35,
-      chromaSmoothness: 0.1,
-      widthDesktop: 200,
-      widthMobile: 130,
-      position: "bottom-right",
-      offsetX: 20,
-      offsetY: 20,
-      zIndex: 50,
-      isEnabled: true,
-      orderIndex: (profile.videoAds || []).length,
-    };
-    setProfile({ ...profile, videoAds: [...(profile.videoAds || []), newAd] });
-  };
-
-  const updateVideoAd = (index: number, key: keyof VideoAdItem, value: any) => {
-    const updated = [...(profile.videoAds || [])];
-    updated[index] = { ...updated[index], [key]: value };
-    setProfile({ ...profile, videoAds: updated });
-  };
-
-  const removeVideoAd = (index: number) => {
-    const updated = (profile.videoAds || []).filter((_, i) => i !== index);
-    setProfile({ ...profile, videoAds: updated });
-  };
-
-  const moveVideoAd = (index: number, direction: "up" | "down") => {
-    const list = profile.videoAds || [];
-    if (
-      (direction === "up" && index === 0) ||
-      (direction === "down" && index === list.length - 1)
-    ) {
-      return;
-    }
-    const targetIdx = direction === "up" ? index - 1 : index + 1;
-    const updated = [...list];
-    const temp = updated[index];
-    updated[index] = updated[targetIdx];
-    updated[targetIdx] = temp;
-    updated.forEach((item, idx) => (item.orderIndex = idx));
-    setProfile({ ...profile, videoAds: updated });
-  };
-
-  const handleAdVideoUpload = async (file: File, index: number) => {
-    if (!file) return;
-    setUploadingField(`video-ad-${index}`);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.url) {
-        updateVideoAd(index, "videoUrl", data.url);
-        setSaveSuccess(false);
-      } else {
-        alert(`Gagal mengunggah video: ${data.error || "Server error"}`);
-      }
-    } catch (err: any) {
-      console.error("Video upload error:", err);
-      alert(`Terjadi kesalahan saat mengunggah video: ${err?.message || err}`);
-    } finally {
-      setUploadingField(null);
-    }
-  };
-
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100">
@@ -877,381 +869,429 @@ export default function EditLinktreePage() {
               </div>
             </div>
 
-            {/* Section 0.8: Iklan Video Overlay (Chroma Key MP4 Playlist & Responsive) */}
+            {/* Section 0.8: Iklan Video Overlay (Chroma Key MP4) */}
             <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl relative overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between border-b border-slate-800/80 pb-4 gap-4">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400">
                     <Video className="w-5 h-5" />
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                      <span>Iklan Video Overlay (Chroma Key Playlist)</span>
+                      <span>Iklan Video Overlay (Playlist & Chroma Key)</span>
                       <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-mono border border-purple-500/30">
-                        Multi-Video & Responsive
+                        Rotation 60 FPS
                       </span>
                     </h2>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Tampilkan 1 atau banyak iklan video MP4 berurutan (playlist) dengan beda ukuran HP vs PC.
+                      Tampilkan 1 atau banyak iklan video MP4 secara bergantian (rotasi berurutan) tanpa background.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={addVideoAd}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-600/80 hover:bg-purple-600 text-white font-semibold text-xs transition-colors cursor-pointer shadow-md"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Tambah Video Ad Baru</span>
-                  </button>
-
-                  <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={profile.showVideoAd || false}
-                      onChange={(e) => setProfile({ ...profile, showVideoAd: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                    <span className="ml-2 text-xs font-semibold text-slate-300">
-                      {profile.showVideoAd ? 'AKTIF' : 'NONAKTIF'}
-                    </span>
-                  </label>
-                </div>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={profile.showVideoAd || false}
+                    onChange={(e) => setProfile({ ...profile, showVideoAd: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                  <span className="ml-2 text-xs font-semibold text-slate-300">
+                    {profile.showVideoAd ? 'AKTIF' : 'NONAKTIF'}
+                  </span>
+                </label>
               </div>
 
               {profile.showVideoAd && (
                 <div className="space-y-6 animate-in fade-in duration-300">
-                  {/* Notice / Info Banner */}
-                  <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-800/30 text-purple-200 text-xs flex items-start gap-2.5">
-                    <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">Transisi Playlist Auto-Loop & Tombol Tutup Fixed:</p>
-                      <p className="text-slate-300 text-[11px] mt-0.5">
-                        Jika ada 2 atau lebih video ad, video akan diputar bergantian secara otomatis saat selesai. Posisi tombol tutup (<code className="text-purple-300 font-bold">X</code>) di pojok container akan tetap diam & tidak melompat-lompat agar pengguna mudah menutup iklan.
-                      </p>
+                  {/* Responsive Sizing & Layout Controls */}
+                  <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-4">
+                    <span className="text-xs font-bold text-slate-200 block border-b border-slate-800/60 pb-2">
+                      Ukuran Responsif (Desktop & Mobile) & Tata Letak Layar
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Desktop Width Slider */}
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
+                          <span>Ukuran Lebar Desktop / Laptop (px)</span>
+                          <span className="text-purple-400 font-mono">
+                            {profile.videoAdWidthDesktop || profile.videoAdWidth || 180}px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="80"
+                          max="400"
+                          step="5"
+                          value={profile.videoAdWidthDesktop || profile.videoAdWidth || 180}
+                          onChange={(e) =>
+                            setProfile({
+                              ...profile,
+                              videoAdWidthDesktop: parseInt(e.target.value),
+                              videoAdWidth: parseInt(e.target.value),
+                            })
+                          }
+                          className="w-full accent-purple-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          Ukuran video untuk pengunjung yang menggunakan laptop / komputer PC.
+                        </p>
+                      </div>
+
+                      {/* Mobile Width Slider */}
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
+                          <span>Ukuran Lebar Mobile / HP (px)</span>
+                          <span className="text-purple-400 font-mono">
+                            {profile.videoAdWidthMobile || 120}px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="60"
+                          max="280"
+                          step="5"
+                          value={profile.videoAdWidthMobile || 120}
+                          onChange={(e) =>
+                            setProfile({ ...profile, videoAdWidthMobile: parseInt(e.target.value) })
+                          }
+                          className="w-full accent-purple-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          Ukuran video pas untuk layar smartphone agar tidak menghalangi tombol linktree.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-400 mb-1">Posisi Layar</label>
+                        <select
+                          value={profile.videoAdPosition || 'bottom-right'}
+                          onChange={(e) => setProfile({ ...profile, videoAdPosition: e.target.value })}
+                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-semibold text-slate-200 outline-none focus:border-purple-500"
+                        >
+                          <option value="bottom-right">Pojok Kanan Bawah</option>
+                          <option value="bottom-left">Pojok Kiri Bawah</option>
+                          <option value="top-right">Pojok Kanan Atas</option>
+                          <option value="top-left">Pojok Kiri Atas</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-400 mb-1">Offset Horizontal X (px)</label>
+                        <input
+                          type="number"
+                          value={profile.videoAdOffsetX ?? 20}
+                          onChange={(e) => setProfile({ ...profile, videoAdOffsetX: parseInt(e.target.value) || 0 })}
+                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-400 mb-1">Offset Vertikal Y (px)</label>
+                        <input
+                          type="number"
+                          value={profile.videoAdOffsetY ?? 20}
+                          onChange={(e) => setProfile({ ...profile, videoAdOffsetY: parseInt(e.target.value) || 0 })}
+                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-400 mb-1">Z-Index Layer</label>
+                        <input
+                          type="number"
+                          value={profile.videoAdZIndex ?? 50}
+                          onChange={(e) => setProfile({ ...profile, videoAdZIndex: parseInt(e.target.value) || 50 })}
+                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* List of Video Ads */}
+                  {/* Playlist / Multiple Video Ads List */}
                   <div className="space-y-4">
-                    {(!profile.videoAds || profile.videoAds.length === 0) ? (
-                      <div className="p-6 rounded-xl bg-slate-950/60 border border-slate-800 text-center space-y-3">
-                        <p className="text-xs text-slate-400">Belum ada item iklan video di playlist.</p>
-                        <button
-                          type="button"
-                          onClick={addVideoAd}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Buat Iklan Video Pertama</span>
-                        </button>
+                    <div className="flex items-center justify-between border-b border-purple-800/30 pb-3">
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                          <span>Daftar Playlist Iklan Video (Bisa Ditambah Bebas)</span>
+                          <span className="px-2 py-0.5 rounded-full bg-purple-600/30 text-purple-300 text-[10px] font-mono">
+                            {(profile.videoAds || []).length} Video
+                          </span>
+                        </h3>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Setiap iklan akan diputar secara berurutan. Setelah selesai, otomatis lanjut ke video berikutnya & berputar terus.
+                        </p>
                       </div>
-                    ) : (
-                      profile.videoAds.map((ad, idx) => (
-                        <div
-                          key={ad.id || idx}
-                          className="p-5 rounded-xl bg-slate-950/80 border border-purple-900/40 space-y-4 shadow-md relative"
-                        >
-                          {/* Header item video ad */}
-                          <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-lg bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-bold flex items-center justify-center font-mono">
-                                {idx + 1}
-                              </span>
+
+                      <button
+                        type="button"
+                        onClick={addVideoAd}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-600/20 transition-all cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Tambah Iklan Video</span>
+                      </button>
+                    </div>
+
+                    {/* Single Legacy Fallback Card if videoAds is empty */}
+                    {(!profile.videoAds || profile.videoAds.length === 0) && (
+                      <div className="p-4 rounded-xl bg-slate-950/80 border border-purple-900/40 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-purple-300">Iklan Utama (Mode Tunggal)</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Migrate legacy single video to videoAds list
+                              const initialAd: VideoAdItem = {
+                                id: `ad-${Date.now()}`,
+                                title: "Iklan 1",
+                                videoUrl: profile.videoAdUrl || "",
+                                targetUrl: profile.videoAdTargetUrl || "",
+                                chromaEnable: profile.videoAdChromaEnable ?? true,
+                                chromaColor: profile.videoAdChromaColor || "#00FF00",
+                                chromaSimilarity: profile.videoAdChromaSimilarity ?? 0.35,
+                                chromaSmoothness: profile.videoAdChromaSmoothness ?? 0.1,
+                                isEnabled: true,
+                                orderIndex: 0,
+                              };
+                              setProfile({ ...profile, videoAds: [initialAd] });
+                            }}
+                            className="text-xs text-purple-400 hover:underline font-semibold"
+                          >
+                            + Konversi Ke Playlist Multi-Iklan
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                              URL Video MP4 / Upload Ke Supabase
+                            </label>
+                            <div className="flex gap-2">
                               <input
                                 type="text"
-                                value={ad.title || `Iklan Video ${idx + 1}`}
-                                onChange={(e) => updateVideoAd(idx, 'title', e.target.value)}
-                                className="bg-transparent text-sm font-bold text-slate-100 border-b border-transparent hover:border-slate-700 focus:border-purple-500 outline-none px-1 py-0.5"
-                                placeholder="Judul Iklan..."
+                                value={profile.videoAdUrl || ''}
+                                onChange={(e) => setProfile({ ...profile, videoAdUrl: e.target.value })}
+                                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl focus:border-purple-500 text-xs font-mono text-slate-100"
+                                placeholder="https://domain.com/video-iklan.mp4"
                               />
-                            </div>
-
-                            <div className="flex items-center gap-1.5">
-                              {/* Enable toggle */}
-                              <label className="flex items-center gap-1.5 cursor-pointer mr-2">
+                              <label className="flex items-center justify-center px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors cursor-pointer shrink-0 gap-1">
+                                {uploadingVideo ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Upload className="w-3.5 h-3.5" />
+                                )}
+                                <span>Upload</span>
                                 <input
-                                  type="checkbox"
-                                  checked={ad.isEnabled ?? true}
-                                  onChange={(e) => updateVideoAd(idx, 'isEnabled', e.target.checked)}
-                                  className="w-4 h-4 accent-purple-500 rounded"
+                                  type="file"
+                                  accept="video/mp4,video/webm,video/ogg"
+                                  className="hidden"
+                                  disabled={uploadingVideo}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleVideoUpload(file);
+                                  }}
                                 />
-                                <span className="text-xs text-slate-300 font-medium">
-                                  {ad.isEnabled ?? true ? 'Aktif' : 'Matikan'}
-                                </span>
                               </label>
-
-                              {/* Move buttons */}
-                              <button
-                                type="button"
-                                onClick={() => moveVideoAd(idx, 'up')}
-                                disabled={idx === 0}
-                                className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-30 cursor-pointer"
-                                title="Geser Ke Atas"
-                              >
-                                <MoveUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => moveVideoAd(idx, 'down')}
-                                disabled={idx === (profile.videoAds || []).length - 1}
-                                className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-30 cursor-pointer"
-                                title="Geser Ke Bawah"
-                              >
-                                <MoveDown className="w-3.5 h-3.5" />
-                              </button>
-
-                              {/* Delete button */}
-                              <button
-                                type="button"
-                                onClick={() => removeVideoAd(idx)}
-                                className="p-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-800/80 text-red-300 cursor-pointer ml-1"
-                                title="Hapus Iklan Ini"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
                             </div>
                           </div>
 
-                          {/* Form inputs per video ad */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Video URL & Supabase upload */}
-                            <div>
-                              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                                URL Video MP4 / Upload Supabase
-                              </label>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={ad.videoUrl || ''}
-                                  onChange={(e) => updateVideoAd(idx, 'videoUrl', e.target.value)}
-                                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl focus:border-purple-500 text-xs outline-none text-slate-100 font-mono"
-                                  placeholder="https://domain.com/video.mp4"
-                                />
-                                <label className="flex items-center justify-center px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors cursor-pointer shrink-0 gap-1 shadow-md">
-                                  {uploadingField === `video-ad-${idx}` ? (
-                                    <>
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                      <span className="text-[11px]">Proses...</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Upload className="w-3.5 h-3.5" />
-                                      <span className="text-[11px]">Upload</span>
-                                    </>
-                                  )}
-                                  <input
-                                    type="file"
-                                    accept="video/mp4,video/webm,video/ogg"
-                                    className="hidden"
-                                    disabled={uploadingField === `video-ad-${idx}`}
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) handleAdVideoUpload(file, idx);
-                                    }}
-                                  />
-                                </label>
-                              </div>
-                            </div>
-
-                            {/* Target Link URL */}
-                            <div>
-                              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                                Target Link Klik (Opsional)
-                              </label>
-                              <input
-                                type="text"
-                                value={ad.targetUrl || ''}
-                                onChange={(e) => updateVideoAd(idx, 'targetUrl', e.target.value)}
-                                className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl focus:border-purple-500 text-xs outline-none text-slate-100 font-mono"
-                                placeholder="https://website-tujuan.com"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Responsive Size Controls: Desktop vs Mobile */}
-                          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
-                            <span className="text-xs font-bold text-purple-300 block border-b border-slate-800/60 pb-1.5">
-                              Diferensiasi Ukuran Layar Desktop vs Mobile
-                            </span>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {/* Desktop Width Slider */}
-                              <div>
-                                <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
-                                  <span>💻 Lebar Layar Desktop (PC)</span>
-                                  <span className="text-purple-400 font-mono">{ad.widthDesktop || 200}px</span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min="80"
-                                  max="400"
-                                  step="5"
-                                  value={ad.widthDesktop || 200}
-                                  onChange={(e) => updateVideoAd(idx, 'widthDesktop', parseInt(e.target.value))}
-                                  className="w-full accent-purple-500"
-                                />
-                              </div>
-
-                              {/* Mobile Width Slider */}
-                              <div>
-                                <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
-                                  <span>📱 Lebar Layar Mobile (HP)</span>
-                                  <span className="text-purple-400 font-mono">{ad.widthMobile || 130}px</span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min="60"
-                                  max="260"
-                                  step="5"
-                                  value={ad.widthMobile || 130}
-                                  onChange={(e) => updateVideoAd(idx, 'widthMobile', parseInt(e.target.value))}
-                                  className="w-full accent-purple-500"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Chroma Key Filter Settings per ad */}
-                          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
-                            <div className="flex items-center justify-between border-b border-slate-800/60 pb-2">
-                              <span className="text-xs font-bold text-slate-200">Chroma Key Filter (Green Screen)</span>
-                              <label className="flex items-center gap-1.5 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={ad.chromaEnable ?? true}
-                                  onChange={(e) => updateVideoAd(idx, 'chromaEnable', e.target.checked)}
-                                  className="w-3.5 h-3.5 accent-purple-500 rounded"
-                                />
-                                <span className="text-[11px] text-slate-300">Aktifkan Transparansi</span>
-                              </label>
-                            </div>
-
-                            {ad.chromaEnable ?? true ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div>
-                                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">Warna Key</label>
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="color"
-                                      value={ad.chromaColor || '#00FF00'}
-                                      onChange={(e) => updateVideoAd(idx, 'chromaColor', e.target.value)}
-                                      className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 cursor-pointer"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={ad.chromaColor || '#00FF00'}
-                                      onChange={(e) => updateVideoAd(idx, 'chromaColor', e.target.value)}
-                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-800 rounded text-xs font-mono text-slate-200 uppercase"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <div className="flex justify-between text-[11px] font-semibold text-slate-400 mb-1">
-                                    <span>Toleransi Warna</span>
-                                    <span className="text-purple-400 font-mono">
-                                      {Math.round((ad.chromaSimilarity ?? 0.35) * 100)}%
-                                    </span>
-                                  </div>
-                                  <input
-                                    type="range"
-                                    min="0.05"
-                                    max="0.8"
-                                    step="0.01"
-                                    value={ad.chromaSimilarity ?? 0.35}
-                                    onChange={(e) => updateVideoAd(idx, 'chromaSimilarity', parseFloat(e.target.value))}
-                                    className="w-full accent-purple-500"
-                                  />
-                                </div>
-
-                                <div>
-                                  <div className="flex justify-between text-[11px] font-semibold text-slate-400 mb-1">
-                                    <span>Smoothness</span>
-                                    <span className="text-purple-400 font-mono">
-                                      {Math.round((ad.chromaSmoothness ?? 0.1) * 100)}%
-                                    </span>
-                                  </div>
-                                  <input
-                                    type="range"
-                                    min="0.0"
-                                    max="0.3"
-                                    step="0.01"
-                                    value={ad.chromaSmoothness ?? 0.1}
-                                    onChange={(e) => updateVideoAd(idx, 'chromaSmoothness', parseFloat(e.target.value))}
-                                    className="w-full accent-purple-500"
-                                  />
-                                </div>
-                              </div>
-                            ) : null}
-                          </div>
-
-                          {/* Position Presets & Offsets */}
-                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-                            <div>
-                              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Posisi Layar</label>
-                              <select
-                                value={ad.position || 'bottom-right'}
-                                onChange={(e) => updateVideoAd(idx, 'position', e.target.value)}
-                                className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-semibold text-slate-200 outline-none"
-                              >
-                                <option value="bottom-right">Pojok Kanan Bawah</option>
-                                <option value="bottom-left">Pojok Kiri Bawah</option>
-                                <option value="top-right">Pojok Kanan Atas</option>
-                                <option value="top-left">Pojok Kiri Atas</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Offset X (px)</label>
-                              <input
-                                type="number"
-                                value={ad.offsetX ?? 20}
-                                onChange={(e) => updateVideoAd(idx, 'offsetX', parseInt(e.target.value) || 0)}
-                                className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Offset Y (px)</label>
-                              <input
-                                type="number"
-                                value={ad.offsetY ?? 20}
-                                onChange={(e) => updateVideoAd(idx, 'offsetY', parseInt(e.target.value) || 0)}
-                                className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Z-Index</label>
-                              <input
-                                type="number"
-                                value={ad.zIndex ?? 50}
-                                onChange={(e) => updateVideoAd(idx, 'zIndex', parseInt(e.target.value) || 50)}
-                                className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none"
-                              />
-                            </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                              Target Link Klik
+                            </label>
+                            <input
+                              type="text"
+                              value={profile.videoAdTargetUrl || ''}
+                              onChange={(e) => setProfile({ ...profile, videoAdTargetUrl: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl focus:border-purple-500 text-xs font-mono text-slate-100"
+                              placeholder="https://website-tujuan.com"
+                            />
                           </div>
                         </div>
-                      ))
+                      </div>
                     )}
+
+                    {/* Playlist Items */}
+                    {(profile.videoAds || []).map((ad, idx) => (
+                      <div
+                        key={ad.id || idx}
+                        className="p-4 rounded-xl bg-slate-950/80 border border-slate-800/90 hover:border-purple-800/60 transition-all space-y-4 shadow-md"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                          <div className="flex items-center gap-2 flex-1 mr-4">
+                            <span className="w-6 h-6 rounded-lg bg-purple-600/30 text-purple-300 text-xs font-bold flex items-center justify-center border border-purple-500/30">
+                              {idx + 1}
+                            </span>
+                            <input
+                              type="text"
+                              value={ad.title || `Iklan ${idx + 1}`}
+                              onChange={(e) => updateVideoAd(idx, 'title', e.target.value)}
+                              className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-bold text-slate-100 outline-none focus:border-purple-500 max-w-[200px]"
+                              placeholder="Judul Iklan"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {/* Enable switch */}
+                            <label className="flex items-center gap-1.5 cursor-pointer mr-2">
+                              <input
+                                type="checkbox"
+                                checked={ad.isEnabled ?? true}
+                                onChange={(e) => updateVideoAd(idx, 'isEnabled', e.target.checked)}
+                                className="w-3.5 h-3.5 accent-purple-500 rounded"
+                              />
+                              <span className="text-[11px] font-semibold text-slate-300">
+                                {ad.isEnabled ? 'Aktif' : 'Mati'}
+                              </span>
+                            </label>
+
+                            {/* Move Up/Down */}
+                            <button
+                              type="button"
+                              onClick={() => moveVideoAd(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 disabled:opacity-30"
+                              title="Naikkan Urutan"
+                            >
+                              <MoveUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveVideoAd(idx, 'down')}
+                              disabled={idx === (profile.videoAds || []).length - 1}
+                              className="p-1 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 disabled:opacity-30"
+                              title="Turunkan Urutan"
+                            >
+                              <MoveDown className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Delete button */}
+                            <button
+                              type="button"
+                              onClick={() => removeVideoAd(idx)}
+                              className="p-1.5 rounded-lg bg-red-950/40 text-red-400 border border-red-900/60 hover:bg-red-900/60 transition-colors ml-1"
+                              title="Hapus Iklan Ini"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Video URL & Target Link */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              URL Video MP4 / Supabase Upload
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={ad.videoUrl || ''}
+                                onChange={(e) => updateVideoAd(idx, 'videoUrl', e.target.value)}
+                                className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-100 outline-none focus:border-purple-500"
+                                placeholder="https://domain.com/video.mp4"
+                              />
+                              <label className="flex items-center justify-center px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors cursor-pointer shrink-0 gap-1">
+                                {uploadingField === `videoAd-${idx}` ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Upload className="w-3.5 h-3.5" />
+                                )}
+                                <span>Upload MP4</span>
+                                <input
+                                  type="file"
+                                  accept="video/mp4,video/webm,video/ogg"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleVideoAdUploadItem(file, idx);
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              Target Link Klik (Opsional)
+                            </label>
+                            <input
+                              type="text"
+                              value={ad.targetUrl || ''}
+                              onChange={(e) => updateVideoAd(idx, 'targetUrl', e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-100 outline-none focus:border-purple-500"
+                              placeholder="https://link-tujuan.com"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Chroma Key Settings for this Video */}
+                        <div className="pt-2 border-t border-slate-900 flex flex-wrap items-center gap-4 text-xs">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={ad.chromaEnable ?? true}
+                              onChange={(e) => updateVideoAd(idx, 'chromaEnable', e.target.checked)}
+                              className="w-3.5 h-3.5 accent-purple-500 rounded"
+                            />
+                            <span className="text-slate-300 font-semibold">Chroma Key</span>
+                          </label>
+
+                          {ad.chromaEnable && (
+                            <>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] text-slate-400">Warna:</span>
+                                <input
+                                  type="color"
+                                  value={ad.chromaColor || '#00FF00'}
+                                  onChange={(e) => updateVideoAd(idx, 'chromaColor', e.target.value)}
+                                  className="w-6 h-6 rounded bg-slate-900 border border-slate-700 cursor-pointer"
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-1.5 flex-1 min-w-[140px]">
+                                <span className="text-[11px] text-slate-400">Toleransi:</span>
+                                <input
+                                  type="range"
+                                  min="0.05"
+                                  max="0.8"
+                                  step="0.01"
+                                  value={ad.chromaSimilarity ?? 0.35}
+                                  onChange={(e) => updateVideoAd(idx, 'chromaSimilarity', parseFloat(e.target.value))}
+                                  className="w-full accent-purple-500"
+                                />
+                                <span className="text-[10px] font-mono text-purple-400 w-8">
+                                  {Math.round((ad.chromaSimilarity ?? 0.35) * 100)}%
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* Live Interactive Preview */}
-                  {profile.videoAds && profile.videoAds.length > 0 && (
-                    <div className="p-4 rounded-xl bg-slate-950 border border-purple-500/30 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
-                          <Eye className="w-4 h-4 text-cyan-400" />
-                          <span>Simulasi Live Playlist Chroma Key:</span>
-                        </span>
-                        <span className="text-[11px] text-slate-400">
-                          Total Iklan: <strong className="text-purple-300">{profile.videoAds.length}</strong>
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-center p-6 bg-slate-900/80 rounded-xl border border-slate-800 min-h-[160px] overflow-hidden">
-                        <ChromaVideoAd ads={profile.videoAds} previewMode={true} />
+                  {/* Live Preview Rotasi Iklan */}
+                  {((profile.videoAds && profile.videoAds.length > 0) || profile.videoAdUrl) && (
+                    <div className="p-4 rounded-xl bg-slate-950 border border-purple-500/20 space-y-2">
+                      <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Preview Live Rotasi Playlist Iklan:</span>
+                      </span>
+                      <div className="flex items-center justify-center p-4 bg-slate-900/80 rounded-lg border border-slate-800 min-h-[140px] overflow-hidden">
+                        <ChromaVideoAd
+                          ads={profile.videoAds}
+                          videoUrl={profile.videoAdUrl}
+                          chromaEnable={profile.videoAdChromaEnable}
+                          chromaColor={profile.videoAdChromaColor}
+                          chromaSimilarity={profile.videoAdChromaSimilarity}
+                          chromaSmoothness={profile.videoAdChromaSmoothness}
+                          widthDesktop={profile.videoAdWidthDesktop || profile.videoAdWidth || 180}
+                          widthMobile={profile.videoAdWidthMobile || 120}
+                          previewMode={true}
+                        />
                       </div>
                     </div>
                   )}

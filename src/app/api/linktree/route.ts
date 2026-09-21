@@ -96,60 +96,49 @@ export async function GET() {
           videoAds: { orderBy: { orderIndex: 'asc' } },
         },
       });
-    } else if (!profile.codes || profile.codes.length === 0) {
-      // Seed default sensitivity code if missing
-      await prisma.linktreeCode.createMany({
-        data: DEFAULT_CODES.map((c) => ({
-          ...c,
-          profileId: 'profile',
-        })),
-      });
+    } else {
+      let needsRefresh = false;
+      if (!profile.codes || profile.codes.length === 0) {
+        await prisma.linktreeCode.createMany({
+          data: DEFAULT_CODES.map((c) => ({
+            ...c,
+            profileId: 'profile',
+          })),
+        });
+        needsRefresh = true;
+      }
 
-      profile = await prisma.linktreeProfile.findUnique({
-        where: { id: 'profile' },
-        include: {
-          links: { orderBy: { orderIndex: 'asc' } },
-          banners: { orderBy: { orderIndex: 'asc' } },
-          topButtons: { orderBy: { orderIndex: 'asc' } },
-          codes: { orderBy: { orderIndex: 'asc' } },
-          videoAds: { orderBy: { orderIndex: 'asc' } },
-        },
-      });
-    }
+      // Seed default video ad if legacy videoAdUrl exists but videoAds table is empty
+      if (profile.videoAdUrl && (!profile.videoAds || profile.videoAds.length === 0)) {
+        await prisma.linktreeVideoAd.create({
+          data: {
+            title: 'Iklan Utama',
+            videoUrl: profile.videoAdUrl,
+            targetUrl: profile.videoAdTargetUrl || '',
+            chromaEnable: profile.videoAdChromaEnable ?? true,
+            chromaColor: profile.videoAdChromaColor || '#00FF00',
+            chromaSimilarity: profile.videoAdChromaSimilarity ?? 0.35,
+            chromaSmoothness: profile.videoAdChromaSmoothness ?? 0.1,
+            isEnabled: true,
+            orderIndex: 0,
+            profileId: 'profile',
+          },
+        });
+        needsRefresh = true;
+      }
 
-    // Auto-migrate legacy single videoAdUrl to videoAds playlist if empty
-    if (profile && profile.videoAdUrl && (!profile.videoAds || profile.videoAds.length === 0)) {
-      await prisma.linktreeVideoAd.create({
-        data: {
-          profileId: 'profile',
-          title: 'Iklan Video 1',
-          videoUrl: profile.videoAdUrl,
-          targetUrl: profile.videoAdTargetUrl || '',
-          chromaEnable: profile.videoAdChromaEnable ?? true,
-          chromaColor: profile.videoAdChromaColor || '#00FF00',
-          chromaSimilarity: profile.videoAdChromaSimilarity ?? 0.35,
-          chromaSmoothness: profile.videoAdChromaSmoothness ?? 0.1,
-          widthDesktop: profile.videoAdWidth || 200,
-          widthMobile: 130,
-          position: profile.videoAdPosition || 'bottom-right',
-          offsetX: profile.videoAdOffsetX ?? 20,
-          offsetY: profile.videoAdOffsetY ?? 20,
-          zIndex: profile.videoAdZIndex ?? 50,
-          isEnabled: true,
-          orderIndex: 0,
-        },
-      });
-
-      profile = await prisma.linktreeProfile.findUnique({
-        where: { id: 'profile' },
-        include: {
-          links: { orderBy: { orderIndex: 'asc' } },
-          banners: { orderBy: { orderIndex: 'asc' } },
-          topButtons: { orderBy: { orderIndex: 'asc' } },
-          codes: { orderBy: { orderIndex: 'asc' } },
-          videoAds: { orderBy: { orderIndex: 'asc' } },
-        },
-      });
+      if (needsRefresh) {
+        profile = await prisma.linktreeProfile.findUnique({
+          where: { id: 'profile' },
+          include: {
+            links: { orderBy: { orderIndex: 'asc' } },
+            banners: { orderBy: { orderIndex: 'asc' } },
+            topButtons: { orderBy: { orderIndex: 'asc' } },
+            codes: { orderBy: { orderIndex: 'asc' } },
+            videoAds: { orderBy: { orderIndex: 'asc' } },
+          },
+        });
+      }
     }
 
     return NextResponse.json(profile);
@@ -198,10 +187,13 @@ export async function PUT(request: Request) {
       videoAdChromaSimilarity,
       videoAdChromaSmoothness,
       videoAdWidth,
+      videoAdWidthDesktop,
+      videoAdWidthMobile,
       videoAdPosition,
       videoAdOffsetX,
       videoAdOffsetY,
       videoAdZIndex,
+      videoAds,
       links,
       banners,
       topButtons,
@@ -247,6 +239,8 @@ export async function PUT(request: Request) {
         ...(videoAdChromaSimilarity !== undefined && { videoAdChromaSimilarity }),
         ...(videoAdChromaSmoothness !== undefined && { videoAdChromaSmoothness }),
         ...(videoAdWidth !== undefined && { videoAdWidth }),
+        ...(videoAdWidthDesktop !== undefined && { videoAdWidthDesktop }),
+        ...(videoAdWidthMobile !== undefined && { videoAdWidthMobile }),
         ...(videoAdPosition !== undefined && { videoAdPosition }),
         ...(videoAdOffsetX !== undefined && { videoAdOffsetX }),
         ...(videoAdOffsetY !== undefined && { videoAdOffsetY }),
@@ -289,6 +283,8 @@ export async function PUT(request: Request) {
         videoAdChromaSimilarity: videoAdChromaSimilarity ?? 0.35,
         videoAdChromaSmoothness: videoAdChromaSmoothness ?? 0.1,
         videoAdWidth: videoAdWidth ?? 180,
+        videoAdWidthDesktop: videoAdWidthDesktop ?? 180,
+        videoAdWidthMobile: videoAdWidthMobile ?? 120,
         videoAdPosition: videoAdPosition || 'bottom-right',
         videoAdOffsetX: videoAdOffsetX ?? 20,
         videoAdOffsetY: videoAdOffsetY ?? 20,
@@ -393,28 +389,22 @@ export async function PUT(request: Request) {
     }
 
     // Sync videoAds if provided
-    if (Array.isArray(body.videoAds)) {
+    if (Array.isArray(videoAds)) {
       await prisma.linktreeVideoAd.deleteMany({
         where: { profileId: 'profile' },
       });
 
-      if (body.videoAds.length > 0) {
+      if (videoAds.length > 0) {
         await prisma.linktreeVideoAd.createMany({
-          data: body.videoAds.map((ad: any, idx: number) => ({
+          data: videoAds.map((ad: any, idx: number) => ({
             id: isUUID(ad.id) ? ad.id : undefined,
-            title: ad.title || 'Iklan Video',
+            title: ad.title || `Iklan ${idx + 1}`,
             videoUrl: ad.videoUrl || '',
             targetUrl: ad.targetUrl || '',
             chromaEnable: ad.chromaEnable ?? true,
             chromaColor: ad.chromaColor || '#00FF00',
             chromaSimilarity: typeof ad.chromaSimilarity === 'number' ? ad.chromaSimilarity : 0.35,
             chromaSmoothness: typeof ad.chromaSmoothness === 'number' ? ad.chromaSmoothness : 0.1,
-            widthDesktop: typeof ad.widthDesktop === 'number' ? ad.widthDesktop : 200,
-            widthMobile: typeof ad.widthMobile === 'number' ? ad.widthMobile : 130,
-            position: ad.position || 'bottom-right',
-            offsetX: typeof ad.offsetX === 'number' ? ad.offsetX : 20,
-            offsetY: typeof ad.offsetY === 'number' ? ad.offsetY : 20,
-            zIndex: typeof ad.zIndex === 'number' ? ad.zIndex : 50,
             isEnabled: ad.isEnabled ?? true,
             orderIndex: idx,
             profileId: 'profile',
