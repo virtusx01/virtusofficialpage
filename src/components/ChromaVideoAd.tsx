@@ -198,34 +198,38 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
         ctx.drawImage(video, 0, 0, currentWidth, targetHeight);
 
         if (currentAd.chromaEnable ?? true) {
-          const imgData = ctx.getImageData(0, 0, currentWidth, targetHeight);
-          const data = imgData.data;
-          const len = data.length;
+          try {
+            const imgData = ctx.getImageData(0, 0, currentWidth, targetHeight);
+            const data = imgData.data;
+            const len = data.length;
 
-          const [keyR, keyG, keyB] = keyRgb;
-          const maxDist = 441.673;
-          const simDist = (currentAd.chromaSimilarity ?? 0.35) * maxDist;
-          const smoothDist = (currentAd.chromaSmoothness ?? 0.1) * maxDist;
+            const [keyR, keyG, keyB] = keyRgb;
+            const maxDist = 441.673;
+            const simDist = (currentAd.chromaSimilarity ?? 0.35) * maxDist;
+            const smoothDist = (currentAd.chromaSmoothness ?? 0.1) * maxDist;
 
-          for (let i = 0; i < len; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
+            for (let i = 0; i < len; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
 
-            const rDiff = r - keyR;
-            const gDiff = g - keyG;
-            const bDiff = b - keyB;
-            const dist = Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
+              const rDiff = r - keyR;
+              const gDiff = g - keyG;
+              const bDiff = b - keyB;
+              const dist = Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
 
-            if (dist < simDist) {
-              data[i + 3] = 0; // Fully transparent
-            } else if (dist < simDist + smoothDist && smoothDist > 0) {
-              const alphaRatio = (dist - simDist) / smoothDist;
-              data[i + 3] = Math.round(alphaRatio * 255);
+              if (dist < simDist) {
+                data[i + 3] = 0; // Fully transparent
+              } else if (dist < simDist + smoothDist && smoothDist > 0) {
+                const alphaRatio = (dist - simDist) / smoothDist;
+                data[i + 3] = Math.round(alphaRatio * 255);
+              }
             }
-          }
 
-          ctx.putImageData(imgData, 0, 0);
+            ctx.putImageData(imgData, 0, 0);
+          } catch (corsErr) {
+            // Video from external URL missing CORS header. Plain canvas render remains.
+          }
         }
       }
 

@@ -117,6 +117,41 @@ export async function GET() {
       });
     }
 
+    // Auto-migrate legacy single videoAdUrl to videoAds playlist if empty
+    if (profile && profile.videoAdUrl && (!profile.videoAds || profile.videoAds.length === 0)) {
+      await prisma.linktreeVideoAd.create({
+        data: {
+          profileId: 'profile',
+          title: 'Iklan Video 1',
+          videoUrl: profile.videoAdUrl,
+          targetUrl: profile.videoAdTargetUrl || '',
+          chromaEnable: profile.videoAdChromaEnable ?? true,
+          chromaColor: profile.videoAdChromaColor || '#00FF00',
+          chromaSimilarity: profile.videoAdChromaSimilarity ?? 0.35,
+          chromaSmoothness: profile.videoAdChromaSmoothness ?? 0.1,
+          widthDesktop: profile.videoAdWidth || 200,
+          widthMobile: 130,
+          position: profile.videoAdPosition || 'bottom-right',
+          offsetX: profile.videoAdOffsetX ?? 20,
+          offsetY: profile.videoAdOffsetY ?? 20,
+          zIndex: profile.videoAdZIndex ?? 50,
+          isEnabled: true,
+          orderIndex: 0,
+        },
+      });
+
+      profile = await prisma.linktreeProfile.findUnique({
+        where: { id: 'profile' },
+        include: {
+          links: { orderBy: { orderIndex: 'asc' } },
+          banners: { orderBy: { orderIndex: 'asc' } },
+          topButtons: { orderBy: { orderIndex: 'asc' } },
+          codes: { orderBy: { orderIndex: 'asc' } },
+          videoAds: { orderBy: { orderIndex: 'asc' } },
+        },
+      });
+    }
+
     return NextResponse.json(profile);
   } catch (error: any) {
     console.error('Error fetching linktree profile:', error);
