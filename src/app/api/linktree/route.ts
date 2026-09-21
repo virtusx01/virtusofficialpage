@@ -61,6 +61,7 @@ export async function GET() {
         banners: { orderBy: { orderIndex: 'asc' } },
         topButtons: { orderBy: { orderIndex: 'asc' } },
         codes: { orderBy: { orderIndex: 'asc' } },
+        videoAds: { orderBy: { orderIndex: 'asc' } },
       },
     });
 
@@ -92,6 +93,7 @@ export async function GET() {
           banners: { orderBy: { orderIndex: 'asc' } },
           topButtons: { orderBy: { orderIndex: 'asc' } },
           codes: { orderBy: { orderIndex: 'asc' } },
+          videoAds: { orderBy: { orderIndex: 'asc' } },
         },
       });
     } else if (!profile.codes || profile.codes.length === 0) {
@@ -110,6 +112,7 @@ export async function GET() {
           banners: { orderBy: { orderIndex: 'asc' } },
           topButtons: { orderBy: { orderIndex: 'asc' } },
           codes: { orderBy: { orderIndex: 'asc' } },
+          videoAds: { orderBy: { orderIndex: 'asc' } },
         },
       });
     }
@@ -354,6 +357,37 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Sync videoAds if provided
+    if (Array.isArray(body.videoAds)) {
+      await prisma.linktreeVideoAd.deleteMany({
+        where: { profileId: 'profile' },
+      });
+
+      if (body.videoAds.length > 0) {
+        await prisma.linktreeVideoAd.createMany({
+          data: body.videoAds.map((ad: any, idx: number) => ({
+            id: isUUID(ad.id) ? ad.id : undefined,
+            title: ad.title || 'Iklan Video',
+            videoUrl: ad.videoUrl || '',
+            targetUrl: ad.targetUrl || '',
+            chromaEnable: ad.chromaEnable ?? true,
+            chromaColor: ad.chromaColor || '#00FF00',
+            chromaSimilarity: typeof ad.chromaSimilarity === 'number' ? ad.chromaSimilarity : 0.35,
+            chromaSmoothness: typeof ad.chromaSmoothness === 'number' ? ad.chromaSmoothness : 0.1,
+            widthDesktop: typeof ad.widthDesktop === 'number' ? ad.widthDesktop : 200,
+            widthMobile: typeof ad.widthMobile === 'number' ? ad.widthMobile : 130,
+            position: ad.position || 'bottom-right',
+            offsetX: typeof ad.offsetX === 'number' ? ad.offsetX : 20,
+            offsetY: typeof ad.offsetY === 'number' ? ad.offsetY : 20,
+            zIndex: typeof ad.zIndex === 'number' ? ad.zIndex : 50,
+            isEnabled: ad.isEnabled ?? true,
+            orderIndex: idx,
+            profileId: 'profile',
+          })),
+        });
+      }
+    }
+
     const result = await prisma.linktreeProfile.findUnique({
       where: { id: 'profile' },
       include: {
@@ -361,6 +395,7 @@ export async function PUT(request: Request) {
         banners: { orderBy: { orderIndex: 'asc' } },
         topButtons: { orderBy: { orderIndex: 'asc' } },
         codes: { orderBy: { orderIndex: 'asc' } },
+        videoAds: { orderBy: { orderIndex: 'asc' } },
       },
     });
 

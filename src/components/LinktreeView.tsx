@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { SociabuzzLeaderboard } from '@/components/SociabuzzLeaderboard';
-import { ChromaVideoAd } from '@/components/ChromaVideoAd';
+import { ChromaVideoAd, VideoAdItem } from '@/components/ChromaVideoAd';
 import {
   Globe,
   MessageCircle,
@@ -115,6 +115,7 @@ export interface LinktreeProfileData {
   videoAdOffsetX?: number;
   videoAdOffsetY?: number;
   videoAdZIndex?: number;
+  videoAds?: VideoAdItem[];
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
   topButtons?: LinktreeTopButtonItem[];
@@ -891,8 +892,9 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
       />
 
       {/* Chroma Key Video Overlay Ad */}
-      {profile.showVideoAd && profile.videoAdUrl && (
+      {profile.showVideoAd && (
         <ChromaVideoAd
+          ads={profile.videoAds}
           videoUrl={profile.videoAdUrl}
           targetUrl={profile.videoAdTargetUrl}
           chromaEnable={profile.videoAdChromaEnable}

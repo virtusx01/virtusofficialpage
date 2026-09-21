@@ -66,8 +66,9 @@ model LinktreeProfile {
   banners          LinktreeBanner[]
   topButtons       LinktreeTopButton[]
   codes            LinktreeCode[]
+  videoAds         LinktreeVideoAd[]
 
-  // Chroma Key MP4 Video Ad Settings
+  // Master switch for Video Ad Overlay
   showVideoAd            Boolean        @default(false)
   videoAdUrl             String         @default("")
   videoAdTargetUrl       String         @default("")
@@ -82,6 +83,29 @@ model LinktreeProfile {
   videoAdZIndex          Int            @default(50)
 
   updatedAt        DateTime       @updatedAt
+}
+
+model LinktreeVideoAd {
+  id               String          @id @default(uuid())
+  title            String          @default("Iklan Video")
+  videoUrl         String          @default("")
+  targetUrl        String          @default("")
+  chromaEnable     Boolean         @default(true)
+  chromaColor      String          @default("#00FF00")
+  chromaSimilarity Float           @default(0.35)
+  chromaSmoothness Float           @default(0.1)
+  widthDesktop     Int             @default(200)
+  widthMobile      Int             @default(130)
+  position         String          @default("bottom-right") // bottom-right, bottom-left, top-right, top-left
+  offsetX          Int             @default(20)
+  offsetY          Int             @default(20)
+  zIndex           Int             @default(50)
+  isEnabled        Boolean         @default(true)
+  orderIndex       Int             @default(0)
+  profileId        String          @default("profile")
+  profile          LinktreeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
 model LinktreeLink {
