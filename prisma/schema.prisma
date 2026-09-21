@@ -66,6 +66,21 @@ model LinktreeProfile {
   banners          LinktreeBanner[]
   topButtons       LinktreeTopButton[]
   codes            LinktreeCode[]
+
+  // Chroma Key MP4 Video Ad Settings
+  showVideoAd            Boolean        @default(false)
+  videoAdUrl             String         @default("")
+  videoAdTargetUrl       String         @default("")
+  videoAdChromaEnable    Boolean        @default(true)
+  videoAdChromaColor     String         @default("#00FF00")
+  videoAdChromaSimilarity Float         @default(0.35)
+  videoAdChromaSmoothness Float         @default(0.1)
+  videoAdWidth           Int            @default(180)
+  videoAdPosition        String         @default("bottom-right") // bottom-right, bottom-left, top-right, top-left, custom
+  videoAdOffsetX         Int            @default(20)
+  videoAdOffsetY         Int            @default(20)
+  videoAdZIndex          Int            @default(50)
+
   updatedAt        DateTime       @updatedAt
 }
 

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { SociabuzzLeaderboard } from '@/components/SociabuzzLeaderboard';
+import { ChromaVideoAd } from '@/components/ChromaVideoAd';
 import {
   Globe,
   MessageCircle,
@@ -102,6 +103,18 @@ export interface LinktreeProfileData {
   leaderboardHeaderColor?: string;
   leaderboardHeaderFont?: string;
   leaderboardHeaderSize?: string;
+  showVideoAd?: boolean;
+  videoAdUrl?: string;
+  videoAdTargetUrl?: string;
+  videoAdChromaEnable?: boolean;
+  videoAdChromaColor?: string;
+  videoAdChromaSimilarity?: number;
+  videoAdChromaSmoothness?: number;
+  videoAdWidth?: number;
+  videoAdPosition?: string;
+  videoAdOffsetX?: number;
+  videoAdOffsetY?: number;
+  videoAdZIndex?: number;
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
   topButtons?: LinktreeTopButtonItem[];
@@ -876,6 +889,23 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
           links: profile.links,
         }}
       />
+
+      {/* Chroma Key Video Overlay Ad */}
+      {profile.showVideoAd && profile.videoAdUrl && (
+        <ChromaVideoAd
+          videoUrl={profile.videoAdUrl}
+          targetUrl={profile.videoAdTargetUrl}
+          chromaEnable={profile.videoAdChromaEnable}
+          chromaColor={profile.videoAdChromaColor}
+          chromaSimilarity={profile.videoAdChromaSimilarity}
+          chromaSmoothness={profile.videoAdChromaSmoothness}
+          width={profile.videoAdWidth}
+          position={profile.videoAdPosition}
+          offsetX={profile.videoAdOffsetX}
+          offsetY={profile.videoAdOffsetY}
+          zIndex={profile.videoAdZIndex}
+        />
+      )}
     </div>
   );
 }
