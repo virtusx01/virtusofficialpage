@@ -95,11 +95,6 @@ model LinktreeProfile {
   socialIconCustomBg     String         @default("") // Hex color string if custom bg
   socialIconShape        String         @default("circle") // "circle" | "rounded" | "square" | "pill"
 
-  // Bio Hyperlinks Customization
-  bioLinkColor           String         @default("") // Custom hex color for bio links e.g. #38bdf8
-  bioLinkBold            Boolean        @default(true)
-  bioLinkUnderline       Boolean        @default(true)
-
   updatedAt        DateTime       @updatedAt
 }
 

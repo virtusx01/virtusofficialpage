@@ -5,7 +5,6 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Footer from "@/components/Footer";
-import { renderFormattedBio } from "@/components/LinktreeView";
 import { ChromaVideoAd } from "@/components/ChromaVideoAd";
 import {
   ArrowLeft,
@@ -150,9 +149,6 @@ interface ProfileData {
   socialIconBg?: string;
   socialIconCustomBg?: string;
   socialIconShape?: string;
-  bioLinkColor?: string;
-  bioLinkBold?: boolean;
-  bioLinkUnderline?: boolean;
   videoAds?: VideoAdItem[];
   links: LinkItem[];
   banners: BannerItem[];
@@ -250,9 +246,6 @@ export default function EditLinktreePage() {
     socialIconBg: "glass",
     socialIconCustomBg: "",
     socialIconShape: "circle",
-    bioLinkColor: "",
-    bioLinkBold: true,
-    bioLinkUnderline: true,
     videoAds: [],
     links: [],
     banners: [],
@@ -263,6 +256,31 @@ export default function EditLinktreePage() {
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [faviconUploading, setFaviconUploading] = useState(false);
   const [faviconSuccess, setFaviconSuccess] = useState(false);
+
+  // Bio Link Generator States
+  const [bioLinkText, setBioLinkText] = useState("Aoi");
+  const [bioLinkUrl, setBioLinkUrl] = useState("https://tiktok.com/@onlyvirtus");
+  const [bioLinkBold, setBioLinkBold] = useState(true);
+  const [bioLinkUnderline, setBioLinkUnderline] = useState(true);
+  const [bioLinkColor, setBioLinkColor] = useState("#38bdf8");
+  const [showBioLinkModal, setShowBioLinkModal] = useState(false);
+
+  const insertBioLink = () => {
+    if (!bioLinkText.trim() || !bioLinkUrl.trim()) return;
+    const opts: string[] = [];
+    if (bioLinkColor) opts.push(bioLinkColor);
+    if (bioLinkBold) opts.push("bold");
+    if (bioLinkUnderline) opts.push("underline");
+
+    const optString = opts.length > 0 ? `|${opts.join("|")}` : "";
+    const markdownSyntax = `[${bioLinkText.trim()}](${bioLinkUrl.trim()}${optString})`;
+
+    setProfile((prev) => ({
+      ...prev,
+      bio: prev.bio ? `${prev.bio} ${markdownSyntax}` : markdownSyntax,
+    }));
+    setShowBioLinkModal(false);
+  };
 
   const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.85): Promise<Blob> => {
     return new Promise((resolve) => {
@@ -1381,79 +1399,117 @@ export default function EditLinktreePage() {
                     rows={3}
                     value={profile.bio}
                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100 resize-none"
-                    placeholder="Tuliskan bio... Gunakan [Teks Link](https://url) untuk membuat kata yang bisa diklik."
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100 resize-none font-mono"
+                    placeholder="Tuliskan bio atau informasi singkat..."
                   />
-                  <p className="text-[11px] text-cyan-400 mt-1 font-medium flex items-center gap-1">
-                    <span>💡 Tips Link Bio: Tulis format <code className="bg-slate-900 text-cyan-300 px-1 py-0.5 rounded font-mono text-[10px]">[Aoi](https://tiktok.com/@...)</code> untuk membuat kata Aoi ber-link.</span>
-                  </p>
 
-                  {/* Kostumisasi Link Bio */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3 mt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Kustomisasi Gaya Link di Bio</span>
-                      </span>
-                      <span className="text-[10px] text-cyan-400 font-mono">Format [Teks](URL)</span>
-                    </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <p className="text-[10px] text-slate-400">
+                      Gunakan format <code className="text-cyan-400 font-mono">[Teks](URL|#warna|bold|underline)</code>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowBioLinkModal(!showBioLinkModal)}
+                      className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-800/50 flex items-center gap-1 cursor-pointer transition-all shadow-sm shrink-0"
+                    >
+                      <LinkIcon className="w-3 h-3 text-cyan-400" />
+                      <span>+ Sisipkan Link Bio</span>
+                    </button>
+                  </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] text-slate-400 mb-1">Warna Link Bio</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={profile.bioLinkColor?.startsWith("#") ? profile.bioLinkColor : "#38bdf8"}
-                            onChange={(e) => setProfile({ ...profile, bioLinkColor: e.target.value })}
-                            className="h-8 w-9 rounded-lg bg-slate-900 border border-slate-700 cursor-pointer shrink-0"
-                          />
+                  {showBioLinkModal && (
+                    <div className="mt-3 p-3.5 rounded-xl bg-slate-950 border border-cyan-800/60 space-y-3 animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Generator Link Teks Bio Kustom</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowBioLinkModal(false)}
+                          className="text-[10px] text-slate-500 hover:text-slate-300"
+                        >
+                          Tutup
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] text-slate-300 font-semibold mb-1">Teks Link (misal: Aoi)</label>
                           <input
                             type="text"
-                            value={profile.bioLinkColor || ""}
-                            onChange={(e) => setProfile({ ...profile, bioLinkColor: e.target.value })}
-                            placeholder="Default / #38bdf8"
-                            className="w-full px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
+                            value={bioLinkText}
+                            onChange={(e) => setBioLinkText(e.target.value)}
+                            placeholder="Aoi"
+                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-100 focus:border-cyan-500"
                           />
-                          {profile.bioLinkColor && (
-                            <button
-                              type="button"
-                              onClick={() => setProfile({ ...profile, bioLinkColor: "" })}
-                              className="text-[10px] px-2 py-1 bg-slate-800 text-slate-400 hover:text-white rounded shrink-0"
-                            >
-                              Reset
-                            </button>
-                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] text-slate-300 font-semibold mb-1">URL Target (misal TikTok)</label>
+                          <input
+                            type="text"
+                            value={bioLinkUrl}
+                            onChange={(e) => setBioLinkUrl(e.target.value)}
+                            placeholder="https://tiktok.com/@onlyvirtus"
+                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-100 focus:border-cyan-500 font-mono"
+                          />
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-                        <span className="text-xs text-slate-300 font-medium">Teks Tebal (Bold)</span>
-                        <label className="relative inline-flex items-center cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={profile.bioLinkBold ?? true}
-                            onChange={(e) => setProfile({ ...profile, bioLinkBold: e.target.checked })}
-                            className="sr-only peer"
-                          />
-                          <div className="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-cyan-500"></div>
-                        </label>
-                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center pt-2 border-t border-slate-800/60">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">Warna Teks Link</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={bioLinkColor.startsWith("#") ? bioLinkColor : "#38bdf8"}
+                              onChange={(e) => setBioLinkColor(e.target.value)}
+                              className="h-8 w-8 rounded bg-slate-900 border border-slate-800 cursor-pointer shrink-0"
+                            />
+                            <input
+                              type="text"
+                              value={bioLinkColor}
+                              onChange={(e) => setBioLinkColor(e.target.value)}
+                              className="w-full px-2 py-1 bg-slate-900 border border-slate-800 rounded text-xs font-mono text-slate-200 outline-none"
+                            />
+                          </div>
+                        </div>
 
-                      <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-                        <span className="text-xs text-slate-300 font-medium">Garis Bawah (Underline)</span>
-                        <label className="relative inline-flex items-center cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={profile.bioLinkUnderline ?? true}
-                            onChange={(e) => setProfile({ ...profile, bioLinkUnderline: e.target.checked })}
-                            className="sr-only peer"
-                          />
-                          <div className="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-cyan-500"></div>
-                        </label>
+                        <div className="flex items-center gap-4 pt-2 sm:pt-0">
+                          <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={bioLinkBold}
+                              onChange={(e) => setBioLinkBold(e.target.checked)}
+                              className="rounded border-slate-700 text-cyan-500"
+                            />
+                            <span className="font-bold">Tebal</span>
+                          </label>
+
+                          <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={bioLinkUnderline}
+                              onChange={(e) => setBioLinkUnderline(e.target.checked)}
+                              className="rounded border-slate-700 text-cyan-500"
+                            />
+                            <span className="underline">Garis Bawah</span>
+                          </label>
+                        </div>
+
+                        <div className="flex justify-end pt-2 sm:pt-0">
+                          <button
+                            type="button"
+                            onClick={insertBioLink}
+                            className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                          >
+                            + Sisipkan Ke Bio
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div>
@@ -3081,7 +3137,7 @@ export default function EditLinktreePage() {
                     className="w-16 h-16 rounded-full object-cover border-2 border-violet-500 shadow-md"
                   />
                   <h3 className="font-bold text-slate-100">{profile.name || "Virtus Official"}</h3>
-                  <p className="text-xs text-slate-400 px-2 whitespace-pre-line">{renderFormattedBio(profile.bio, profile)}</p>
+                  <p className="text-xs text-slate-400 px-2 whitespace-pre-line">{profile.bio}</p>
 
                   {/* Mini Preview Social Icons Bar */}
                   {(profile.showSocialHeaderIcons ?? true) && profile.socialIconPosition !== "disabled" && (

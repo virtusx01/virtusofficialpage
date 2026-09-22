@@ -202,9 +202,6 @@ export async function PUT(request: Request) {
       socialIconBg,
       socialIconCustomBg,
       socialIconShape,
-      bioLinkColor,
-      bioLinkBold,
-      bioLinkUnderline,
       videoAds,
       links,
       banners,
@@ -266,9 +263,6 @@ export async function PUT(request: Request) {
         ...(socialIconBg !== undefined && { socialIconBg }),
         ...(socialIconCustomBg !== undefined && { socialIconCustomBg }),
         ...(socialIconShape !== undefined && { socialIconShape }),
-        ...(bioLinkColor !== undefined && { bioLinkColor }),
-        ...(bioLinkBold !== undefined && { bioLinkBold }),
-        ...(bioLinkUnderline !== undefined && { bioLinkUnderline }),
       },
       create: {
         id: 'profile',
@@ -322,9 +316,6 @@ export async function PUT(request: Request) {
         socialIconBg: socialIconBg || 'glass',
         socialIconCustomBg: socialIconCustomBg || '',
         socialIconShape: socialIconShape || 'circle',
-        bioLinkColor: bioLinkColor || '',
-        bioLinkBold: bioLinkBold ?? true,
-        bioLinkUnderline: bioLinkUnderline ?? true,
       },
     });
 

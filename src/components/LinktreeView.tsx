@@ -127,9 +127,6 @@ export interface LinktreeProfileData {
   socialIconBg?: string;
   socialIconCustomBg?: string;
   socialIconShape?: string;
-  bioLinkColor?: string;
-  bioLinkBold?: boolean;
-  bioLinkUnderline?: boolean;
   videoAds?: any[];
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
@@ -389,62 +386,126 @@ const renderSocialHeaderIcons = (profile: LinktreeProfileData, itemVariants: any
   );
 };
 
-export const renderFormattedBio = (bioText: string, profile: LinktreeProfileData) => {
-  if (!bioText) return null;
+const renderFormattedBioText = (bio: string) => {
+  if (!bio) return null;
 
-  // Regex to match markdown links [label](url)
-  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
+  const parseBioContent = (text: string) => {
+    // Regex matches markdown links: [Text](URL) or [Text](URL|color|bold|underline) OR HTML <a> tags
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)|<a\s+(?:[^>]*?\bhref=["']([^"']+)["'])?[^>]*>(.*?)<\/a>/gi;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
 
-  const isBold = profile.bioLinkBold ?? true;
-  const isUnderline = profile.bioLinkUnderline ?? true;
-  const customColor = profile.bioLinkColor;
+    while ((match = linkRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        const plainText = text.substring(lastIndex, match.index);
+        parts.push(parseFormattedSubText(plainText, `plain-${lastIndex}`));
+      }
 
-  const linkClasses = [
-    'transition-all hover:opacity-80 inline-block',
-    isBold ? 'font-bold' : 'font-medium',
-    isUnderline ? 'underline underline-offset-2 decoration-current' : 'no-underline',
-  ].join(' ');
+      if (match[1] && match[2]) {
+        // Markdown style: [Text](URL|options)
+        const label = match[1];
+        const rawUrl = match[2];
+        const urlParts = rawUrl.split('|');
+        const url = urlParts[0].trim();
+        const colorOpt = urlParts[1]?.trim();
+        const isBold = rawUrl.toLowerCase().includes('bold') || rawUrl.toLowerCase().includes('b');
+        const isUnderline = rawUrl.toLowerCase().includes('underline') || rawUrl.toLowerCase().includes('u');
 
-  const linkStyle: React.CSSProperties = customColor
-    ? { color: customColor }
-    : {};
+        let linkColorStyle: React.CSSProperties = {};
+        let linkClass = 'transition-all hover:opacity-80 inline-block cursor-pointer font-semibold';
 
-  let keyCounter = 0;
+        if (colorOpt && (colorOpt.startsWith('#') || colorOpt.startsWith('rgb') || colorOpt.startsWith('hsl'))) {
+          linkColorStyle.color = colorOpt;
+        } else if (colorOpt && colorOpt !== 'bold' && colorOpt !== 'underline') {
+          if (colorOpt === 'cyan') linkClass += ' text-cyan-400';
+          else if (colorOpt === 'gold' || colorOpt === 'amber') linkClass += ' text-amber-400';
+          else if (colorOpt === 'pink') linkClass += ' text-pink-400';
+          else if (colorOpt === 'emerald' || colorOpt === 'green') linkClass += ' text-emerald-400';
+          else if (colorOpt === 'red') linkClass += ' text-red-400';
+          else linkClass += ` text-${colorOpt}`;
+        } else {
+          linkClass += ' text-cyan-400';
+        }
 
-  while ((match = linkRegex.exec(bioText)) !== null) {
-    const textBefore = bioText.substring(lastIndex, match.index);
-    if (textBefore) {
-      parts.push(<React.Fragment key={`text-${keyCounter++}`}>{textBefore}</React.Fragment>);
+        if (isBold) linkClass += ' font-extrabold';
+        if (isUnderline) linkClass += ' underline underline-offset-2';
+
+        parts.push(
+          <a
+            key={`link-${match.index}`}
+            href={url}
+            target={url.startsWith('http') ? '_blank' : '_self'}
+            rel="noopener noreferrer"
+            style={linkColorStyle}
+            className={linkClass}
+          >
+            {label}
+          </a>
+        );
+      } else if (match[4]) {
+        // HTML <a> tag
+        const url = match[3] || '#';
+        const label = match[4];
+        parts.push(
+          <a
+            key={`html-link-${match.index}`}
+            href={url}
+            target={url.startsWith('http') ? '_blank' : '_self'}
+            rel="noopener noreferrer"
+            className="text-cyan-400 font-bold underline underline-offset-2 hover:opacity-80 transition-all inline-block"
+          >
+            {label}
+          </a>
+        );
+      }
+
+      lastIndex = linkRegex.lastIndex;
     }
 
-    const label = match[1];
-    const url = match[2];
+    if (lastIndex < text.length) {
+      parts.push(parseFormattedSubText(text.substring(lastIndex), `plain-${lastIndex}`));
+    }
 
-    parts.push(
-      <a
-        key={`link-${keyCounter++}`}
-        href={url}
-        target={url.startsWith('http') ? '_blank' : '_self'}
-        rel="noopener noreferrer"
-        style={linkStyle}
-        className={`${linkClasses} ${!customColor ? 'text-cyan-300 hover:text-cyan-200' : ''}`}
-      >
-        {label}
-      </a>
-    );
+    return parts;
+  };
 
-    lastIndex = linkRegex.lastIndex;
-  }
+  const parseFormattedSubText = (text: string, keyPrefix: string) => {
+    const lines = text.split('\n');
+    return lines.map((line, lineIdx) => {
+      const inlineRegex = /\*\*([^*]+)\*\*|<u>(.*?)<\/u>/g;
+      const inlineParts: React.ReactNode[] = [];
+      let lastIdx = 0;
+      let inMatch: RegExpExecArray | null;
 
-  const remainingText = bioText.substring(lastIndex);
-  if (remainingText) {
-    parts.push(<React.Fragment key={`text-${keyCounter++}`}>{remainingText}</React.Fragment>);
-  }
+      while ((inMatch = inlineRegex.exec(line)) !== null) {
+        if (inMatch.index > lastIdx) {
+          inlineParts.push(line.substring(lastIdx, inMatch.index));
+        }
 
-  return parts;
+        if (inMatch[1]) {
+          inlineParts.push(<strong key={`${keyPrefix}-b-${inMatch.index}`} className="font-bold">{inMatch[1]}</strong>);
+        } else if (inMatch[2]) {
+          inlineParts.push(<u key={`${keyPrefix}-u-${inMatch.index}`} className="underline underline-offset-2">{inMatch[2]}</u>);
+        }
+
+        lastIdx = inlineRegex.lastIndex;
+      }
+
+      if (lastIdx < line.length) {
+        inlineParts.push(line.substring(lastIdx));
+      }
+
+      return (
+        <React.Fragment key={`${keyPrefix}-line-${lineIdx}`}>
+          {inlineParts}
+          {lineIdx < lines.length - 1 && <br />}
+        </React.Fragment>
+      );
+    });
+  };
+
+  return parseBioContent(bio);
 };
 
 const AutoScrollText = ({
@@ -754,8 +815,8 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
               <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${currentTheme.textColor}`}>
                 {profile.name}
               </h1>
-              <p className={`text-sm leading-relaxed max-w-xs mx-auto font-medium whitespace-pre-line ${currentTheme.subColor}`}>
-                {renderFormattedBio(profile.bio, profile)}
+              <p className={`text-sm leading-relaxed max-w-xs mx-auto font-medium ${currentTheme.subColor}`}>
+                {renderFormattedBioText(profile.bio)}
               </p>
 
               {/* Social Media Header Icons (Bawah Judul & Bio) */}
