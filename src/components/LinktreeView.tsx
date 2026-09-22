@@ -239,12 +239,12 @@ const renderLinkIcon = (link: LinktreeItem) => {
       return (
         <div
           style={{ width: `${clampedWidth}px`, height: '56px' }}
-          className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-full"
+          className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-full rounded-2xl"
         >
           <img
             src={link.customIconUrl}
             alt={link.title}
-            className="w-full h-full object-contain drop-shadow-sm rounded-lg"
+            className={`w-full h-full ${clampedWidth <= 64 ? 'object-cover' : 'object-contain'} drop-shadow-sm rounded-2xl`}
             loading="lazy"
           />
         </div>
@@ -254,12 +254,12 @@ const renderLinkIcon = (link: LinktreeItem) => {
     return (
       <div
         style={{ width: `${clampedWidth}px`, height: '36px' }}
-        className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-[120px]"
+        className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-[120px] rounded-full"
       >
         <img
           src={link.customIconUrl}
           alt={link.title}
-          className="w-full h-full object-contain drop-shadow-sm rounded"
+          className={`w-full h-full ${clampedWidth <= 48 ? 'object-cover' : 'object-contain'} drop-shadow-sm rounded-full`}
           loading="lazy"
         />
       </div>
@@ -366,13 +366,13 @@ const renderSocialHeaderIcons = (profile: LinktreeProfileData, itemVariants: any
             whileTap={{ scale: 0.92 }}
             title={link.title}
             style={inlineBgStyle}
-            className={`flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0 ${sizeStyle.btn} ${shapeClass} ${bgClass}`}
+            className={`flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0 overflow-hidden ${sizeStyle.btn} ${shapeClass} ${bgClass}`}
           >
             {link.customIconUrl && link.customIconUrl.trim() ? (
               <img
                 src={link.customIconUrl}
                 alt={link.title}
-                className={`${sizeStyle.icon} object-contain rounded`}
+                className={`w-full h-full object-cover ${shapeClass}`}
               />
             ) : (
               <div className={`flex items-center justify-center ${sizeStyle.icon} [&>svg]:w-full [&>svg]:h-full`}>
