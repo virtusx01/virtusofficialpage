@@ -42,6 +42,7 @@ export interface LinktreeItem {
   sectionBgColor?: string;
   sectionTextColor?: string;
   waCustomMessage?: string;
+  showInHeaderIcons?: boolean;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -117,6 +118,15 @@ export interface LinktreeProfileData {
   videoAdOffsetX?: number;
   videoAdOffsetY?: number;
   videoAdZIndex?: number;
+  showSocialHeaderIcons?: boolean;
+  socialIconPosition?: string;
+  socialIconSize?: string;
+  socialIconGap?: string;
+  socialIconColor?: string;
+  socialIconUseBrandColor?: boolean;
+  socialIconBg?: string;
+  socialIconCustomBg?: string;
+  socialIconShape?: string;
   videoAds?: any[];
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
@@ -271,6 +281,108 @@ const renderLinkIcon = (link: LinktreeItem) => {
     <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner shrink-0 group-hover:scale-110 transition-transform duration-300">
       {getIconComponent(link.icon)}
     </div>
+  );
+};
+
+const renderSocialHeaderIcons = (profile: LinktreeProfileData, itemVariants: any) => {
+  if (profile.showSocialHeaderIcons === false || profile.socialIconPosition === 'disabled') return null;
+
+  const headerLinks = (profile.links || []).filter(
+    (l) => l.isEnabled && l.showInHeaderIcons !== false
+  );
+
+  if (headerLinks.length === 0) return null;
+
+  // Size mapping
+  const sizeMap: Record<string, { btn: string; icon: string }> = {
+    sm: { btn: 'w-8 h-8', icon: 'w-4 h-4' },
+    md: { btn: 'w-10 h-10', icon: 'w-5 h-5' },
+    lg: { btn: 'w-12 h-12', icon: 'w-6 h-6' },
+    xl: { btn: 'w-14 h-14', icon: 'w-7 h-7' },
+  };
+  const sizeStyle = sizeMap[profile.socialIconSize || 'md'] || sizeMap.md;
+
+  // Gap mapping
+  const gapMap: Record<string, string> = {
+    sm: 'gap-2',
+    md: 'gap-3',
+    lg: 'gap-4.5',
+    xl: 'gap-6',
+  };
+  const gapClass = gapMap[profile.socialIconGap || 'md'] || 'gap-3';
+
+  // Shape mapping
+  const shapeMap: Record<string, string> = {
+    circle: 'rounded-full',
+    rounded: 'rounded-xl',
+    square: 'rounded-md',
+    pill: 'rounded-2xl',
+  };
+  const shapeClass = shapeMap[profile.socialIconShape || 'circle'] || 'rounded-full';
+
+  // Bg style
+  const bgType = profile.socialIconBg || 'glass';
+  let bgClass = '';
+  let inlineBgStyle: React.CSSProperties = {};
+
+  if (bgType === 'transparent') {
+    bgClass = 'bg-transparent hover:bg-white/10 border border-transparent text-white';
+  } else if (bgType === 'solid') {
+    bgClass = 'bg-slate-900/90 hover:bg-slate-800 border border-slate-700/60 shadow-md text-white';
+  } else if (bgType === 'custom' && profile.socialIconCustomBg) {
+    bgClass = 'hover:brightness-110 border border-white/20 shadow-sm text-white';
+    inlineBgStyle.backgroundColor = profile.socialIconCustomBg;
+  } else {
+    // default glass
+    bgClass = 'bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 shadow-sm text-white';
+  }
+
+  if (profile.socialIconColor) {
+    inlineBgStyle.color = profile.socialIconColor;
+  }
+
+  return (
+    <motion.div variants={itemVariants} className={`flex items-center justify-center flex-wrap ${gapClass} pt-2.5 pb-1 px-4 w-full`}>
+      {headerLinks.map((link) => {
+        let targetUrl = link.url;
+        const isWa =
+          link.icon?.toLowerCase().includes('whatsapp') ||
+          link.icon?.toLowerCase() === 'wa' ||
+          link.url.includes('wa.me') ||
+          link.url.includes('whatsapp.com');
+
+        if (isWa && link.waCustomMessage && link.waCustomMessage.trim() && !targetUrl.includes('text=')) {
+          const separator = targetUrl.includes('?') ? '&' : '?';
+          targetUrl = `${targetUrl}${separator}text=${encodeURIComponent(link.waCustomMessage.trim())}`;
+        }
+
+        return (
+          <motion.a
+            key={link.id}
+            href={targetUrl}
+            target={targetUrl.startsWith('http') ? '_blank' : '_self'}
+            rel="noopener noreferrer"
+            whileHover={{ scale: 1.15, y: -2 }}
+            whileTap={{ scale: 0.92 }}
+            title={link.title}
+            style={inlineBgStyle}
+            className={`flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0 ${sizeStyle.btn} ${shapeClass} ${bgClass}`}
+          >
+            {link.customIconUrl && link.customIconUrl.trim() ? (
+              <img
+                src={link.customIconUrl}
+                alt={link.title}
+                className={`${sizeStyle.icon} object-contain rounded`}
+              />
+            ) : (
+              <div className={`flex items-center justify-center ${sizeStyle.icon} [&>svg]:w-full [&>svg]:h-full`}>
+                {getIconComponent(link.icon)}
+              </div>
+            )}
+          </motion.a>
+        );
+      })}
+    </motion.div>
   );
 };
 
@@ -585,6 +697,10 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                 {profile.bio}
               </p>
 
+              {/* Social Media Header Icons (Bawah Judul & Bio) */}
+              {(profile.socialIconPosition === 'under_bio' || !profile.socialIconPosition) &&
+                renderSocialHeaderIcons(profile, itemVariants)}
+
               {/* Sensitivity & Game Codes (Located under Bio) */}
               {profile.codes && profile.codes.filter((c) => c.isEnabled).length > 0 && (
                 <div className="pt-2 w-full max-w-xs mx-auto space-y-2">
@@ -646,6 +762,9 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                 />
               </motion.div>
             )}
+
+            {/* Social Media Header Icons (Di Atas Links List) */}
+            {profile.socialIconPosition === 'above_links' && renderSocialHeaderIcons(profile, itemVariants)}
 
             {/* Links List with Dynamic Section Headers */}
             <motion.div variants={containerVariants} className="w-full space-y-3.5 px-1">

@@ -84,6 +84,17 @@ model LinktreeProfile {
   videoAdOffsetY         Int            @default(20)
   videoAdZIndex          Int            @default(50)
 
+  // Social Media Header Icons Customization
+  showSocialHeaderIcons  Boolean        @default(true)
+  socialIconPosition     String         @default("under_bio") // "under_bio" | "above_links" | "disabled"
+  socialIconSize         String         @default("md") // "sm" | "md" | "lg" | "xl"
+  socialIconGap          String         @default("md") // "sm" | "md" | "lg" | "xl"
+  socialIconColor        String         @default("") // Hex color string or empty
+  socialIconUseBrandColor Boolean       @default(false) // Whether to use brand original colors
+  socialIconBg           String         @default("glass") // "transparent" | "glass" | "solid" | "custom"
+  socialIconCustomBg     String         @default("") // Hex color string if custom bg
+  socialIconShape        String         @default("circle") // "circle" | "rounded" | "square" | "pill"
+
   updatedAt        DateTime       @updatedAt
 }
 
@@ -102,6 +113,7 @@ model LinktreeLink {
   sectionBgColor  String          @default("")
   sectionTextColor String         @default("")
   waCustomMessage String          @default("")
+  showInHeaderIcons Boolean       @default(true)
   isEnabled       Boolean         @default(true)
   orderIndex      Int             @default(0)
   profileId       String          @default("profile")

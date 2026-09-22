@@ -51,6 +51,7 @@ interface LinkItem {
   sectionBgColor?: string;
   sectionTextColor?: string;
   waCustomMessage?: string;
+  showInHeaderIcons?: boolean;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -139,6 +140,15 @@ interface ProfileData {
   videoAdOffsetX?: number;
   videoAdOffsetY?: number;
   videoAdZIndex?: number;
+  showSocialHeaderIcons?: boolean;
+  socialIconPosition?: string;
+  socialIconSize?: string;
+  socialIconGap?: string;
+  socialIconColor?: string;
+  socialIconUseBrandColor?: boolean;
+  socialIconBg?: string;
+  socialIconCustomBg?: string;
+  socialIconShape?: string;
   videoAds?: VideoAdItem[];
   links: LinkItem[];
   banners: BannerItem[];
@@ -227,6 +237,15 @@ export default function EditLinktreePage() {
     videoAdOffsetX: 20,
     videoAdOffsetY: 20,
     videoAdZIndex: 50,
+    showSocialHeaderIcons: true,
+    socialIconPosition: "under_bio",
+    socialIconSize: "md",
+    socialIconGap: "md",
+    socialIconColor: "",
+    socialIconUseBrandColor: false,
+    socialIconBg: "glass",
+    socialIconCustomBg: "",
+    socialIconShape: "circle",
     videoAds: [],
     links: [],
     banners: [],
@@ -1516,6 +1535,286 @@ export default function EditLinktreePage() {
               </div>
             </div>
 
+            {/* Section 1.1: Deretan Icon Social Media (Bawah Judul Virtus Official) */}
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-blue-800/40 space-y-6 shadow-xl">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                      <span>Icon Social Media Header (Bawah Judul Virtus Official)</span>
+                      <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono border border-cyan-500/30">
+                        Linktree Icon Bar
+                      </span>
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Tampilkan deretan logo/icon sosial media tepat di bawah judul/bio Virtus Official dengan pilihan kustomisasi ukuran, jarak, warna, background, dan bentuk.
+                    </p>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={profile.showSocialHeaderIcons ?? true}
+                    onChange={(e) => setProfile({ ...profile, showSocialHeaderIcons: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <span className="ml-2 text-xs font-semibold text-slate-300">
+                    {(profile.showSocialHeaderIcons ?? true) ? 'AKTIF' : 'NONAKTIF'}
+                  </span>
+                </label>
+              </div>
+
+              {(profile.showSocialHeaderIcons ?? true) && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  {/* 1. Posisi Penempatan Icon Bar */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-200 mb-2">Posisi Penempatan Icon Bar</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { id: "under_bio", label: "📌 Bawah Judul & Bio (Default)", desc: "Tepat di bawah Virtus Official" },
+                        { id: "above_links", label: "📋 Di Atas Links List", desc: "Di atas daftar link utama" },
+                        { id: "disabled", label: "🚫 Sembunyikan Bar", desc: "Nonaktifkan icon bar header" },
+                      ].map((pos) => (
+                        <button
+                          key={pos.id}
+                          type="button"
+                          onClick={() => setProfile({ ...profile, socialIconPosition: pos.id })}
+                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                            (profile.socialIconPosition || "under_bio") === pos.id
+                              ? "bg-blue-900/40 border-blue-500 text-white font-bold shadow-md ring-1 ring-blue-500/50"
+                              : "bg-slate-950/70 border-slate-800 text-slate-400 hover:bg-slate-900 hover:text-slate-200"
+                          }`}
+                        >
+                          <div className="text-xs font-semibold">{pos.label}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">{pos.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Ukuran Icon & Jarak Spacing */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">Ukuran Icon (Icon Size)</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { id: "sm", label: "Kecil (S)" },
+                          { id: "md", label: "Sedang (M)" },
+                          { id: "lg", label: "Besar (L)" },
+                          { id: "xl", label: "Extra (XL)" },
+                        ].map((sz) => (
+                          <button
+                            key={sz.id}
+                            type="button"
+                            onClick={() => setProfile({ ...profile, socialIconSize: sz.id })}
+                            className={`py-2 px-1 rounded-lg border text-center text-xs font-semibold transition-all cursor-pointer ${
+                              (profile.socialIconSize || "md") === sz.id
+                                ? "bg-violet-600 text-white border-violet-400 font-bold"
+                                : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800"
+                            }`}
+                          >
+                            {sz.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">Jarak Spacing (Gap)</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { id: "sm", label: "Rapat" },
+                          { id: "md", label: "Sedang" },
+                          { id: "lg", label: "Renggang" },
+                          { id: "xl", label: "Jauh" },
+                        ].map((gp) => (
+                          <button
+                            key={gp.id}
+                            type="button"
+                            onClick={() => setProfile({ ...profile, socialIconGap: gp.id })}
+                            className={`py-2 px-1 rounded-lg border text-center text-xs font-semibold transition-all cursor-pointer ${
+                              (profile.socialIconGap || "md") === gp.id
+                                ? "bg-violet-600 text-white border-violet-400 font-bold"
+                                : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800"
+                            }`}
+                          >
+                            {gp.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Bentuk Icon & Background Style */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">Bentuk Sudut Icon (Shape)</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { id: "circle", label: "Circle", radius: "rounded-full" },
+                          { id: "rounded", label: "Rounded", radius: "rounded-xl" },
+                          { id: "square", label: "Square", radius: "rounded-md" },
+                          { id: "pill", label: "Pill", radius: "rounded-2xl" },
+                        ].map((shp) => (
+                          <button
+                            key={shp.id}
+                            type="button"
+                            onClick={() => setProfile({ ...profile, socialIconShape: shp.id })}
+                            className={`py-2 px-1 rounded-lg border text-center text-xs font-semibold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                              (profile.socialIconShape || "circle") === shp.id
+                                ? "bg-blue-600 text-white border-blue-400 font-bold"
+                                : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800"
+                            }`}
+                          >
+                            <div className={`w-4 h-4 border border-current ${shp.radius}`} />
+                            <span>{shp.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2">Tipe Background Icon</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { id: "glass", label: "Glass" },
+                          { id: "transparent", label: "Polos" },
+                          { id: "solid", label: "Solid" },
+                          { id: "custom", label: "Custom" },
+                        ].map((bg) => (
+                          <button
+                            key={bg.id}
+                            type="button"
+                            onClick={() => setProfile({ ...profile, socialIconBg: bg.id })}
+                            className={`py-2 px-1 rounded-lg border text-center text-xs font-semibold transition-all cursor-pointer ${
+                              (profile.socialIconBg || "glass") === bg.id
+                                ? "bg-blue-600 text-white border-blue-400 font-bold"
+                                : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800"
+                            }`}
+                          >
+                            {bg.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {profile.socialIconBg === "custom" && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={profile.socialIconCustomBg?.startsWith("#") ? profile.socialIconCustomBg : "#1e1b4b"}
+                            onChange={(e) => setProfile({ ...profile, socialIconCustomBg: e.target.value })}
+                            className="h-9 w-10 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={profile.socialIconCustomBg || ""}
+                            onChange={(e) => setProfile({ ...profile, socialIconCustomBg: e.target.value })}
+                            placeholder="#1e1b4b (Warna Hex Custom)"
+                            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 4. Warna Icon & Brand Colors Toggle */}
+                  <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-3">
+                    <label className="block text-xs font-semibold text-slate-300">Warna Icon / Logo</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">Custom Warna Hex Icon</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={profile.socialIconColor?.startsWith("#") ? profile.socialIconColor : "#ffffff"}
+                            onChange={(e) => setProfile({ ...profile, socialIconColor: e.target.value })}
+                            className="h-9 w-10 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={profile.socialIconColor || ""}
+                            onChange={(e) => setProfile({ ...profile, socialIconColor: e.target.value })}
+                            placeholder="Default / #ffffff / #38bdf8"
+                            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 outline-none focus:border-blue-500"
+                          />
+                          {profile.socialIconColor && (
+                            <button
+                              type="button"
+                              onClick={() => setProfile({ ...profile, socialIconColor: "" })}
+                              className="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg shrink-0"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                        <div>
+                          <div className="text-xs font-semibold text-slate-200">Gunakan Warna Brand Original</div>
+                          <div className="text-[10px] text-slate-400">TikTok, YouTube, WA, Instagram, dll.</div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={profile.socialIconUseBrandColor ?? false}
+                            onChange={(e) => setProfile({ ...profile, socialIconUseBrandColor: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5. Daftar Link yang Muncul di Header Icon Bar */}
+                  <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-200">
+                        Pilih Link yang Tampil di Header Icon Bar ({profile.links.filter(l => l.showInHeaderIcons !== false && l.isEnabled).length} terpilih)
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Centang link yang ingin Anda munculkan sebagai icon di bawah nama/bio Virtus Official:
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                      {profile.links.map((link, idx) => (
+                        <label
+                          key={link.id || idx}
+                          className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                            link.showInHeaderIcons !== false && link.isEnabled
+                              ? "bg-slate-900 border-blue-500/50 text-white"
+                              : "bg-slate-950/50 border-slate-800 text-slate-500"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="font-semibold truncate">{link.title || "Link " + (idx + 1)}</span>
+                            <span className="text-[10px] text-slate-500 uppercase font-mono">({link.icon})</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={link.showInHeaderIcons !== false}
+                            onChange={(e) => {
+                              const updatedLinks = [...profile.links];
+                              updatedLinks[idx] = { ...updatedLinks[idx], showInHeaderIcons: e.target.checked };
+                              setProfile({ ...profile, links: updatedLinks });
+                            }}
+                            className="rounded border-slate-700 text-blue-500 focus:ring-blue-500 h-4 w-4 shrink-0"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Section 1.2: Pengaturan Leaderboard (Top Supporters) */}
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-5">
               <h2 className="text-base font-bold text-slate-100 flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -2704,8 +3003,27 @@ export default function EditLinktreePage() {
                     alt={profile.name}
                     className="w-16 h-16 rounded-full object-cover border-2 border-violet-500 shadow-md"
                   />
-                  <h3 className="font-bold text-slate-100">{profile.name || "Jessica Jones"}</h3>
+                  <h3 className="font-bold text-slate-100">{profile.name || "Virtus Official"}</h3>
                   <p className="text-xs text-slate-400 px-2 whitespace-pre-line">{profile.bio}</p>
+
+                  {/* Mini Preview Social Icons Bar */}
+                  {(profile.showSocialHeaderIcons ?? true) && profile.socialIconPosition !== "disabled" && (
+                    <div className="flex items-center justify-center flex-wrap gap-2 pt-2 px-2">
+                      {profile.links
+                        .filter((l) => l.isEnabled && l.showInHeaderIcons !== false)
+                        .map((l) => (
+                          <span
+                            key={l.id}
+                            title={l.title}
+                            className={`w-7 h-7 rounded-full bg-white/10 border border-white/15 text-white flex items-center justify-center text-[10px] shadow-sm hover:scale-110 transition-all ${
+                              profile.socialIconShape === "square" ? "rounded-md" : profile.socialIconShape === "rounded" ? "rounded-lg" : "rounded-full"
+                            }`}
+                          >
+                            <span className="capitalize font-bold text-[9px] truncate max-w-[20px]">{l.icon.substring(0, 2)}</span>
+                          </span>
+                        ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-around text-xs text-slate-400">
