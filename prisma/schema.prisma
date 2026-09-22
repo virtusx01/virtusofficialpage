@@ -95,6 +95,11 @@ model LinktreeProfile {
   socialIconCustomBg     String         @default("") // Hex color string if custom bg
   socialIconShape        String         @default("circle") // "circle" | "rounded" | "square" | "pill"
 
+  // Bio Hyperlinks Customization
+  bioLinkColor           String         @default("") // Custom hex color for bio links e.g. #38bdf8
+  bioLinkBold            Boolean        @default(true)
+  bioLinkUnderline       Boolean        @default(true)
+
   updatedAt        DateTime       @updatedAt
 }
 
@@ -114,9 +119,6 @@ model LinktreeLink {
   sectionTextColor String         @default("")
   waCustomMessage String          @default("")
   showInHeaderIcons Boolean       @default(true)
-  customIconScale Int             @default(100) // Zoom level percentage (50% s/d 200%)
-  customIconShape String          @default("auto") // "auto" | "circle" | "rounded" | "square" | "fill"
-  customIconFit   String          @default("contain") // "contain" | "cover"
   isEnabled       Boolean         @default(true)
   orderIndex      Int             @default(0)
   profileId       String          @default("profile")

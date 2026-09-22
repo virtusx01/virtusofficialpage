@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Footer from "@/components/Footer";
+import { renderFormattedBio } from "@/components/LinktreeView";
 import { ChromaVideoAd } from "@/components/ChromaVideoAd";
 import {
   ArrowLeft,
@@ -52,9 +53,6 @@ interface LinkItem {
   sectionTextColor?: string;
   waCustomMessage?: string;
   showInHeaderIcons?: boolean;
-  customIconScale?: number;
-  customIconShape?: string;
-  customIconFit?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -152,6 +150,9 @@ interface ProfileData {
   socialIconBg?: string;
   socialIconCustomBg?: string;
   socialIconShape?: string;
+  bioLinkColor?: string;
+  bioLinkBold?: boolean;
+  bioLinkUnderline?: boolean;
   videoAds?: VideoAdItem[];
   links: LinkItem[];
   banners: BannerItem[];
@@ -249,6 +250,9 @@ export default function EditLinktreePage() {
     socialIconBg: "glass",
     socialIconCustomBg: "",
     socialIconShape: "circle",
+    bioLinkColor: "",
+    bioLinkBold: true,
+    bioLinkUnderline: true,
     videoAds: [],
     links: [],
     banners: [],
@@ -1374,12 +1378,82 @@ export default function EditLinktreePage() {
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Bio / Deskripsi Singkat</label>
                   <textarea
-                    rows={2}
+                    rows={3}
                     value={profile.bio}
                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100 resize-none"
-                    placeholder="Tuliskan bio atau informasi singkat..."
+                    placeholder="Tuliskan bio... Gunakan [Teks Link](https://url) untuk membuat kata yang bisa diklik."
                   />
+                  <p className="text-[11px] text-cyan-400 mt-1 font-medium flex items-center gap-1">
+                    <span>💡 Tips Link Bio: Tulis format <code className="bg-slate-900 text-cyan-300 px-1 py-0.5 rounded font-mono text-[10px]">[Aoi](https://tiktok.com/@...)</code> untuk membuat kata Aoi ber-link.</span>
+                  </p>
+
+                  {/* Kostumisasi Link Bio */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3 mt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Kustomisasi Gaya Link di Bio</span>
+                      </span>
+                      <span className="text-[10px] text-cyan-400 font-mono">Format [Teks](URL)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">Warna Link Bio</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={profile.bioLinkColor?.startsWith("#") ? profile.bioLinkColor : "#38bdf8"}
+                            onChange={(e) => setProfile({ ...profile, bioLinkColor: e.target.value })}
+                            className="h-8 w-9 rounded-lg bg-slate-900 border border-slate-700 cursor-pointer shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={profile.bioLinkColor || ""}
+                            onChange={(e) => setProfile({ ...profile, bioLinkColor: e.target.value })}
+                            placeholder="Default / #38bdf8"
+                            className="w-full px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none focus:border-cyan-500"
+                          />
+                          {profile.bioLinkColor && (
+                            <button
+                              type="button"
+                              onClick={() => setProfile({ ...profile, bioLinkColor: "" })}
+                              className="text-[10px] px-2 py-1 bg-slate-800 text-slate-400 hover:text-white rounded shrink-0"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                        <span className="text-xs text-slate-300 font-medium">Teks Tebal (Bold)</span>
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={profile.bioLinkBold ?? true}
+                            onChange={(e) => setProfile({ ...profile, bioLinkBold: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-cyan-500"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                        <span className="text-xs text-slate-300 font-medium">Garis Bawah (Underline)</span>
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={profile.bioLinkUnderline ?? true}
+                            onChange={(e) => setProfile({ ...profile, bioLinkUnderline: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-cyan-500"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -2526,78 +2600,6 @@ export default function EditLinktreePage() {
                       </div>
                     )}
 
-                    {/* Zoom In / Zoom Out & Shape Control per-link */}
-                    <div className="p-3.5 rounded-xl bg-violet-950/20 border border-violet-800/40 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-violet-300 flex items-center gap-1.5">
-                          <Maximize2 className="w-3.5 h-3.5 text-violet-400" />
-                          <span>Ukuran Zoom (Scale) & Bentuk Shape Icon</span>
-                        </label>
-                        <span className="text-[10px] text-violet-400 font-mono font-bold">
-                          Scale: {link.customIconScale || 100}%
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                        {/* 1. Zoom Slider */}
-                        <div>
-                          <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
-                            <span>Zoom In / Out (Scale)</span>
-                            <button
-                              type="button"
-                              onClick={() => updateLink(idx, "customIconScale", 100)}
-                              className="text-[10px] text-violet-400 hover:text-white underline cursor-pointer"
-                            >
-                              Reset (100%)
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-slate-500 font-mono">50%</span>
-                            <input
-                              type="range"
-                              min="50"
-                              max="200"
-                              step="5"
-                              value={link.customIconScale || 100}
-                              onChange={(e) => updateLink(idx, "customIconScale", parseInt(e.target.value))}
-                              className="w-full accent-violet-500 cursor-pointer"
-                            />
-                            <span className="text-[10px] text-slate-500 font-mono">200%</span>
-                          </div>
-                        </div>
-
-                        {/* 2. Shape Selector */}
-                        <div>
-                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">Bentuk Potongan (Shape / Fit)</label>
-                          <div className="grid grid-cols-5 gap-1">
-                            {[
-                              { id: "auto", label: "Auto" },
-                              { id: "fill", label: "Fill Full" },
-                              { id: "circle", label: "Circle" },
-                              { id: "rounded", label: "Rounded" },
-                              { id: "square", label: "Square" },
-                            ].map((shp) => (
-                              <button
-                                key={shp.id}
-                                type="button"
-                                onClick={() => {
-                                  updateLink(idx, "customIconShape", shp.id);
-                                  if (shp.id === "fill") updateLink(idx, "customIconFit", "cover");
-                                }}
-                                className={`py-1 px-1 rounded text-[10px] font-semibold border text-center transition-all cursor-pointer ${
-                                  (link.customIconShape || "auto") === shp.id
-                                    ? "bg-violet-600 text-white border-violet-400 font-bold"
-                                    : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800"
-                                }`}
-                              >
-                                {shp.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                     {/* Section Kontrol: Tata Letak & Perataan (Layout, Item Align, Text Align) */}
                     <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 space-y-3">
                       <div className="text-xs font-bold text-slate-200 flex items-center gap-2">
@@ -3079,7 +3081,7 @@ export default function EditLinktreePage() {
                     className="w-16 h-16 rounded-full object-cover border-2 border-violet-500 shadow-md"
                   />
                   <h3 className="font-bold text-slate-100">{profile.name || "Virtus Official"}</h3>
-                  <p className="text-xs text-slate-400 px-2 whitespace-pre-line">{profile.bio}</p>
+                  <p className="text-xs text-slate-400 px-2 whitespace-pre-line">{renderFormattedBio(profile.bio, profile)}</p>
 
                   {/* Mini Preview Social Icons Bar */}
                   {(profile.showSocialHeaderIcons ?? true) && profile.socialIconPosition !== "disabled" && (

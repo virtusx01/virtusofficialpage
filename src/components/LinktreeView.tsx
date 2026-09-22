@@ -43,9 +43,6 @@ export interface LinktreeItem {
   sectionTextColor?: string;
   waCustomMessage?: string;
   showInHeaderIcons?: boolean;
-  customIconScale?: number;
-  customIconShape?: string;
-  customIconFit?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -130,6 +127,9 @@ export interface LinktreeProfileData {
   socialIconBg?: string;
   socialIconCustomBg?: string;
   socialIconShape?: string;
+  bioLinkColor?: string;
+  bioLinkBold?: boolean;
+  bioLinkUnderline?: boolean;
   videoAds?: any[];
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
@@ -238,16 +238,6 @@ const renderLinkIcon = (link: LinktreeItem) => {
   const clampedWidth = Math.max(24, Math.min(Math.round(rawWidth), 280));
 
   if (isCustom) {
-    const scale = typeof link.customIconScale === 'number' && !isNaN(link.customIconScale) ? link.customIconScale / 100 : 1;
-    const shape = link.customIconShape || 'auto';
-    let shapeClass = 'rounded-lg';
-    if (shape === 'circle') shapeClass = 'rounded-full';
-    else if (shape === 'rounded') shapeClass = 'rounded-xl';
-    else if (shape === 'square') shapeClass = 'rounded-none';
-    else if (shape === 'fill') shapeClass = 'rounded-full w-full h-full object-cover';
-
-    const objectFitClass = link.customIconFit === 'cover' || shape === 'fill' ? 'object-cover' : 'object-contain';
-
     if (isColumn) {
       return (
         <div
@@ -257,8 +247,7 @@ const renderLinkIcon = (link: LinktreeItem) => {
           <img
             src={link.customIconUrl}
             alt={link.title}
-            style={{ transform: `scale(${scale})` }}
-            className={`w-full h-full ${objectFitClass} drop-shadow-sm ${shapeClass} transition-transform duration-200`}
+            className="w-full h-full object-contain drop-shadow-sm rounded-lg"
             loading="lazy"
           />
         </div>
@@ -273,21 +262,18 @@ const renderLinkIcon = (link: LinktreeItem) => {
         <img
           src={link.customIconUrl}
           alt={link.title}
-          style={{ transform: `scale(${scale})` }}
-          className={`w-full h-full ${objectFitClass} drop-shadow-sm ${shapeClass} transition-transform duration-200`}
+          className="w-full h-full object-contain drop-shadow-sm rounded"
           loading="lazy"
         />
       </div>
     );
   }
 
-  const iconScale = typeof link.customIconScale === 'number' && !isNaN(link.customIconScale) ? link.customIconScale / 100 : 1;
-
   // Predefined SVG icon
   if (isColumn) {
     return (
       <div className="w-14 h-14 rounded-2xl bg-white/10 dark:bg-white/5 border border-white/15 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300 shrink-0">
-        <div style={{ transform: `scale(${iconScale})` }} className="w-8 h-8 flex items-center justify-center [&>svg]:w-7 [&>svg]:h-7 transition-transform duration-200">
+        <div className="w-8 h-8 flex items-center justify-center [&>svg]:w-7 [&>svg]:h-7">
           {getIconComponent(link.icon)}
         </div>
       </div>
@@ -296,9 +282,7 @@ const renderLinkIcon = (link: LinktreeItem) => {
 
   return (
     <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner shrink-0 group-hover:scale-110 transition-transform duration-300">
-      <div style={{ transform: `scale(${iconScale})` }} className="flex items-center justify-center transition-transform duration-200">
-        {getIconComponent(link.icon)}
-      </div>
+      {getIconComponent(link.icon)}
     </div>
   );
 };
@@ -375,16 +359,6 @@ const renderSocialHeaderIcons = (profile: LinktreeProfileData, itemVariants: any
           targetUrl = `${targetUrl}${separator}text=${encodeURIComponent(link.waCustomMessage.trim())}`;
         }
 
-        const linkScale = typeof link.customIconScale === 'number' && !isNaN(link.customIconScale) ? link.customIconScale / 100 : 1;
-        const imgShape = link.customIconShape || 'auto';
-        let imgShapeClass = 'rounded-md';
-        if (imgShape === 'circle') imgShapeClass = 'rounded-full';
-        else if (imgShape === 'rounded') imgShapeClass = 'rounded-xl';
-        else if (imgShape === 'square') imgShapeClass = 'rounded-none';
-        else if (imgShape === 'fill') imgShapeClass = 'rounded-full w-full h-full object-cover';
-
-        const imgFitClass = link.customIconFit === 'cover' || imgShape === 'fill' ? 'object-cover' : 'object-contain';
-
         return (
           <motion.a
             key={link.id}
@@ -395,17 +369,16 @@ const renderSocialHeaderIcons = (profile: LinktreeProfileData, itemVariants: any
             whileTap={{ scale: 0.92 }}
             title={link.title}
             style={inlineBgStyle}
-            className={`flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0 overflow-hidden ${sizeStyle.btn} ${shapeClass} ${bgClass}`}
+            className={`flex items-center justify-center transition-all duration-200 cursor-pointer shrink-0 ${sizeStyle.btn} ${shapeClass} ${bgClass}`}
           >
             {link.customIconUrl && link.customIconUrl.trim() ? (
               <img
                 src={link.customIconUrl}
                 alt={link.title}
-                style={{ transform: `scale(${linkScale})` }}
-                className={`${imgShape === 'fill' ? 'w-full h-full' : sizeStyle.icon} ${imgFitClass} ${imgShapeClass} transition-transform duration-200`}
+                className={`${sizeStyle.icon} object-contain rounded`}
               />
             ) : (
-              <div style={{ transform: `scale(${linkScale})` }} className={`flex items-center justify-center ${sizeStyle.icon} [&>svg]:w-full [&>svg]:h-full transition-transform duration-200`}>
+              <div className={`flex items-center justify-center ${sizeStyle.icon} [&>svg]:w-full [&>svg]:h-full`}>
                 {getIconComponent(link.icon)}
               </div>
             )}
@@ -414,6 +387,64 @@ const renderSocialHeaderIcons = (profile: LinktreeProfileData, itemVariants: any
       })}
     </motion.div>
   );
+};
+
+export const renderFormattedBio = (bioText: string, profile: LinktreeProfileData) => {
+  if (!bioText) return null;
+
+  // Regex to match markdown links [label](url)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  const isBold = profile.bioLinkBold ?? true;
+  const isUnderline = profile.bioLinkUnderline ?? true;
+  const customColor = profile.bioLinkColor;
+
+  const linkClasses = [
+    'transition-all hover:opacity-80 inline-block',
+    isBold ? 'font-bold' : 'font-medium',
+    isUnderline ? 'underline underline-offset-2 decoration-current' : 'no-underline',
+  ].join(' ');
+
+  const linkStyle: React.CSSProperties = customColor
+    ? { color: customColor }
+    : {};
+
+  let keyCounter = 0;
+
+  while ((match = linkRegex.exec(bioText)) !== null) {
+    const textBefore = bioText.substring(lastIndex, match.index);
+    if (textBefore) {
+      parts.push(<React.Fragment key={`text-${keyCounter++}`}>{textBefore}</React.Fragment>);
+    }
+
+    const label = match[1];
+    const url = match[2];
+
+    parts.push(
+      <a
+        key={`link-${keyCounter++}`}
+        href={url}
+        target={url.startsWith('http') ? '_blank' : '_self'}
+        rel="noopener noreferrer"
+        style={linkStyle}
+        className={`${linkClasses} ${!customColor ? 'text-cyan-300 hover:text-cyan-200' : ''}`}
+      >
+        {label}
+      </a>
+    );
+
+    lastIndex = linkRegex.lastIndex;
+  }
+
+  const remainingText = bioText.substring(lastIndex);
+  if (remainingText) {
+    parts.push(<React.Fragment key={`text-${keyCounter++}`}>{remainingText}</React.Fragment>);
+  }
+
+  return parts;
 };
 
 const AutoScrollText = ({
@@ -724,7 +755,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                 {profile.name}
               </h1>
               <p className={`text-sm leading-relaxed max-w-xs mx-auto font-medium whitespace-pre-line ${currentTheme.subColor}`}>
-                {profile.bio}
+                {renderFormattedBio(profile.bio, profile)}
               </p>
 
               {/* Social Media Header Icons (Bawah Judul & Bio) */}
