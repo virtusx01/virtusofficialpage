@@ -114,6 +114,9 @@ model LinktreeLink {
   sectionTextColor String         @default("")
   waCustomMessage String          @default("")
   showInHeaderIcons Boolean       @default(true)
+  customIconScale Int             @default(100) // Zoom level percentage (50% s/d 200%)
+  customIconShape String          @default("auto") // "auto" | "circle" | "rounded" | "square" | "fill"
+  customIconFit   String          @default("contain") // "contain" | "cover"
   isEnabled       Boolean         @default(true)
   orderIndex      Int             @default(0)
   profileId       String          @default("profile")

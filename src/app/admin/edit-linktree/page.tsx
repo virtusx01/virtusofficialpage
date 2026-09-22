@@ -52,6 +52,9 @@ interface LinkItem {
   sectionTextColor?: string;
   waCustomMessage?: string;
   showInHeaderIcons?: boolean;
+  customIconScale?: number;
+  customIconShape?: string;
+  customIconFit?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -2522,6 +2525,78 @@ export default function EditLinktreePage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Zoom In / Zoom Out & Shape Control per-link */}
+                    <div className="p-3.5 rounded-xl bg-violet-950/20 border border-violet-800/40 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-violet-300 flex items-center gap-1.5">
+                          <Maximize2 className="w-3.5 h-3.5 text-violet-400" />
+                          <span>Ukuran Zoom (Scale) & Bentuk Shape Icon</span>
+                        </label>
+                        <span className="text-[10px] text-violet-400 font-mono font-bold">
+                          Scale: {link.customIconScale || 100}%
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        {/* 1. Zoom Slider */}
+                        <div>
+                          <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                            <span>Zoom In / Out (Scale)</span>
+                            <button
+                              type="button"
+                              onClick={() => updateLink(idx, "customIconScale", 100)}
+                              className="text-[10px] text-violet-400 hover:text-white underline cursor-pointer"
+                            >
+                              Reset (100%)
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-500 font-mono">50%</span>
+                            <input
+                              type="range"
+                              min="50"
+                              max="200"
+                              step="5"
+                              value={link.customIconScale || 100}
+                              onChange={(e) => updateLink(idx, "customIconScale", parseInt(e.target.value))}
+                              className="w-full accent-violet-500 cursor-pointer"
+                            />
+                            <span className="text-[10px] text-slate-500 font-mono">200%</span>
+                          </div>
+                        </div>
+
+                        {/* 2. Shape Selector */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">Bentuk Potongan (Shape / Fit)</label>
+                          <div className="grid grid-cols-5 gap-1">
+                            {[
+                              { id: "auto", label: "Auto" },
+                              { id: "fill", label: "Fill Full" },
+                              { id: "circle", label: "Circle" },
+                              { id: "rounded", label: "Rounded" },
+                              { id: "square", label: "Square" },
+                            ].map((shp) => (
+                              <button
+                                key={shp.id}
+                                type="button"
+                                onClick={() => {
+                                  updateLink(idx, "customIconShape", shp.id);
+                                  if (shp.id === "fill") updateLink(idx, "customIconFit", "cover");
+                                }}
+                                className={`py-1 px-1 rounded text-[10px] font-semibold border text-center transition-all cursor-pointer ${
+                                  (link.customIconShape || "auto") === shp.id
+                                    ? "bg-violet-600 text-white border-violet-400 font-bold"
+                                    : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800"
+                                }`}
+                              >
+                                {shp.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Section Kontrol: Tata Letak & Perataan (Layout, Item Align, Text Align) */}
                     <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 space-y-3">

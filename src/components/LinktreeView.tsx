@@ -43,6 +43,9 @@ export interface LinktreeItem {
   sectionTextColor?: string;
   waCustomMessage?: string;
   showInHeaderIcons?: boolean;
+  customIconScale?: number;
+  customIconShape?: string;
+  customIconFit?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -235,16 +238,27 @@ const renderLinkIcon = (link: LinktreeItem) => {
   const clampedWidth = Math.max(24, Math.min(Math.round(rawWidth), 280));
 
   if (isCustom) {
+    const scale = typeof link.customIconScale === 'number' && !isNaN(link.customIconScale) ? link.customIconScale / 100 : 1;
+    const shape = link.customIconShape || 'auto';
+    let shapeClass = 'rounded-lg';
+    if (shape === 'circle') shapeClass = 'rounded-full';
+    else if (shape === 'rounded') shapeClass = 'rounded-xl';
+    else if (shape === 'square') shapeClass = 'rounded-none';
+    else if (shape === 'fill') shapeClass = 'rounded-full w-full h-full object-cover';
+
+    const objectFitClass = link.customIconFit === 'cover' || shape === 'fill' ? 'object-cover' : 'object-contain';
+
     if (isColumn) {
       return (
         <div
           style={{ width: `${clampedWidth}px`, height: '56px' }}
-          className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-full rounded-2xl"
+          className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-full"
         >
           <img
             src={link.customIconUrl}
             alt={link.title}
-            className={`w-full h-full ${clampedWidth <= 64 ? 'object-cover' : 'object-contain'} drop-shadow-sm rounded-2xl`}
+            style={{ transform: `scale(${scale})` }}
+            className={`w-full h-full ${objectFitClass} drop-shadow-sm ${shapeClass} transition-transform duration-200`}
             loading="lazy"
           />
         </div>
@@ -254,23 +268,26 @@ const renderLinkIcon = (link: LinktreeItem) => {
     return (
       <div
         style={{ width: `${clampedWidth}px`, height: '36px' }}
-        className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-[120px] rounded-full"
+        className="flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300 max-w-[120px]"
       >
         <img
           src={link.customIconUrl}
           alt={link.title}
-          className={`w-full h-full ${clampedWidth <= 48 ? 'object-cover' : 'object-contain'} drop-shadow-sm rounded-full`}
+          style={{ transform: `scale(${scale})` }}
+          className={`w-full h-full ${objectFitClass} drop-shadow-sm ${shapeClass} transition-transform duration-200`}
           loading="lazy"
         />
       </div>
     );
   }
 
+  const iconScale = typeof link.customIconScale === 'number' && !isNaN(link.customIconScale) ? link.customIconScale / 100 : 1;
+
   // Predefined SVG icon
   if (isColumn) {
     return (
       <div className="w-14 h-14 rounded-2xl bg-white/10 dark:bg-white/5 border border-white/15 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300 shrink-0">
-        <div className="w-8 h-8 flex items-center justify-center [&>svg]:w-7 [&>svg]:h-7">
+        <div style={{ transform: `scale(${iconScale})` }} className="w-8 h-8 flex items-center justify-center [&>svg]:w-7 [&>svg]:h-7 transition-transform duration-200">
           {getIconComponent(link.icon)}
         </div>
       </div>
@@ -279,7 +296,9 @@ const renderLinkIcon = (link: LinktreeItem) => {
 
   return (
     <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center shadow-inner shrink-0 group-hover:scale-110 transition-transform duration-300">
-      {getIconComponent(link.icon)}
+      <div style={{ transform: `scale(${iconScale})` }} className="flex items-center justify-center transition-transform duration-200">
+        {getIconComponent(link.icon)}
+      </div>
     </div>
   );
 };
@@ -356,6 +375,16 @@ const renderSocialHeaderIcons = (profile: LinktreeProfileData, itemVariants: any
           targetUrl = `${targetUrl}${separator}text=${encodeURIComponent(link.waCustomMessage.trim())}`;
         }
 
+        const linkScale = typeof link.customIconScale === 'number' && !isNaN(link.customIconScale) ? link.customIconScale / 100 : 1;
+        const imgShape = link.customIconShape || 'auto';
+        let imgShapeClass = 'rounded-md';
+        if (imgShape === 'circle') imgShapeClass = 'rounded-full';
+        else if (imgShape === 'rounded') imgShapeClass = 'rounded-xl';
+        else if (imgShape === 'square') imgShapeClass = 'rounded-none';
+        else if (imgShape === 'fill') imgShapeClass = 'rounded-full w-full h-full object-cover';
+
+        const imgFitClass = link.customIconFit === 'cover' || imgShape === 'fill' ? 'object-cover' : 'object-contain';
+
         return (
           <motion.a
             key={link.id}
@@ -372,10 +401,11 @@ const renderSocialHeaderIcons = (profile: LinktreeProfileData, itemVariants: any
               <img
                 src={link.customIconUrl}
                 alt={link.title}
-                className={`w-full h-full object-cover ${shapeClass}`}
+                style={{ transform: `scale(${linkScale})` }}
+                className={`${imgShape === 'fill' ? 'w-full h-full' : sizeStyle.icon} ${imgFitClass} ${imgShapeClass} transition-transform duration-200`}
               />
             ) : (
-              <div className={`flex items-center justify-center ${sizeStyle.icon} [&>svg]:w-full [&>svg]:h-full`}>
+              <div style={{ transform: `scale(${linkScale})` }} className={`flex items-center justify-center ${sizeStyle.icon} [&>svg]:w-full [&>svg]:h-full transition-transform duration-200`}>
                 {getIconComponent(link.icon)}
               </div>
             )}
