@@ -130,11 +130,6 @@ export default function AdminDashboard() {
     announcement: ""
   });
 
-  // OCR Screenshot Scanner State
-  const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrSuccessMsg, setOcrSuccessMsg] = useState<string | null>(null);
-  const [ocrErrorMsg, setOcrErrorMsg] = useState<string | null>(null);
-
   // Real-time Duplicate Game ID check
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
 
@@ -156,77 +151,6 @@ export default function AdminDashboard() {
       setDuplicateWarning(null);
     }
   }, [formData.gameId, players, editingPlayer]);
-
-  // Gemini Vision API — scan screenshot for nickname & game ID
-  const handleProcessImage = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setOcrErrorMsg("File harus berupa gambar (PNG, JPG, JPEG, WEBP).");
-      return;
-    }
-
-    setOcrLoading(true);
-    setOcrSuccessMsg(null);
-    setOcrErrorMsg(null);
-
-    try {
-      const body = new FormData();
-      body.append("image", file);
-
-      const res = await fetch("/api/scan-screenshot", {
-        method: "POST",
-        body
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || errData.error || `HTTP ${res.status}`);
-      }
-
-      const { nickname, gameId } = await res.json();
-
-      if (nickname || gameId) {
-        setFormData(prev => ({
-          ...prev,
-          name: nickname || prev.name,
-          gameId: gameId || prev.gameId
-        }));
-
-        const details: string[] = [];
-        if (nickname) details.push(`Nickname: "${nickname}"`);
-        if (gameId) details.push(`Game ID: "${gameId}"`);
-        setOcrSuccessMsg(`✅ Berhasil scan screenshot! (${details.join(", ")})`);
-      } else {
-        setOcrErrorMsg("Tidak dapat mendeteksi Nickname / Game ID dari gambar. Silakan isi manual.");
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      console.error("Scan Screenshot Error:", message);
-      setOcrErrorMsg(`Gagal memproses gambar: ${message}. Pastikan gambar jelas dan coba lagi.`);
-    } finally {
-      setOcrLoading(false);
-    }
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleProcessImage(e.target.files[0]);
-    }
-  };
-
-  const handlePasteImage = (e: React.ClipboardEvent) => {
-    if (e.clipboardData.items) {
-      for (let i = 0; i < e.clipboardData.items.length; i++) {
-        const item = e.clipboardData.items[i];
-        if (item.type.indexOf("image") !== -1) {
-          const file = item.getAsFile();
-          if (file) {
-            handleProcessImage(file);
-            break;
-          }
-        }
-      }
-    }
-  };
 
   const fetchData = async () => {
     try {
@@ -262,8 +186,6 @@ export default function AdminDashboard() {
   // Open modal for adding
   const handleAddClick = () => {
     setEditingPlayer(null);
-    setOcrSuccessMsg(null);
-    setOcrErrorMsg(null);
     setDuplicateWarning(null);
     setFormData({
       name: "",
@@ -280,8 +202,6 @@ export default function AdminDashboard() {
   // Open modal for editing
   const handleEditClick = (player: Player) => {
     setEditingPlayer(player);
-    setOcrSuccessMsg(null);
-    setOcrErrorMsg(null);
     setDuplicateWarning(null);
     setFormData({
       name: player.name,
@@ -1366,64 +1286,7 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            {/* Screenshot OCR Scanner Box */}
-            <div
-              onPaste={handlePasteImage}
-              tabIndex={0}
-              className="group relative overflow-hidden bg-gradient-to-br from-violet-950/40 via-slate-900 to-fuchsia-950/30 border border-violet-800/40 hover:border-violet-500/60 p-4 rounded-xl mb-4 transition-all focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-            >
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-violet-300">
-                  <Sparkles className="h-4 w-4 text-fuchsia-400 animate-pulse" />
-                  <span>Auto-Fill via Screenshot Profil Game</span>
-                </div>
-                <span className="text-[10px] bg-violet-900/60 text-violet-200 border border-violet-700/50 px-2 py-0.5 rounded-full font-medium">
-                  OCR Cerdas
-                </span>
-              </div>
 
-              <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
-                Upload atau <strong className="text-violet-300">Paste (Ctrl+V)</strong> screenshot profil game (Valorant Mobile dll). Nickname & Game ID otomatis terbaca!
-              </p>
-
-              {/* Upload Input Button */}
-              <label className="flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-slate-900/80 hover:bg-slate-800 border border-dashed border-violet-600/50 hover:border-violet-400 rounded-lg text-xs font-semibold text-slate-200 transition-all cursor-pointer">
-                {ocrLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 text-violet-400 animate-spin" />
-                    <span className="text-violet-300">Membaca data screenshot...</span>
-                  </>
-                ) : (
-                  <>
-                    <Camera className="h-4 w-4 text-violet-400" />
-                    <span>Pilih Foto Screenshot / Tempel di Sini</span>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileInputChange}
-                  disabled={ocrLoading}
-                  className="hidden"
-                />
-              </label>
-
-              {/* Success Notification */}
-              {ocrSuccessMsg && (
-                <div className="mt-2.5 p-2 bg-emerald-950/40 border border-emerald-800/60 rounded-lg text-[11px] text-emerald-300 flex items-start gap-1.5">
-                  <Check className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
-                  <span>{ocrSuccessMsg}</span>
-                </div>
-              )}
-
-              {/* Error Notification */}
-              {ocrErrorMsg && (
-                <div className="mt-2.5 p-2 bg-red-950/40 border border-red-800/60 rounded-lg text-[11px] text-red-300 flex items-start gap-1.5">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
-                  <span>{ocrErrorMsg}</span>
-                </div>
-              )}
-            </div>
 
             <form onSubmit={handleSavePlayer} className="space-y-4">
 
