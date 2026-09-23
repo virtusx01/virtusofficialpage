@@ -105,11 +105,27 @@ export default function EditFanbaseCupidutDududPage() {
     setIsModalOpen(true);
   };
 
+  const deleteUploadedFile = async (url?: string) => {
+    if (!url || !url.includes('/storage/v1/object/public/assets/')) return;
+    try {
+      await fetch('/api/upload', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+    } catch (e) {
+      console.error('Failed to delete file from Supabase:', e);
+    }
+  };
+
   const handleUploadImage = async (file: File) => {
     setUploading(true);
     try {
       const uploadData = new FormData();
       uploadData.append("file", file);
+      if (formData.imageUrl) {
+        uploadData.append("oldUrl", formData.imageUrl);
+      }
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -167,10 +183,13 @@ export default function EditFanbaseCupidutDududPage() {
     }
   };
 
-  const handleDelete = async (id: string, title: string) => {
+  const handleDelete = async (id: string, title: string, imageUrl?: string) => {
     if (!confirm(`Hapus foto "${title}" dari album?`)) return;
 
     try {
+      if (imageUrl) {
+        deleteUploadedFile(imageUrl);
+      }
       const res = await fetch(`/api/fanbase-cat/${id}`, { method: "DELETE" });
       if (res.ok) {
         setSuccess("Foto berhasil dihapus.");
@@ -285,7 +304,7 @@ export default function EditFanbaseCupidutDududPage() {
                       <span>Edit</span>
                     </button>
                     <button
-                      onClick={() => handleDelete(photo.id, photo.title)}
+                      onClick={() => handleDelete(photo.id, photo.title, photo.imageUrl)}
                       className="p-1.5 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-900/40 text-red-400 text-xs flex items-center gap-1 cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -334,7 +353,7 @@ export default function EditFanbaseCupidutDududPage() {
                       <span>Edit</span>
                     </button>
                     <button
-                      onClick={() => handleDelete(photo.id, photo.title)}
+                      onClick={() => handleDelete(photo.id, photo.title, photo.imageUrl)}
                       className="p-1.5 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-900/40 text-red-400 text-xs flex items-center gap-1 cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

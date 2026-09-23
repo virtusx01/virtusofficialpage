@@ -8,13 +8,45 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI
 // Initialize Supabase Client with Admin Service Role Key (bypasses RLS for uploads)
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+function extractFilenameFromUrl(url: string): string | null {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    const urlObj = new URL(url);
+    // Standard Supabase public storage URL: .../storage/v1/object/public/assets/filename
+    const pathnameParts = urlObj.pathname.split('/');
+    if (urlObj.pathname.includes('/storage/v1/object/public/assets/')) {
+      const filename = pathnameParts[pathnameParts.length - 1];
+      return filename ? decodeURIComponent(filename) : null;
+    }
+  } catch (e) {
+    if (url.startsWith('upload-')) return url;
+  }
+  return null;
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    const oldUrl = formData.get('oldUrl') as string | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
+
+    // Auto-delete old file if oldUrl is provided and points to Supabase assets bucket
+    if (oldUrl) {
+      const oldFilename = extractFilenameFromUrl(oldUrl);
+      if (oldFilename) {
+        supabase.storage
+          .from('assets')
+          .remove([oldFilename])
+          .then(({ error }) => {
+            if (error) console.error('Failed to auto-delete old file from Supabase:', error);
+            else console.log(`Auto-deleted old file from Supabase: ${oldFilename}`);
+          })
+          .catch((err) => console.error('Error auto-deleting old file:', err));
+      }
     }
 
     const bytes = await file.arrayBuffer();
@@ -46,5 +78,33 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Error uploading file to Supabase:', error);
     return NextResponse.json({ error: error?.message || 'Failed to upload image' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { url } = await request.json();
+    if (!url || typeof url !== 'string') {
+      return NextResponse.json({ error: 'URL file tidak valid' }, { status: 400 });
+    }
+
+    const filename = extractFilenameFromUrl(url);
+    if (!filename) {
+      return NextResponse.json({ error: 'Filename tidak ditemukan dari URL' }, { status: 400 });
+    }
+
+    const { error } = await supabase.storage
+      .from('assets')
+      .remove([filename]);
+
+    if (error) {
+      console.error('Supabase storage delete error:', error);
+      throw error;
+    }
+
+    return NextResponse.json({ success: true, message: `File ${filename} berhasil dihapus dari bucket Supabase` });
+  } catch (error: any) {
+    console.error('Error deleting file from Supabase:', error);
+    return NextResponse.json({ error: error?.message || 'Gagal menghapus file' }, { status: 500 });
   }
 }

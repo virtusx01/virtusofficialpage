@@ -329,12 +329,28 @@ export default function EditLinktreePage() {
     });
   };
 
+  const deleteUploadedFile = async (url?: string) => {
+    if (!url || !url.includes('/storage/v1/object/public/assets/')) return;
+    try {
+      await fetch('/api/upload', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+    } catch (e) {
+      console.error('Failed to delete file from Supabase:', e);
+    }
+  };
+
   const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage") => {
     setUploadingField(field);
     try {
       const compressedBlob = await compressImage(file, 800, 800, 0.85);
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
+      if (profile[field]) {
+        formData.append("oldUrl", profile[field]);
+      }
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -365,6 +381,9 @@ export default function EditLinktreePage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (profile.videoAdUrl) {
+        formData.append("oldUrl", profile.videoAdUrl);
+      }
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -393,6 +412,9 @@ export default function EditLinktreePage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (profile.videoAds?.[index]?.videoUrl) {
+        formData.append("oldUrl", profile.videoAds[index].videoUrl);
+      }
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -438,6 +460,10 @@ export default function EditLinktreePage() {
   };
 
   const removeVideoAd = (index: number) => {
+    const targetAd = profile.videoAds?.[index];
+    if (targetAd?.videoUrl) {
+      deleteUploadedFile(targetAd.videoUrl);
+    }
     const updated = (profile.videoAds || []).filter((_, i) => i !== index);
     setProfile({ ...profile, videoAds: updated });
   };
@@ -465,6 +491,9 @@ export default function EditLinktreePage() {
       const compressedBlob = await compressImage(file);
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
+      if (profile.banners?.[index]?.imageUrl) {
+        formData.append("oldUrl", profile.banners[index].imageUrl);
+      }
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -547,6 +576,9 @@ export default function EditLinktreePage() {
       const compressedBlob = await compressImage(file, 800, 800, 0.9);
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".png");
+      if (profile.links?.[index]?.customIconUrl) {
+        formData.append("oldUrl", profile.links[index].customIconUrl);
+      }
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -604,6 +636,10 @@ export default function EditLinktreePage() {
   };
 
   const removeLink = (index: number) => {
+    const targetLink = profile.links[index];
+    if (targetLink?.customIconUrl) {
+      deleteUploadedFile(targetLink.customIconUrl);
+    }
     const updatedLinks = profile.links.filter((_, i) => i !== index);
     setProfile({ ...profile, links: updatedLinks });
   };
@@ -647,6 +683,10 @@ export default function EditLinktreePage() {
   };
 
   const removeBanner = (index: number) => {
+    const targetBanner = profile.banners?.[index];
+    if (targetBanner?.imageUrl) {
+      deleteUploadedFile(targetBanner.imageUrl);
+    }
     const updated = (profile.banners || []).filter((_, i) => i !== index);
     setProfile({ ...profile, banners: updated });
   };
@@ -1138,6 +1178,20 @@ export default function EditLinktreePage() {
                                   }}
                                 />
                               </label>
+                              {profile.videoAdUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    deleteUploadedFile(profile.videoAdUrl);
+                                    setProfile({ ...profile, videoAdUrl: "" });
+                                  }}
+                                  className="px-3 py-2 rounded-xl bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                                  title="Hapus Video Ad dari Supabase Storage"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                  <span>Hapus</span>
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -1254,6 +1308,20 @@ export default function EditLinktreePage() {
                                   }}
                                 />
                               </label>
+                              {ad.videoUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    deleteUploadedFile(ad.videoUrl);
+                                    updateVideoAd(idx, 'videoUrl', '');
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                                  title="Hapus Video dari Bucket Supabase"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                  <span>Hapus</span>
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -1388,6 +1456,20 @@ export default function EditLinktreePage() {
                         }}
                       />
                     </label>
+                    {profile.avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteUploadedFile(profile.avatarUrl);
+                          setProfile({ ...profile, avatarUrl: "" });
+                        }}
+                        className="px-3 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 rounded-xl text-xs font-semibold shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Hapus Avatar dari Supabase Storage"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                        <span>Hapus</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2634,6 +2716,20 @@ export default function EditLinktreePage() {
                                   }}
                                 />
                               </label>
+                              {link.customIconUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    deleteUploadedFile(link.customIconUrl);
+                                    updateLink(idx, "customIconUrl", "");
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-bold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                                  title="Hapus Icon dari Bucket Supabase"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                  <span>Hapus</span>
+                                </button>
+                              )}
                             </div>
                             <p className="text-[10px] text-slate-400">
                               Unggah icon kustom atau paste URL gambar. Icon ini akan menggantikan icon standar.
@@ -3116,6 +3212,20 @@ export default function EditLinktreePage() {
                               }}
                             />
                           </label>
+                          {banner.imageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                deleteUploadedFile(banner.imageUrl);
+                                updateBanner(idx, "imageUrl", "");
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                              title="Hapus Gambar Banner dari Bucket Supabase"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                              <span>Hapus</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
