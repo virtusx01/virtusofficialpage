@@ -76,13 +76,16 @@ export default function Header({ initialData }: HeaderProps = {}) {
   // Dynamically update favicon in document head
   useEffect(() => {
     if (faviconUrl) {
-      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "shortcut icon";
-        document.getElementsByTagName("head")[0].appendChild(link);
+      let links = document.querySelectorAll<HTMLLinkElement>("link[rel*='icon']");
+      if (links.length === 0) {
+        const link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+        links = document.querySelectorAll<HTMLLinkElement>("link[rel*='icon']");
       }
-      link.href = faviconUrl;
+      links.forEach((l) => {
+        l.href = faviconUrl;
+      });
     }
   }, [faviconUrl]);
 
