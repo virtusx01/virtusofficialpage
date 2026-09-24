@@ -10,6 +10,8 @@ interface HeaderProps {
   initialData?: {
     siteTitle?: string;
     siteSubtitle?: string;
+    siteLogoUrl?: string;
+    faviconUrl?: string;
   };
 }
 
@@ -22,6 +24,8 @@ export default function Header({ initialData }: HeaderProps = {}) {
 
   const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
   const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
+  const [siteLogoUrl, setSiteLogoUrl] = useState("");
+  const [faviconUrl, setFaviconUrl] = useState("");
 
   // Auto-detect live status (auto TikTok detector) & site branding settings
   useEffect(() => {
@@ -56,6 +60,8 @@ export default function Header({ initialData }: HeaderProps = {}) {
           if (data && !data.error) {
             if (data.siteTitle) setSiteTitle(data.siteTitle);
             if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
+            if (data.siteLogoUrl !== undefined) setSiteLogoUrl(data.siteLogoUrl || "");
+            if (data.faviconUrl !== undefined) setFaviconUrl(data.faviconUrl || "");
           }
         }
       } catch (err) { }
@@ -66,6 +72,19 @@ export default function Header({ initialData }: HeaderProps = {}) {
     const interval = setInterval(checkLiveStatus, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  // Dynamically update favicon in document head
+  useEffect(() => {
+    if (faviconUrl) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "shortcut icon";
+        document.getElementsByTagName("head")[0].appendChild(link);
+      }
+      link.href = faviconUrl;
+    }
+  }, [faviconUrl]);
 
   const isActive = (path: string) => {
     if (path === "/" && pathname === "/") return true;
@@ -99,8 +118,8 @@ export default function Header({ initialData }: HeaderProps = {}) {
           id="nav-brand-logo"
           className="flex items-center gap-3 group shrink-0"
         >
-          <div className="h-10 w-10 rounded-xl  flex items-center justify-center  group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
-            <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
+          <div className="h-10 w-10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
+            <img src={siteLogoUrl || "/logo.png"} alt="Virtus Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-none">
