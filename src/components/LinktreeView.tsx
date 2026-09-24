@@ -1029,119 +1029,81 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
             </motion.div>
 
             {/* Live / Custom Banner Cards (Multiple Support) */}
-            {profile.banners && profile.banners.length > 0 ? (
-              profile.banners
-                .filter((banner) => banner.isEnabled !== false)
-                .map((banner) => {
-                  const isInternal = banner.targetUrl?.startsWith('/');
-                  return (
-                    <motion.div
-                      key={banner.id}
-                      variants={itemVariants}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full pt-2"
-                    >
-                      {isInternal ? (
-                        <Link
-                          href={banner.targetUrl || '/mabarvip'}
-                          prefetch={true}
-                          className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
-                        >
-                          <img
-                            src={
-                              banner.imageUrl ||
-                              'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80'
-                            }
-                            alt=""
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
-                            <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
-                              {banner.title}
-                            </h3>
-                            {banner.subtitle && (
-                              <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
-                                {banner.subtitle}
-                              </p>
-                            )}
-                            <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
-                              <span>Kunjungi</span>
-                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                            </div>
-                          </div>
-                        </Link>
-                      ) : (
-                        <a
-                          href={banner.targetUrl || '/mabarvip'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
-                        >
-                          <img
-                            src={
-                              banner.imageUrl ||
-                              'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80'
-                            }
-                            alt=""
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
-                            <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
-                              {banner.title}
-                            </h3>
-                            {banner.subtitle && (
-                              <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
-                                {banner.subtitle}
-                              </p>
-                            )}
-                            <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
-                              <span>Kunjungi</span>
-                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                            </div>
-                          </div>
-                        </a>
-                      )}
-                    </motion.div>
-                  );
-                })
-            ) : (
-              profile.showLiveBanner && (
-                <motion.div
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full pt-2"
-                >
-                  <Link
-                    href={profile.liveBannerUrl || '/mabarvip'}
-                    prefetch={true}
-                    className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
+            {profile.showLiveBanner !== false && (() => {
+              const activeBanners = (profile.banners || []).filter((banner) => banner.isEnabled !== false);
+              if (activeBanners.length === 0) return null;
+              return activeBanners.map((banner) => {
+                const isInternal = banner.targetUrl?.startsWith('/');
+                return (
+                  <motion.div
+                    key={banner.id}
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full pt-2"
                   >
-                    <img
-                      src={
-                        profile.liveBannerImage ||
-                        'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80'
-                      }
-                      alt=""
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
-                      <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
-                        {profile.liveBannerTitle}
-                      </h3>
-                      <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
-                        {profile.liveBannerSub}
-                      </p>
-                      <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
-                        <span>Kunjungi</span>
-                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              )
-            )}
+                    {isInternal ? (
+                      <Link
+                        href={banner.targetUrl || '/mabarvip'}
+                        prefetch={true}
+                        className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
+                      >
+                        {banner.imageUrl && (
+                          <img
+                            src={banner.imageUrl}
+                            alt=""
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
+                          <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
+                            {banner.title}
+                          </h3>
+                          {banner.subtitle && (
+                            <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
+                              {banner.subtitle}
+                            </p>
+                          )}
+                          <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
+                            <span>Kunjungi</span>
+                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </div>
+                      </Link>
+                    ) : (
+                      <a
+                        href={banner.targetUrl || '/mabarvip'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
+                      >
+                        {banner.imageUrl && (
+                          <img
+                            src={banner.imageUrl}
+                            alt=""
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
+                          <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
+                            {banner.title}
+                          </h3>
+                          {banner.subtitle && (
+                            <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
+                              {banner.subtitle}
+                            </p>
+                          )}
+                          <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
+                            <span>Kunjungi</span>
+                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </div>
+                      </a>
+                    )}
+                  </motion.div>
+                );
+              });
+            })()}
 
             {/* Branding badge */}
             <motion.div variants={itemVariants} className="pt-2 text-center text-xs opacity-60 text-white">

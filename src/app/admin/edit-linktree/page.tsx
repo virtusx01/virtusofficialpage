@@ -3070,19 +3070,36 @@ export default function EditLinktreePage() {
 
             {/* Section 4: Banner Cards CRUD Manager */}
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-amber-400" />
-                  <span>Kelola Kartu Banner Live / Promo ({(profile.banners || []).length})</span>
-                </h2>
-                <button
-                  type="button"
-                  onClick={addBanner}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Tambah Banner</span>
-                </button>
+              <div className="flex flex-wrap items-center justify-between border-b border-slate-800/80 pb-3 gap-3">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-amber-400" />
+                    <span>Kelola Kartu Banner Live / Promo ({(profile.banners || []).length})</span>
+                  </h2>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                    <input
+                      type="checkbox"
+                      checked={profile.showLiveBanner ?? true}
+                      onChange={(e) => setProfile({ ...profile, showLiveBanner: e.target.checked })}
+                      className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
+                    />
+                    <span className="text-xs font-semibold text-slate-200">
+                      {(profile.showLiveBanner ?? true) ? "Tampilkan Banner" : "Sembunyikan Banner"}
+                    </span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={addBanner}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Banner</span>
+                  </button>
+                </div>
               </div>
 
               {(profile.banners || []).length === 0 ? (
