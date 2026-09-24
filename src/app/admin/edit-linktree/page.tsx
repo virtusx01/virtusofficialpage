@@ -116,7 +116,6 @@ interface ProfileData {
   siteTitle?: string;
   siteSubtitle?: string;
   siteLogoUrl?: string;
-  faviconUrl?: string;
   footerDesc?: string;
   showLeaderboard?: boolean;
   leaderboardTitle?: string;
@@ -214,7 +213,6 @@ export default function EditLinktreePage() {
     siteTitle: "Virtus Official",
     siteSubtitle: "Streamer TIDAK KIKIR",
     siteLogoUrl: "",
-    faviconUrl: "",
     footerDesc: "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
     showLeaderboard: true,
     leaderboardTitle: "TOP SUPPORTERS BULAN INI",
@@ -344,22 +342,14 @@ export default function EditLinktreePage() {
     }
   };
 
-  const handleImageUpload = async (
-    file: File,
-    field: "avatarUrl" | "liveBannerImage" | "siteLogoUrl" | "faviconUrl" | "siteBrandingAll"
-  ) => {
+  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage") => {
     setUploadingField(field);
     try {
       const compressedBlob = await compressImage(file, 800, 800, 0.85);
       const formData = new FormData();
-      formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".png");
-
-      const oldUrl = field === "siteBrandingAll"
-        ? (profile.siteLogoUrl || profile.faviconUrl)
-        : (profile[field as keyof typeof profile] as string);
-
-      if (oldUrl) {
-        formData.append("oldUrl", oldUrl);
+      formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
+      if (profile[field]) {
+        formData.append("oldUrl", profile[field]);
       }
 
       const res = await fetch("/api/upload", {
@@ -370,15 +360,7 @@ export default function EditLinktreePage() {
       const data = await res.json();
 
       if (res.ok && data.url) {
-        if (field === "siteBrandingAll") {
-          setProfile((prev) => ({
-            ...prev,
-            siteLogoUrl: data.url,
-            faviconUrl: data.url,
-          }));
-        } else {
-          setProfile((prev) => ({ ...prev, [field]: data.url }));
-        }
+        setProfile((prev) => ({ ...prev, [field]: data.url }));
         setSaveSuccess(false);
       } else {
         alert(`Gagal mengunggah gambar: ${data.error || "Server error"}`);
@@ -891,83 +873,13 @@ export default function EditLinktreePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left / Middle: Configuration Panel */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Section 0.5: Branding Website (Header, Footer, & Tab Browser Favicon) */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-fuchsia-950/30 border border-fuchsia-800/40 space-y-6 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-fuchsia-600/20 border border-fuchsia-500/30 text-fuchsia-400">
-                    <Globe className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                      <span>Branding Header, Footer & Tab Browser (Favicon)</span>
-                      <span className="px-2 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 text-[10px] font-mono border border-fuchsia-500/30">
-                        Multi-Branding Sync
-                      </span>
-                    </h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Kustomisasi judul, logo header/footer, dan icon tab browser (favicon) secara instan.
-                    </p>
-                  </div>
-                </div>
-              </div>
+            {/* Section 0.5: Branding Website (Header & Footer) */}
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
+                <Globe className="w-5 h-5 text-fuchsia-400" />
+                <span>Branding Header & Footer Website</span>
+              </h2>
 
-              {/* Master 1-Click Image Upload for ALL Branding */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-fuchsia-950/60 via-purple-950/60 to-indigo-950/60 border border-fuchsia-500/40 space-y-3 shadow-lg">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-fuchsia-800/40 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-                    <span className="text-xs font-extrabold text-slate-100">
-                      Master Sync: 1 Gambar Untuk Semua (Logo Header, Logo Footer & Favicon Tab Browser)
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-fuchsia-300 font-mono">Serentak dalam 1 Klik</span>
-                </div>
-
-                <p className="text-[11px] text-slate-300">
-                  Unggah 1 gambar di sini untuk langsung memasang gambar tersebut sebagai <strong>Logo Website (Header & Footer)</strong> sekaligus <strong>Icon Tab Browser (Favicon)</strong> sekaligus!
-                </p>
-
-                <div className="flex flex-wrap gap-2">
-                  <label className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-fuchsia-600/30 transition-all cursor-pointer gap-2 shrink-0">
-                    {uploadingField === "siteBrandingAll" ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
-                        <span>Mengunggah & Menyinkronkan...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 text-amber-300" />
-                        <span>Upload 1 Gambar Untuk Semua Logo & Favicon</span>
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={uploadingField === "siteBrandingAll"}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleImageUpload(file, "siteBrandingAll");
-                      }}
-                    />
-                  </label>
-
-                  {profile.siteLogoUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setProfile({ ...profile, faviconUrl: profile.siteLogoUrl })}
-                      className="px-3.5 py-2.5 rounded-xl bg-purple-900/60 hover:bg-purple-800/80 text-purple-200 border border-purple-700/60 font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                      title="Samakan Favicon Browser dengan Logo Website saat ini"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Samakan Favicon dengan Logo Website</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Title & Subtitle Inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Judul Header & Footer</label>
@@ -975,7 +887,7 @@ export default function EditLinktreePage() {
                     type="text"
                     value={profile.siteTitle || "Virtus Official"}
                     onChange={(e) => setProfile({ ...profile, siteTitle: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100 font-bold"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
                     placeholder="Contoh: Virtus Official"
                   />
                 </div>
@@ -992,161 +904,23 @@ export default function EditLinktreePage() {
                 </div>
               </div>
 
-              {/* Logo Website (Header & Footer) */}
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-200">
-                    Logo Website (Header & Footer Logo)
-                  </label>
-                  <span className="text-[10px] text-slate-500 font-mono">Tampil di Navbar & Footer</span>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                  <div className="h-14 w-14 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 p-1">
-                    <img
-                      src={profile.siteLogoUrl || "/logo.png"}
-                      alt="Logo Website"
-                      className="max-h-full max-w-full object-contain"
-                    />
+              {/* Logo Website */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Logo Website <span className="text-slate-500 font-normal">(disimpan statis di /public/logo.png – dimuat instan)</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  {/* Preview logo */}
+                  <div className="h-12 w-12 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center overflow-hidden shrink-0">
+                    <img src="/logo.png" alt="Logo Statis" className="w-full h-full object-cover" />
                   </div>
-
-                  <div className="flex-1 space-y-2 w-full">
-                    <div className="flex gap-2 w-full">
-                      <input
-                        type="text"
-                        value={profile.siteLogoUrl || ""}
-                        onChange={(e) => setProfile({ ...profile, siteLogoUrl: e.target.value })}
-                        placeholder="Default: /logo.png (masukkan URL atau klik Upload)"
-                        className="flex-1 px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-slate-100 outline-none focus:border-violet-500"
-                      />
-
-                      <label className="flex items-center gap-1.5 px-3.5 py-2 bg-violet-600 hover:bg-violet-500 text-white border border-violet-500 rounded-xl text-xs font-bold cursor-pointer shrink-0 transition-colors">
-                        {uploadingField === "siteLogoUrl" ? (
-                          <Loader2 className="w-4 h-4 text-white animate-spin" />
-                        ) : (
-                          <Upload className="w-4 h-4 text-white" />
-                        )}
-                        <span>Upload Logo</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "siteLogoUrl");
-                          }}
-                        />
-                      </label>
-
-                      {profile.siteLogoUrl && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            deleteUploadedFile(profile.siteLogoUrl);
-                            setProfile({ ...profile, siteLogoUrl: "" });
-                          }}
-                          className="px-3 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 rounded-xl text-xs font-semibold shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
-                          title="Hapus Logo Custom dari Supabase Storage"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-400" />
-                          <span>Hapus</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Status: {profile.siteLogoUrl ? <code className="text-emerald-400 font-mono">Custom Supabase URL</code> : <code className="text-violet-400 font-mono">Default (/logo.png)</code>}</span>
-                      {profile.siteLogoUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setProfile({ ...profile, faviconUrl: profile.siteLogoUrl })}
-                          className="text-fuchsia-400 hover:underline font-semibold cursor-pointer"
-                        >
-                          + Terapkan Ke Favicon Browser
-                        </button>
-                      )}
-                    </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-slate-300 font-medium">Logo Aktif: <code className="text-violet-400 font-mono text-[11px]">/public/logo.png</code></p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Logo Header dan Footer sekarang otomatis memuat file statis dari folder public agar instan dan tanpa jeda.</p>
                   </div>
                 </div>
               </div>
 
-              {/* Favicon / Icon Tab Browser */}
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-200">
-                    Icon Tab Browser (Favicon Icon)
-                  </label>
-                  <span className="text-[10px] text-slate-500 font-mono">Tampil di Tab Browser</span>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                  <div className="h-14 w-14 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 p-1">
-                    <img
-                      src={profile.faviconUrl || "/favicon.ico"}
-                      alt="Favicon Browser"
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-
-                  <div className="flex-1 space-y-2 w-full">
-                    <div className="flex gap-2 w-full">
-                      <input
-                        type="text"
-                        value={profile.faviconUrl || ""}
-                        onChange={(e) => setProfile({ ...profile, faviconUrl: e.target.value })}
-                        placeholder="Default: /favicon.ico (masukkan URL atau klik Upload)"
-                        className="flex-1 px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-slate-100 outline-none focus:border-violet-500"
-                      />
-
-                      <label className="flex items-center gap-1.5 px-3.5 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white border border-fuchsia-500 rounded-xl text-xs font-bold cursor-pointer shrink-0 transition-colors">
-                        {uploadingField === "faviconUrl" ? (
-                          <Loader2 className="w-4 h-4 text-white animate-spin" />
-                        ) : (
-                          <Upload className="w-4 h-4 text-white" />
-                        )}
-                        <span>Upload Favicon</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "faviconUrl");
-                          }}
-                        />
-                      </label>
-
-                      {profile.faviconUrl && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            deleteUploadedFile(profile.faviconUrl);
-                            setProfile({ ...profile, faviconUrl: "" });
-                          }}
-                          className="px-3 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 rounded-xl text-xs font-semibold shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
-                          title="Hapus Favicon Custom dari Supabase Storage"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-400" />
-                          <span>Hapus</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Status: {profile.faviconUrl ? <code className="text-emerald-400 font-mono">Custom Favicon URL</code> : <code className="text-violet-400 font-mono">Default (/favicon.ico)</code>}</span>
-                      {profile.siteLogoUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setProfile({ ...profile, faviconUrl: profile.siteLogoUrl })}
-                          className="text-fuchsia-400 hover:underline font-semibold cursor-pointer"
-                        >
-                          + Samakan Dengan Logo Website
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer Description */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">Deskripsi Footer Website</label>
                 <textarea
@@ -1158,51 +932,22 @@ export default function EditLinktreePage() {
                 />
               </div>
 
-              {/* Live Preview Box */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-fuchsia-900/40 space-y-3">
-                <span className="text-xs font-bold text-fuchsia-300 flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Live Preview Branding Header, Footer & Tab Browser:</span>
-                </span>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Header Preview */}
-                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
-                    <span className="text-[10px] font-bold text-slate-400 block border-b border-slate-800 pb-1">Header Logo</span>
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-slate-950 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 p-0.5">
-                        <img src={profile.siteLogoUrl || "/logo.png"} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="overflow-hidden">
-                        <p className="text-xs font-bold text-slate-100 truncate">{profile.siteTitle || "Virtus Official"}</p>
-                        <p className="text-[9px] text-slate-500 truncate">{profile.siteSubtitle || "Streamer TIDAK KIKIR"}</p>
-                      </div>
-                    </div>
+              {/* Favicon / Icon Tab Browser */}
+              <div className="pt-3 border-t border-slate-800/60">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Icon Tab Browser (Favicon) <span className="text-slate-500 font-normal">(disimpan statis di /public/favicon.ico)</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                    <img
+                      src="/favicon.ico"
+                      alt="Favicon"
+                      className="w-8 h-8 object-contain"
+                    />
                   </div>
-
-                  {/* Footer Preview */}
-                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
-                    <span className="text-[10px] font-bold text-slate-400 block border-b border-slate-800 pb-1">Footer Logo</span>
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-slate-950 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 p-0.5">
-                        <img src={profile.siteLogoUrl || "/logo.png"} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="overflow-hidden">
-                        <p className="text-xs font-bold text-slate-100 truncate">{profile.siteTitle || "Virtus Official"}</p>
-                        <p className="text-[9px] text-slate-500 truncate">{profile.siteSubtitle || "Streamer TIDAK KIKIR"}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Favicon Browser Preview */}
-                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
-                    <span className="text-[10px] font-bold text-slate-400 block border-b border-slate-800 pb-1">Tab Browser Favicon</span>
-                    <div className="flex items-center gap-2 bg-slate-950 px-2.5 py-1.5 rounded border border-slate-800">
-                      <div className="h-4 w-4 rounded bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
-                        <img src={profile.faviconUrl || "/favicon.ico"} alt="" className="w-full h-full object-contain" />
-                      </div>
-                      <span className="text-[10px] font-semibold text-slate-300 truncate">{profile.siteTitle || "Virtus Official"}</span>
-                    </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-slate-300 font-medium">Favicon Aktif: <code className="text-violet-400 font-mono text-[11px]">/public/favicon.ico</code></p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Favicon otomatis tampil di tab browser untuk semua pengunjung website.</p>
                   </div>
                 </div>
               </div>

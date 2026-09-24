@@ -17,7 +17,6 @@ interface FooterProps {
   initialData?: {
     siteTitle?: string;
     siteSubtitle?: string;
-    siteLogoUrl?: string;
     footerDesc?: string;
     links?: SocialLink[];
   };
@@ -27,7 +26,6 @@ export default function Footer({ initialData }: FooterProps = {}) {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialData?.links || []);
   const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
   const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
-  const [siteLogoUrl, setSiteLogoUrl] = useState(initialData?.siteLogoUrl || "");
   const [footerDesc, setFooterDesc] = useState(
     initialData?.footerDesc ||
     "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami."
@@ -47,7 +45,6 @@ export default function Footer({ initialData }: FooterProps = {}) {
           }
           if (data.siteTitle) setSiteTitle(data.siteTitle);
           if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
-          if (data.siteLogoUrl !== undefined) setSiteLogoUrl(data.siteLogoUrl || "");
           if (data.footerDesc !== undefined) setFooterDesc(data.footerDesc || "");
         }
       } catch (err) {
@@ -72,12 +69,8 @@ export default function Footer({ initialData }: FooterProps = {}) {
           {/* Col 1: Brand Info */}
           <div className="md:col-span-2 space-y-4">
             <Link href="/" prefetch={true} className="flex items-center gap-3 group">
-              <div className="h-10 w-10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
-                {siteLogoUrl ? (
-                  <img src={siteLogoUrl} alt="Virtus Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
-                )}
+              <div className="h-10 w-10 rounded-xl  flex items-center justify-center  group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
+                <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h3 className="text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent">
