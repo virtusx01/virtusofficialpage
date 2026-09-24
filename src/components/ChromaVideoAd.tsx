@@ -249,6 +249,47 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
     activeAdsList.length,
   ]);
 
+  // Auto Close 1-Hour Frequency Check
+  useEffect(() => {
+    if (previewMode) return;
+    try {
+      const dismissedAt = localStorage.getItem('chroma_ad_dismissed_at');
+      if (dismissedAt) {
+        const lastDismissedTime = parseInt(dismissedAt, 10);
+        const ONE_HOUR_MS = 60 * 60 * 1000;
+        if (Date.now() - lastDismissedTime < ONE_HOUR_MS) {
+          setIsDismissed(true);
+        } else {
+          localStorage.removeItem('chroma_ad_dismissed_at');
+        }
+      }
+    } catch {
+      // Ignore localStorage errors (safari private mode fallback)
+    }
+  }, [previewMode]);
+
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDismissed(true);
+    if (!previewMode) {
+      try {
+        localStorage.setItem('chroma_ad_dismissed_at', Date.now().toString());
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+  };
+
+  // Helper to generate WebM fallback URL from MP4 path if available
+  const getWebmUrl = (url: string) => {
+    if (!url) return '';
+    if (url.endsWith('.mp4')) {
+      return url.substring(0, url.lastIndexOf('.')) + '.webm';
+    }
+    return '';
+  };
+
   if (!currentVideoUrl || isDismissed || activeAdsList.length === 0) return null;
 
   // Position Styles calculation
@@ -309,13 +350,19 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
       <video
         ref={videoRef}
         key={currentVideoUrl} // Remount video element on URL change for smooth transition
-        src={currentVideoUrl}
         autoPlay
         muted
+        loop
         playsInline
+        webkit-playsinline="true"
         crossOrigin="anonymous"
         className="hidden"
-      />
+      >
+        {getWebmUrl(currentVideoUrl) && (
+          <source src={getWebmUrl(currentVideoUrl)} type="video/webm" />
+        )}
+        <source src={currentVideoUrl} type={currentVideoUrl.endsWith('.webm') ? 'video/webm' : 'video/mp4'} />
+      </video>
 
       {/* Target Link Icon Indicator */}
       {currentTargetUrl && !previewMode && (
@@ -339,11 +386,7 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
       {/* FIXED POSITION CLOSE BUTTON: Positioned consistently at top-right of wrapper */}
       {!previewMode && (
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsDismissed(true);
-          }}
+          onClick={handleDismiss}
           className="absolute -top-2.5 -right-2.5 bg-black/80 hover:bg-red-600 text-white rounded-full p-1.5 shadow-xl border border-white/20 backdrop-blur-md opacity-90 hover:opacity-100 transition-all z-30 cursor-pointer"
           title="Tutup Iklan"
           aria-label="Tutup Iklan"
