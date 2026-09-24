@@ -24,8 +24,8 @@ export default function Header({ initialData }: HeaderProps = {}) {
 
   const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
   const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
-  const [siteLogoUrl, setSiteLogoUrl] = useState("");
-  const [faviconUrl, setFaviconUrl] = useState("");
+  const [siteLogoUrl, setSiteLogoUrl] = useState(initialData?.siteLogoUrl || "");
+  const [faviconUrl, setFaviconUrl] = useState(initialData?.faviconUrl || "");
 
   // Auto-detect live status (auto TikTok detector) & site branding settings
   useEffect(() => {

@@ -27,7 +27,7 @@ export default function Footer({ initialData }: FooterProps = {}) {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialData?.links || []);
   const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
   const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
-  const [siteLogoUrl, setSiteLogoUrl] = useState("");
+  const [siteLogoUrl, setSiteLogoUrl] = useState(initialData?.siteLogoUrl || "");
   const [footerDesc, setFooterDesc] = useState(
     initialData?.footerDesc ||
     "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami."
