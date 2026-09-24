@@ -97,21 +97,21 @@ export default function Header({ initialData }: HeaderProps = {}) {
           href="/"
           prefetch={true}
           id="nav-brand-logo"
-          className="flex items-center gap-3 group shrink-0"
+          className="flex items-center gap-3 group shrink-0 py-1"
         >
-          <div className="h-10 w-10 rounded-xl  flex items-center justify-center  group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
+          <div className="h-10 w-10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0 border border-slate-800/60 bg-slate-900">
             <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
           </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-none">
+          <div className="flex flex-col justify-center">
+            <h1 className="text-sm sm:text-base font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-tight">
               {siteTitle}
             </h1>
-            <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">{siteSubtitle}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium leading-none mt-1">{siteSubtitle}</p>
           </div>
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 border border-slate-800/80 p-1 rounded-xl">
+        <nav className="hidden md:flex items-center gap-1.5 bg-slate-900/80 border border-slate-800/80 p-1.5 rounded-2xl shadow-inner">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const active = isActive(link.href);
@@ -120,22 +120,22 @@ export default function Header({ initialData }: HeaderProps = {}) {
                 key={link.href}
                 href={link.href}
                 prefetch={true}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${active
-                  ? "bg-violet-600 text-white shadow-md shadow-violet-600/20"
-                  : "text-slate-300 hover:text-white hover:bg-slate-850"
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${active
+                  ? "bg-violet-600 text-white shadow-lg shadow-violet-600/30"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
                   }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{link.label}</span>
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">{link.label}</span>
                 {link.badge && (
                   <span
-                    className={`flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${link.isLive
+                    className={`flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full border whitespace-nowrap ${link.isLive
                       ? "bg-red-500/20 text-red-400 border-red-500/30 shadow-sm shadow-red-500/20"
                       : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
                       }`}
                   >
                     <span
-                      className={`h-1.5 w-1.5 rounded-full ${link.isLive ? "bg-red-500 animate-pulse" : "bg-emerald-400"
+                      className={`h-1.5 w-1.5 rounded-full shrink-0 ${link.isLive ? "bg-red-500 animate-pulse" : "bg-emerald-400"
                         }`}
                     />
                     {link.badge}
@@ -147,23 +147,23 @@ export default function Header({ initialData }: HeaderProps = {}) {
         </nav>
 
         {/* Desktop Admin Controls (Shown ONLY if logged in as Admin) */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center justify-end gap-3 shrink-0">
           {isAdmin && (
             <div className="flex items-center gap-2">
               <Link
                 href="/admin/dashboard"
                 id="nav-dashboard-btn"
-                className="flex items-center gap-1.5 text-xs font-bold text-slate-100 bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-850 transition-all px-3 py-1.5 rounded-xl"
+                className="flex items-center gap-2 text-xs font-bold text-slate-100 bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 transition-all px-3.5 py-2 rounded-xl"
               >
-                <LayoutDashboard className="h-4 w-4 text-violet-400" />
+                <LayoutDashboard className="h-4 w-4 text-violet-400 shrink-0" />
                 <span>Dashboard Admin</span>
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: window.location.origin + "/" })}
                 id="nav-logout-btn"
-                className="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 bg-red-950/30 border border-red-900/40 hover:border-red-900/70 transition-all px-3 py-1.5 rounded-xl cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 bg-red-950/30 border border-red-900/40 hover:border-red-900/70 transition-all px-3.5 py-2 rounded-xl cursor-pointer"
               >
-                <LogOut className="h-3.5 w-3.5" />
+                <LogOut className="h-3.5 w-3.5 shrink-0" />
                 <span>Logout</span>
               </button>
             </div>
