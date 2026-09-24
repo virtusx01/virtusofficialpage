@@ -98,15 +98,7 @@ export async function GET() {
       });
     } else {
       let needsRefresh = false;
-      if (!profile.codes || profile.codes.length === 0) {
-        await prisma.linktreeCode.createMany({
-          data: DEFAULT_CODES.map((c) => ({
-            ...c,
-            profileId: 'profile',
-          })),
-        });
-        needsRefresh = true;
-      }
+
 
       // Seed default video ad if legacy videoAdUrl exists but videoAds table is empty
       if (profile.videoAdUrl && (!profile.videoAds || profile.videoAds.length === 0)) {
