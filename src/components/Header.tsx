@@ -119,7 +119,11 @@ export default function Header({ initialData }: HeaderProps = {}) {
           className="flex items-center gap-3 group shrink-0"
         >
           <div className="h-10 w-10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
-            <img src={siteLogoUrl || "/logo.png"} alt="Virtus Logo" className="w-full h-full object-cover" />
+            {siteLogoUrl ? (
+              <img src={siteLogoUrl} alt="Virtus Logo" className="w-full h-full object-cover" />
+            ) : (
+              <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
+            )}
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-none">
