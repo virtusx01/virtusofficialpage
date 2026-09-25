@@ -92,8 +92,12 @@ model LinktreeProfile {
   socialIconColor        String         @default("") // Hex color string or empty
   socialIconUseBrandColor Boolean       @default(false) // Whether to use brand original colors
   socialIconBg           String         @default("glass") // "transparent" | "glass" | "solid" | "custom"
-  socialIconCustomBg     String         @default("") // Hex color string if custom bg
-  socialIconShape        String         @default("circle") // "circle" | "rounded" | "square" | "pill"
+  // Custom Background & Visual Effects
+  bgImageUrl             String         @default("") // Custom background image URL
+  bgDarkness             Int            @default(40) // 0 to 90 % opacity overlay
+  bgBlur                 Int            @default(0) // 0 to 20 px blur filter
+  bgEffect               String         @default("none") // "none" | "particles" | "ambient-glow" | "cyber-rain" | "aurora" | "cyber-grid"
+  bgEffectSpeed          String         @default("normal") // "slow" | "normal" | "fast"
 
   updatedAt        DateTime       @updatedAt
 }

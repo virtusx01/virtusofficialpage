@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { SociabuzzLeaderboard } from '@/components/SociabuzzLeaderboard';
 import { ChromaVideoAd } from '@/components/ChromaVideoAd';
+import { BackgroundEffects } from '@/components/BackgroundEffects';
 import {
   Globe,
   MessageCircle,
@@ -125,8 +126,11 @@ export interface LinktreeProfileData {
   socialIconColor?: string;
   socialIconUseBrandColor?: boolean;
   socialIconBg?: string;
-  socialIconCustomBg?: string;
-  socialIconShape?: string;
+  bgImageUrl?: string;
+  bgDarkness?: number;
+  bgBlur?: number;
+  bgEffect?: string;
+  bgEffectSpeed?: string;
   videoAds?: any[];
   links: LinktreeItem[];
   banners?: LinktreeBannerItem[];
@@ -703,26 +707,39 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
           siteSubtitle: profile.siteSubtitle,
         }}
       />
-      <main className={`flex-1 w-full flex items-center justify-center p-3 sm:p-6 ${currentTheme.bg} font-sans relative overflow-hidden`}>
-        {/* Background Animated Blobs / Glow */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-            rotate: [0, 90, 0],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' as const }}
-          className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+      <main className={`flex-1 w-full flex items-center justify-center p-3 sm:p-6 ${profile.bgImageUrl ? 'bg-slate-950' : currentTheme.bg} font-sans relative overflow-hidden`}>
+        {/* Custom Background Image & Ultra-fast Visual Effects Layer */}
+        <BackgroundEffects
+          bgImageUrl={profile.bgImageUrl}
+          bgDarkness={profile.bgDarkness ?? 40}
+          bgBlur={profile.bgBlur ?? 0}
+          bgEffect={profile.bgEffect || 'none'}
+          bgEffectSpeed={profile.bgEffectSpeed || 'normal'}
         />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.2, 0.4, 0.2],
-            rotate: [0, -90, 0],
-          }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' as const }}
-          className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"
-        />
+
+        {/* Background Animated Blobs / Glow (Fallback if no custom image & effect) */}
+        {!profile.bgImageUrl && profile.bgEffect === 'none' && (
+          <>
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.5, 0.3],
+                rotate: [0, 90, 0],
+              }}
+              transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' as const }}
+              className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+            />
+            <motion.div
+              animate={{
+                scale: [1, 1.3, 1],
+                opacity: [0.2, 0.4, 0.2],
+                rotate: [0, -90, 0],
+              }}
+              transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' as const }}
+              className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"
+            />
+          </>
+        )}
 
         {/* Main Container Card */}
         <div className="w-full max-w-md my-auto relative z-10 py-6">
