@@ -126,6 +126,8 @@ export interface LinktreeProfileData {
   socialIconColor?: string;
   socialIconUseBrandColor?: boolean;
   socialIconBg?: string;
+  socialIconCustomBg?: string;
+  socialIconShape?: string;
   bgImageUrl?: string;
   bgDarkness?: number;
   bgBlur?: number;
