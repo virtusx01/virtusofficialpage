@@ -352,7 +352,7 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
         key={currentVideoUrl} // Remount video element on URL change for smooth transition
         autoPlay
         muted
-        loop
+        loop={activeAdsList.length <= 1}
         playsInline
         webkit-playsinline="true"
         crossOrigin="anonymous"

@@ -254,7 +254,20 @@ export default function EditLinktreePage() {
     bgBlur: 0,
     bgEffect: "none",
     bgEffectSpeed: "normal",
-    videoAds: [],
+    videoAds: [
+      {
+        id: "default-1",
+        title: "Iklan Video 1",
+        videoUrl: "",
+        targetUrl: "",
+        chromaEnable: true,
+        chromaColor: "#00FF00",
+        chromaSimilarity: 0.35,
+        chromaSmoothness: 0.1,
+        isEnabled: true,
+        orderIndex: 0,
+      },
+    ],
     links: [],
     banners: [],
     topButtons: [],
@@ -536,6 +549,22 @@ export default function EditLinktreePage() {
         const res = await fetch("/api/linktree");
         if (res.ok) {
           const data = await res.json();
+          if (!data.videoAds || data.videoAds.length === 0) {
+            data.videoAds = [
+              {
+                id: `default-${Date.now()}`,
+                title: "Iklan Video 1",
+                videoUrl: data.videoAdUrl || "",
+                targetUrl: data.videoAdTargetUrl || "",
+                chromaEnable: data.videoAdChromaEnable ?? true,
+                chromaColor: data.videoAdChromaColor || "#00FF00",
+                chromaSimilarity: data.videoAdChromaSimilarity ?? 0.35,
+                chromaSmoothness: data.videoAdChromaSmoothness ?? 0.1,
+                isEnabled: true,
+                orderIndex: 0,
+              },
+            ];
+          }
           setProfile(data);
         }
       } catch (err) {
