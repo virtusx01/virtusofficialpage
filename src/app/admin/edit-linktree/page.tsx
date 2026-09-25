@@ -1758,6 +1758,169 @@ export default function EditLinktreePage() {
               </div>
             </div>
 
+            {/* Section 2: Custom Background & Visual Effects */}
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl">
+              <h2 className="text-base font-bold text-slate-100 flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-fuchsia-400" />
+                  <span>Custom Background Gambar & Efek Visual</span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 text-[10px] font-mono border border-fuchsia-500/30 font-bold">
+                  SUPER FAST 60FPS
+                </span>
+              </h2>
+
+              <div className="space-y-6">
+                {/* 1. Custom Background Image URL / Upload */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    URL Gambar Background Sendiri (Atau Upload File Gambar)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={profile.bgImageUrl || ""}
+                      onChange={(e) => setProfile({ ...profile, bgImageUrl: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-purple-500 text-sm outline-none text-slate-100 font-mono"
+                      placeholder="https://images.unsplash.com/... atau kosongkan untuk warna tema"
+                    />
+                    <label className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
+                      {uploadingField === "bgImageUrl" ? (
+                        <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4 text-purple-400" />
+                      )}
+                      <span>Upload</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "bgImageUrl");
+                        }}
+                      />
+                    </label>
+                    {profile.bgImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteUploadedFile(profile.bgImageUrl || "");
+                          setProfile({ ...profile, bgImageUrl: "" });
+                        }}
+                        className="px-3 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 rounded-xl text-xs font-semibold shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Hapus Background"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                        <span>Hapus</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Upload gambar kustom Anda (JPG/PNG/WebP/GIF) atau masukkan URL gambar dari internet.
+                  </p>
+                </div>
+
+                {/* 2. Darkness Dimmer & Blur Controls */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                  {/* Darkness Slider */}
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
+                      <span>Tingkat Kegelapan Layer (Darkness)</span>
+                      <span className="text-purple-400 font-mono font-bold">{profile.bgDarkness ?? 40}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="90"
+                      step="5"
+                      value={profile.bgDarkness ?? 40}
+                      onChange={(e) => setProfile({ ...profile, bgDarkness: parseInt(e.target.value) })}
+                      className="w-full accent-purple-500"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Gelapkan gambar agar teks & tombol link di atasnya tetap jelas dibaca.
+                    </p>
+                  </div>
+
+                  {/* Blur Slider */}
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
+                      <span>Tingkat Kelembutan Blur (Frosted Glass)</span>
+                      <span className="text-purple-400 font-mono font-bold">{profile.bgBlur ?? 0}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="20"
+                      step="1"
+                      value={profile.bgBlur ?? 0}
+                      onChange={(e) => setProfile({ ...profile, bgBlur: parseInt(e.target.value) })}
+                      className="w-full accent-purple-500"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Beri efek blur halus (0px = tajam / 20px = blur lembut).
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Pilihan Efek Animasi Background Visual */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-200 mb-2">Pilihan Efek Visual Latar Belakang (Ultra-Lightweight)</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {[
+                      { id: "none", label: "🚫 Tanpa Efek", desc: "Polos tanpa animasi" },
+                      { id: "particles", label: "🌌 Bintang Melayang", desc: "Titik partikel cahaya neon melayang" },
+                      { id: "ambient-glow", label: "✨ Ambient Glow Pulse", desc: "Lingkaran cahaya neon berdenyut" },
+                      { id: "aurora", label: "💫 Aurora Motion", desc: "Gelombang warna aurora halus" },
+                      { id: "cyber-rain", label: "🌧️ Cyber Digital Rain", desc: "Hujan kode/cahaya digital" },
+                      { id: "cyber-grid", label: "⚡ Retro Cyber Grid", desc: "Garis-garis kisi cyber synthwave" },
+                    ].map((eff) => (
+                      <button
+                        key={eff.id}
+                        type="button"
+                        onClick={() => setProfile({ ...profile, bgEffect: eff.id })}
+                        className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                          (profile.bgEffect || "none") === eff.id
+                            ? "bg-purple-900/40 border-purple-500 text-white font-bold shadow-md ring-1 ring-purple-500/50"
+                            : "bg-slate-950/70 border-slate-800 text-slate-400 hover:bg-slate-900 hover:text-slate-200"
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{eff.label}</div>
+                        <div className="text-[10px] text-slate-400 mt-1">{eff.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Kecepatan Animasi */}
+                {(profile.bgEffect && profile.bgEffect !== "none") && (
+                  <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                    <label className="block text-xs font-semibold text-slate-300 mb-2">Kecepatan Animasi Efek</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "slow", label: "🐢 Lambat & Soft" },
+                        { id: "normal", label: "⚡ Normal (Recommended)" },
+                        { id: "fast", label: "🚀 Cepat & Dynamic" },
+                      ].map((sp) => (
+                        <button
+                          key={sp.id}
+                          type="button"
+                          onClick={() => setProfile({ ...profile, bgEffectSpeed: sp.id })}
+                          className={`py-2 px-2 rounded-lg border text-center text-xs font-semibold transition-all cursor-pointer ${
+                            (profile.bgEffectSpeed || "normal") === sp.id
+                              ? "bg-purple-600 text-white border-purple-400 font-bold"
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800"
+                          }`}
+                        >
+                          {sp.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Section 1.1: Deretan Icon Social Media (Bawah Judul Virtus Official) */}
             <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-blue-800/40 space-y-6 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
@@ -2516,169 +2679,6 @@ export default function EditLinktreePage() {
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Section 2: Custom Background & Visual Effects */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl">
-              <h2 className="text-base font-bold text-slate-100 flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-fuchsia-400" />
-                  <span>Custom Background Gambar & Efek Visual</span>
-                </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 text-[10px] font-mono border border-fuchsia-500/30 font-bold">
-                  SUPER FAST 60FPS
-                </span>
-              </h2>
-
-              <div className="space-y-6">
-                {/* 1. Custom Background Image URL / Upload */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    URL Gambar Background Sendiri (Atau Upload File Gambar)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={profile.bgImageUrl || ""}
-                      onChange={(e) => setProfile({ ...profile, bgImageUrl: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-purple-500 text-sm outline-none text-slate-100 font-mono"
-                      placeholder="https://images.unsplash.com/... atau kosongkan untuk warna tema"
-                    />
-                    <label className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
-                      {uploadingField === "bgImageUrl" ? (
-                        <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
-                      ) : (
-                        <Upload className="w-4 h-4 text-purple-400" />
-                      )}
-                      <span>Upload</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "bgImageUrl");
-                        }}
-                      />
-                    </label>
-                    {profile.bgImageUrl && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          deleteUploadedFile(profile.bgImageUrl || "");
-                          setProfile({ ...profile, bgImageUrl: "" });
-                        }}
-                        className="px-3 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 rounded-xl text-xs font-semibold shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
-                        title="Hapus Background"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-400" />
-                        <span>Hapus</span>
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Upload gambar kustom Anda (JPG/PNG/WebP/GIF) atau masukkan URL gambar dari internet.
-                  </p>
-                </div>
-
-                {/* 2. Darkness Dimmer & Blur Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                  {/* Darkness Slider */}
-                  <div>
-                    <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
-                      <span>Tingkat Kegelapan Layer (Darkness)</span>
-                      <span className="text-purple-400 font-mono font-bold">{profile.bgDarkness ?? 40}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="90"
-                      step="5"
-                      value={profile.bgDarkness ?? 40}
-                      onChange={(e) => setProfile({ ...profile, bgDarkness: parseInt(e.target.value) })}
-                      className="w-full accent-purple-500"
-                    />
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      Gelapkan gambar agar teks & tombol link di atasnya tetap jelas dibaca.
-                    </p>
-                  </div>
-
-                  {/* Blur Slider */}
-                  <div>
-                    <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
-                      <span>Tingkat Kelembutan Blur (Frosted Glass)</span>
-                      <span className="text-purple-400 font-mono font-bold">{profile.bgBlur ?? 0}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="20"
-                      step="1"
-                      value={profile.bgBlur ?? 0}
-                      onChange={(e) => setProfile({ ...profile, bgBlur: parseInt(e.target.value) })}
-                      className="w-full accent-purple-500"
-                    />
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      Beri efek blur halus (0px = tajam / 20px = blur lembut).
-                    </p>
-                  </div>
-                </div>
-
-                {/* 3. Pilihan Efek Animasi Background Visual */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-200 mb-2">Pilihan Efek Visual Latar Belakang (Ultra-Lightweight)</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {[
-                      { id: "none", label: "🚫 Tanpa Efek", desc: "Polos tanpa animasi" },
-                      { id: "particles", label: "🌌 Bintang Melayang", desc: "Titik partikel cahaya neon melayang" },
-                      { id: "ambient-glow", label: "✨ Ambient Glow Pulse", desc: "Lingkaran cahaya neon berdenyut" },
-                      { id: "aurora", label: "💫 Aurora Motion", desc: "Gelombang warna aurora halus" },
-                      { id: "cyber-rain", label: "🌧️ Cyber Digital Rain", desc: "Hujan kode/cahaya digital" },
-                      { id: "cyber-grid", label: "⚡ Retro Cyber Grid", desc: "Garis-garis kisi cyber synthwave" },
-                    ].map((eff) => (
-                      <button
-                        key={eff.id}
-                        type="button"
-                        onClick={() => setProfile({ ...profile, bgEffect: eff.id })}
-                        className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
-                          (profile.bgEffect || "none") === eff.id
-                            ? "bg-purple-900/40 border-purple-500 text-white font-bold shadow-md ring-1 ring-purple-500/50"
-                            : "bg-slate-950/70 border-slate-800 text-slate-400 hover:bg-slate-900 hover:text-slate-200"
-                        }`}
-                      >
-                        <div className="text-xs font-bold">{eff.label}</div>
-                        <div className="text-[10px] text-slate-400 mt-1">{eff.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. Kecepatan Animasi */}
-                {(profile.bgEffect && profile.bgEffect !== "none") && (
-                  <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                    <label className="block text-xs font-semibold text-slate-300 mb-2">Kecepatan Animasi Efek</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { id: "slow", label: "🐢 Lambat & Soft" },
-                        { id: "normal", label: "⚡ Normal (Recommended)" },
-                        { id: "fast", label: "🚀 Cepat & Dynamic" },
-                      ].map((sp) => (
-                        <button
-                          key={sp.id}
-                          type="button"
-                          onClick={() => setProfile({ ...profile, bgEffectSpeed: sp.id })}
-                          className={`py-2 px-2 rounded-lg border text-center text-xs font-semibold transition-all cursor-pointer ${
-                            (profile.bgEffectSpeed || "normal") === sp.id
-                              ? "bg-purple-600 text-white border-purple-400 font-bold"
-                              : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800"
-                          }`}
-                        >
-                          {sp.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Section 2.5: Tema Visual */}
