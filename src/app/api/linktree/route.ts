@@ -312,8 +312,11 @@ export async function PUT(request: Request) {
         socialIconColor: socialIconColor || '',
         socialIconUseBrandColor: socialIconUseBrandColor ?? false,
         socialIconBg: socialIconBg || 'glass',
-        socialIconCustomBg: socialIconCustomBg || '',
-        socialIconShape: socialIconShape || 'circle',
+        bgImageUrl: bgImageUrl || '',
+        bgDarkness: bgDarkness ?? 40,
+        bgBlur: bgBlur ?? 0,
+        bgEffect: bgEffect || 'none',
+        bgEffectSpeed: bgEffectSpeed || 'normal',
       },
     });
 
