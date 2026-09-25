@@ -350,7 +350,7 @@ export default function EditLinktreePage() {
     }
   };
 
-  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage") => {
+  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl") => {
     setUploadingField(field);
     try {
       const compressedBlob = await compressImage(file, 800, 800, 0.85);
