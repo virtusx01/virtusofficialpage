@@ -1099,24 +1099,26 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         transition={linkTransitionProps}
                         whileHover={{ scale: 1.025, y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        style={{
-                          opacity: cardOpacity,
-                        }}
-                        className={`w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md overflow-hidden ${
-                          link.bgImageUrl ? 'bg-slate-900 border border-white/20' : currentTheme.cardBg
-                        }`}
+                        className="w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md overflow-hidden"
                       >
-                        {/* Background Banner Image for Link Card */}
-                        {link.bgImageUrl && (
-                          <div className="absolute inset-0 z-0">
-                            <img
-                              src={link.bgImageUrl}
-                              alt=""
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/25 transition-colors duration-300" />
-                          </div>
-                        )}
+                        {/* Background Base Container with Opacity */}
+                        <div
+                          style={{ opacity: cardOpacity }}
+                          className={`absolute inset-0 z-0 transition-opacity duration-300 ${
+                            link.bgImageUrl ? 'bg-slate-900 border border-white/20' : currentTheme.cardBg
+                          }`}
+                        >
+                          {link.bgImageUrl && (
+                            <div className="absolute inset-0">
+                              <img
+                                src={link.bgImageUrl}
+                                alt=""
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/25 transition-colors duration-300" />
+                            </div>
+                          )}
+                        </div>
 
                         <div className="relative z-10 flex flex-col items-center justify-center w-full gap-2.5">
                           <div style={{ filter: iconShadowCss }}>
@@ -1144,24 +1146,28 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         transition={linkTransitionProps}
                         whileHover={{ scale: 1.025, y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        style={{
-                          opacity: cardOpacity,
-                        }}
                         className={`w-full py-4 px-6 rounded-full flex items-center transition-all duration-300 font-semibold text-base relative group shadow-md overflow-hidden ${
                           link.itemAlign === 'center' ? 'justify-center' : 'justify-between'
-                        } ${link.bgImageUrl ? 'bg-slate-900 border border-white/20' : currentTheme.cardBg}`}
+                        }`}
                       >
-                        {/* Background Banner Image for Link Card */}
-                        {link.bgImageUrl && (
-                          <div className="absolute inset-0 z-0">
-                            <img
-                              src={link.bgImageUrl}
-                              alt=""
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/25 transition-colors duration-300" />
-                          </div>
-                        )}
+                        {/* Background Base Container with Opacity */}
+                        <div
+                          style={{ opacity: cardOpacity }}
+                          className={`absolute inset-0 z-0 transition-opacity duration-300 ${
+                            link.bgImageUrl ? 'bg-slate-900 border border-white/20' : currentTheme.cardBg
+                          }`}
+                        >
+                          {link.bgImageUrl && (
+                            <div className="absolute inset-0">
+                              <img
+                                src={link.bgImageUrl}
+                                alt=""
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/25 transition-colors duration-300" />
+                            </div>
+                          )}
+                        </div>
 
                         {link.itemAlign === 'center' ? (
                           <>
