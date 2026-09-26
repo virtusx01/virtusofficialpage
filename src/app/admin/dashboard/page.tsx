@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -54,7 +54,7 @@ interface SystemHealth {
   lastChecked: Date | null;
 }
 
-export default function AdminDashboardMenu() {
+const AdminDashboardMenu: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -216,7 +216,7 @@ export default function AdminDashboardMenu() {
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         {/* Colorful Welcome & Overview Header */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-950/50 via-slate-900/80 to-slate-950 border border-violet-500/30 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+        <section aria-labelledby="dashboard-title" className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-950/50 via-slate-900/80 to-slate-950 border border-violet-500/30 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-1/3 -mb-16 w-64 h-64 bg-fuchsia-600/15 rounded-full blur-3xl pointer-events-none" />
 
@@ -226,11 +226,11 @@ export default function AdminDashboardMenu() {
                 <Sparkles className="w-3.5 h-3.5 text-violet-400" />
                 <span>Portal Kontrol Administrator</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+              <h1 id="dashboard-title" className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
                 Dashboard Menu
               </h1>
               <p className="text-sm text-slate-300/90 mt-2 max-w-xl leading-relaxed">
-                Pilih modul manajemen yang ingin Anda kelola. Atur sistem antrean Mabar VIP, konfigurasi live stream, atau modifikasi konten Linktree utama.
+                Pilih modul manajemen yang ingin kamu kelola. Atur sistem antrean Mabar VIP, konfigurasi live stream, atau modifikasi konten Linktree utama.
               </p>
             </div>
 
@@ -253,7 +253,7 @@ export default function AdminDashboardMenu() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Website Healthy Status Panel (Clean and Informative) */}
         <section aria-labelledby="status-kesehatan-website" className="relative overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-cyan-950/20 p-5 sm:p-6 backdrop-blur-xl shadow-xl">
@@ -370,7 +370,7 @@ export default function AdminDashboardMenu() {
         </section>
 
         {/* Colorful Quick Stats Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <section aria-label="Statistik Ringkas" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="p-4 rounded-2xl border border-slate-800/80 bg-slate-900/50 hover:border-emerald-500/30 transition-all shadow-md">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
               Sedang Main
@@ -410,18 +410,18 @@ export default function AdminDashboardMenu() {
               <span className="text-xs text-slate-500 font-medium">Tautan</span>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Colorful Core Navigation Cards Menu */}
-        <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
+        <section aria-labelledby="pengaturan-menu-heading">
+          <h2 id="pengaturan-menu-heading" className="text-base sm:text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
             <Layers className="w-5 h-5 text-violet-400" />
             <span>Pilih Pengaturan Menu</span>
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* CARD 1: EDIT MABAR VIP (Colorful Violet & Indigo) */}
-            <div className="group relative rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-violet-500/50 transition-all duration-300 p-6 sm:p-7 flex flex-col justify-between overflow-hidden hover:shadow-2xl hover:shadow-violet-600/20">
+            <article className="group relative rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-violet-500/50 transition-all duration-300 p-6 sm:p-7 flex flex-col justify-between overflow-hidden hover:shadow-2xl hover:shadow-violet-600/20">
               <div className="absolute top-0 right-0 w-36 h-36 bg-violet-600/15 rounded-full blur-2xl group-hover:bg-violet-600/30 transition-all pointer-events-none" />
 
               <div>
@@ -477,10 +477,10 @@ export default function AdminDashboardMenu() {
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
-            </div>
+            </article>
 
             {/* CARD 2: EDIT LINKTREE UTAMA (Colorful Amber & Orange) */}
-            <div className="group relative rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/50 transition-all duration-300 p-6 sm:p-7 flex flex-col justify-between overflow-hidden hover:shadow-2xl hover:shadow-amber-600/20">
+            <article className="group relative rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/50 transition-all duration-300 p-6 sm:p-7 flex flex-col justify-between overflow-hidden hover:shadow-2xl hover:shadow-amber-600/20">
               <div className="absolute top-0 right-0 w-36 h-36 bg-amber-600/15 rounded-full blur-2xl group-hover:bg-amber-600/30 transition-all pointer-events-none" />
 
               <div>
@@ -536,18 +536,18 @@ export default function AdminDashboardMenu() {
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
-            </div>
+            </article>
           </div>
-        </div>
+        </section>
 
         {/* Additional Admin Tools / Fanbase Card (Colorful Fuchsia) */}
-        <div className="rounded-3xl bg-slate-900/40 border border-slate-800 hover:border-fuchsia-500/40 p-5 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all">
+        <section aria-labelledby="fanbase-card-heading" className="rounded-3xl bg-slate-900/40 border border-slate-800 hover:border-fuchsia-500/40 p-5 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-fuchsia-600/20 border border-fuchsia-500/30 flex items-center justify-center text-fuchsia-400 shrink-0 shadow-lg shadow-fuchsia-950/40">
               <Cat className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-slate-100">Kustomisasi Fanbase Cat (Cupidut & Dudud)</h4>
+              <h4 id="fanbase-card-heading" className="text-base font-bold text-slate-100">Kustomisasi Fanbase Cat (Cupidut & Dudud)</h4>
               <p className="text-xs text-slate-400 mt-0.5">Kelola foto, video lucu, dan ucapan untuk fanbase kucing kesayangan</p>
             </div>
           </div>
@@ -558,10 +558,12 @@ export default function AdminDashboardMenu() {
             <span>Edit Fanbase</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
-        </div>
+        </section>
       </main>
 
       <Footer />
     </div>
   );
-}
+};
+
+export default AdminDashboardMenu;
