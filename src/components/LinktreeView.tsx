@@ -43,6 +43,9 @@ export interface LinktreeItem {
   sectionBgColor?: string;
   sectionTextColor?: string;
   waCustomMessage?: string;
+  shakeEnable?: boolean;
+  shakeIntensity?: 'gentle' | 'medium' | 'strong' | string;
+  shakeFrequency?: 'rare' | 'normal' | 'frequent' | 'constant' | string;
   showInHeaderIcons?: boolean;
   isEnabled: boolean;
   orderIndex: number;
@@ -654,6 +657,78 @@ const THEMES: Record<string, { bg: string; cardBg: string; textColor: string; su
   },
 };
 
+const SHAKE_KEYFRAMES = {
+  gentle: [0, -3, 3, -2, 2, -1, 1, 0],
+  medium: [0, -6, 6, -5, 5, -3, 3, 0],
+  strong: [0, -10, 10, -8, 8, -5, 5, -2, 2, 0],
+};
+
+const SHAKE_DURATIONS = {
+  gentle: 0.5,
+  medium: 0.6,
+  strong: 0.7,
+};
+
+const SHAKE_PAUSES = {
+  rare: 7,
+  normal: 4,
+  frequent: 2,
+  constant: 0.1,
+};
+
+function MotionShakeLink({
+  link,
+  children,
+  targetUrl,
+  itemVariants,
+  className,
+}: {
+  link: LinktreeItem;
+  children: React.ReactNode;
+  targetUrl: string;
+  itemVariants: any;
+  className: string;
+}) {
+  const isShake = Boolean(link.shakeEnable);
+  const intensity = (link.shakeIntensity as 'gentle' | 'medium' | 'strong') || 'medium';
+  const frequency = (link.shakeFrequency as 'rare' | 'normal' | 'frequent' | 'constant') || 'normal';
+
+  const xKeyframes = SHAKE_KEYFRAMES[intensity] || SHAKE_KEYFRAMES.medium;
+  const shakeDur = SHAKE_DURATIONS[intensity] || 0.6;
+  const pauseDur = SHAKE_PAUSES[frequency] ?? 4;
+  const totalPeriod = shakeDur + pauseDur;
+
+  // Animate x displacement in Framer Motion repeat cycle
+  const animateProp = isShake
+    ? {
+        x: xKeyframes,
+        transition: {
+          x: {
+            duration: shakeDur,
+            repeat: Infinity,
+            repeatDelay: pauseDur,
+            ease: 'easeInOut',
+          },
+        },
+      }
+    : {};
+
+  return (
+    <motion.a
+      href={targetUrl}
+      target={targetUrl.startsWith('http') ? '_blank' : '_self'}
+      rel="noopener noreferrer"
+      variants={itemVariants}
+      animate={isShake ? animateProp : undefined}
+      whileHover={{ scale: 1.025, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      className={className}
+    >
+      {children}
+    </motion.a>
+  );
+}
+
 export default function LinktreeView({ profile: initialProfile }: { profile: LinktreeProfileData }) {
   const [profile, setProfile] = useState<LinktreeProfileData>(initialProfile);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
@@ -983,13 +1058,10 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                     )}
 
                     {link.layout === 'column' ? (
-                      <motion.a
-                        href={targetUrl}
-                        target={targetUrl.startsWith('http') ? '_blank' : '_self'}
-                        rel="noopener noreferrer"
-                        variants={itemVariants}
-                        whileHover={{ scale: 1.025, y: -2 }}
-                        whileTap={{ scale: 0.98 }}
+                      <MotionShakeLink
+                        link={link}
+                        targetUrl={targetUrl}
+                        itemVariants={itemVariants}
                         className={`w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md ${currentTheme.cardBg}`}
                       >
                         {renderLinkIcon(link)}
@@ -1000,15 +1072,12 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         <div className="absolute top-3.5 right-4 opacity-30 group-hover:opacity-90 transition-opacity">
                           <MoreHorizontal className="w-4 h-4" />
                         </div>
-                      </motion.a>
+                      </MotionShakeLink>
                     ) : (
-                      <motion.a
-                        href={targetUrl}
-                        target={targetUrl.startsWith('http') ? '_blank' : '_self'}
-                        rel="noopener noreferrer"
-                        variants={itemVariants}
-                        whileHover={{ scale: 1.025, y: -2 }}
-                        whileTap={{ scale: 0.98 }}
+                      <MotionShakeLink
+                        link={link}
+                        targetUrl={targetUrl}
+                        itemVariants={itemVariants}
                         className={`w-full py-4 px-6 rounded-full flex items-center transition-all duration-300 font-semibold text-base relative group shadow-md ${
                           link.itemAlign === 'center' ? 'justify-center' : 'justify-between'
                         } ${currentTheme.cardBg}`}
@@ -1040,7 +1109,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                             <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
                           </>
                         )}
-                      </motion.a>
+                      </MotionShakeLink>
                     )}
                   </div>
                 );

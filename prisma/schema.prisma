@@ -117,6 +117,9 @@ model LinktreeLink {
   sectionBgColor  String          @default("")
   sectionTextColor String         @default("")
   waCustomMessage String          @default("")
+  shakeEnable     Boolean         @default(false)
+  shakeIntensity  String          @default("medium") // "gentle" | "medium" | "strong"
+  shakeFrequency  String          @default("normal") // "rare" | "normal" | "frequent" | "constant"
   showInHeaderIcons Boolean       @default(true)
   isEnabled       Boolean         @default(true)
   orderIndex      Int             @default(0)

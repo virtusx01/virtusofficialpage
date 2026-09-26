@@ -51,6 +51,9 @@ interface LinkItem {
   sectionBgColor?: string;
   sectionTextColor?: string;
   waCustomMessage?: string;
+  shakeEnable?: boolean;
+  shakeIntensity?: "gentle" | "medium" | "strong";
+  shakeFrequency?: "rare" | "normal" | "frequent" | "constant";
   showInHeaderIcons?: boolean;
   isEnabled: boolean;
   orderIndex: number;
@@ -660,6 +663,9 @@ export default function EditLinktreePage() {
       sectionBgColor: "",
       sectionTextColor: "",
       waCustomMessage: "",
+      shakeEnable: false,
+      shakeIntensity: "medium",
+      shakeFrequency: "normal",
       isEnabled: true,
       orderIndex: profile.links.length,
     };
@@ -3078,6 +3084,87 @@ export default function EditLinktreePage() {
                             Format perataan nama link
                           </p>
                         </div>
+                      </div>
+
+                      {/* Section Kontrol Efek Shake (Goyang) Link */}
+                      <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={link.shakeEnable ?? false}
+                              onChange={(e) => updateLink(idx, "shakeEnable", e.target.checked)}
+                              className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 h-4 w-4"
+                            />
+                            <span className="flex items-center gap-1">
+                              <span>⚡ Efek Shake (Goyang / Getar Link)</span>
+                              {link.shakeEnable && (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/30">
+                                  AKTIF
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                        </div>
+
+                        {link.shakeEnable && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-800/60">
+                            {/* Kekuatan Shake */}
+                            <div>
+                              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                                Kekuatan Getar (Intensity)
+                              </label>
+                              <div className="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                                {[
+                                  { id: "gentle", label: "Halus" },
+                                  { id: "medium", label: "Sedang" },
+                                  { id: "strong", label: "Kuat" },
+                                ].map((int) => (
+                                  <button
+                                    key={int.id}
+                                    type="button"
+                                    onClick={() => updateLink(idx, "shakeIntensity", int.id)}
+                                    className={`py-1 px-1.5 rounded text-[11px] font-semibold transition-all ${
+                                      (link.shakeIntensity || "medium") === int.id
+                                        ? "bg-amber-600 text-white font-bold shadow-sm"
+                                        : "text-slate-400 hover:text-slate-200"
+                                    }`}
+                                  >
+                                    {int.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Frekuensi Shake */}
+                            <div>
+                              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                                Jeda / Frekuensi Shake
+                              </label>
+                              <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                                {[
+                                  { id: "rare", label: "Jarang" },
+                                  { id: "normal", label: "Sedang" },
+                                  { id: "frequent", label: "Sering" },
+                                  { id: "constant", label: "Terus" },
+                                ].map((freq) => (
+                                  <button
+                                    key={freq.id}
+                                    type="button"
+                                    onClick={() => updateLink(idx, "shakeFrequency", freq.id)}
+                                    className={`py-1 px-1 rounded text-[10px] font-semibold transition-all ${
+                                      (link.shakeFrequency || "normal") === freq.id
+                                        ? "bg-amber-600 text-white font-bold shadow-sm"
+                                        : "text-slate-400 hover:text-slate-200"
+                                    }`}
+                                  >
+                                    {freq.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Slider Pengatur Lebar Horizontal Ikon (Tinggi Vertikal Fixed 56px) */}
