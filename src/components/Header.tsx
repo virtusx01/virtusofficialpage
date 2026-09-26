@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { LogOut, LayoutDashboard, Sparkles, Menu, X, Home, Users, Cat } from "lucide-react";
 
+import { getCachedBranding, setCachedBranding, subscribeBrandingUpdate } from "@/lib/brandingCache";
+
 interface HeaderProps {
   initialData?: {
     siteTitle?: string;
@@ -20,21 +22,42 @@ export default function Header({ initialData }: HeaderProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLive, setIsLive] = useState<boolean>(false);
 
-  const [siteTitle, setSiteTitle] = useState(initialData?.siteTitle || "Virtus Official");
-  const [siteSubtitle, setSiteSubtitle] = useState(initialData?.siteSubtitle || "Streamer TIDAK KIKIR");
+  const [siteTitle, setSiteTitle] = useState(() => {
+    if (initialData?.siteTitle) return initialData.siteTitle;
+    const cached = getCachedBranding();
+    return cached?.siteTitle || "";
+  });
+  const [siteSubtitle, setSiteSubtitle] = useState(() => {
+    if (initialData?.siteSubtitle) return initialData.siteSubtitle;
+    const cached = getCachedBranding();
+    return cached?.siteSubtitle || "";
+  });
+  const [isBrandingReady, setIsBrandingReady] = useState(
+    () => !!initialData?.siteTitle || !!getCachedBranding()?.siteTitle
+  );
 
-  // Auto-detect live status (auto TikTok detector) & site branding settings
   useEffect(() => {
+    const cached = getCachedBranding();
+    if (cached) {
+      if (cached.siteTitle && !initialData?.siteTitle) setSiteTitle(cached.siteTitle);
+      if (cached.siteSubtitle && !initialData?.siteSubtitle) setSiteSubtitle(cached.siteSubtitle);
+      setIsBrandingReady(true);
+    }
+
+    const unsubscribe = subscribeBrandingUpdate((branding) => {
+      if (branding.siteTitle) setSiteTitle(branding.siteTitle);
+      if (branding.siteSubtitle) setSiteSubtitle(branding.siteSubtitle);
+      setIsBrandingReady(true);
+    });
+
     const checkLiveStatus = async () => {
       try {
-        // Auto-check live status from settings & TikTok
         const res = await fetch("/api/settings", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setIsLive(!!data.isLive);
         }
 
-        // Trigger TikTok live checker periodically in background
         fetch("/api/live-check", { cache: "no-store" })
           .then((r) => r.json())
           .then((liveData) => {
@@ -56,6 +79,12 @@ export default function Header({ initialData }: HeaderProps = {}) {
           if (data && !data.error) {
             if (data.siteTitle) setSiteTitle(data.siteTitle);
             if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
+            setIsBrandingReady(true);
+            setCachedBranding({
+              siteTitle: data.siteTitle,
+              siteSubtitle: data.siteSubtitle,
+              footerDesc: data.footerDesc,
+            });
           }
         }
       } catch (err) { }
@@ -64,8 +93,11 @@ export default function Header({ initialData }: HeaderProps = {}) {
     checkLiveStatus();
     fetchBranding();
     const interval = setInterval(checkLiveStatus, 15000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
+  }, [initialData]);
 
   const handleLogout = async () => {
     const prodUrl = process.env.NEXT_PUBLIC_SITE_URL;
@@ -112,11 +144,11 @@ export default function Header({ initialData }: HeaderProps = {}) {
             <div className="h-10 w-10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0 border border-slate-800/60 bg-slate-900">
               <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
             </div>
-            <div className="flex flex-col justify-center">
-              <h1 className="text-sm sm:text-base font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-tight">
+            <div className={`flex flex-col justify-center transition-opacity duration-200 ${isBrandingReady ? "opacity-100" : "opacity-0"}`}>
+              <h1 className="text-sm sm:text-base font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-tight min-h-[1.25rem]">
                 {siteTitle}
               </h1>
-              <p className="text-[10px] sm:text-xs text-slate-400 font-medium leading-none mt-1">{siteSubtitle}</p>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-medium leading-none mt-1 min-h-[0.875rem]">{siteSubtitle}</p>
             </div>
           </Link>
         </div>

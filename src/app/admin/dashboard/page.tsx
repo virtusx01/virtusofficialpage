@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { getCachedBranding } from "@/lib/brandingCache";
 import {
   Gamepad2,
   Sparkles,
@@ -58,15 +59,15 @@ const AdminDashboardMenu: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [stats, setStats] = useState<QuickStats>({
+  const [stats, setStats] = useState<QuickStats>(() => ({
     totalPlayers: 0,
     playingCount: 0,
     queueCount: 0,
     isLive: false,
     streamTitle: "",
     totalLinks: 0,
-    siteTitle: "Virtus Official",
-  });
+    siteTitle: getCachedBranding()?.siteTitle || "",
+  }));
   const [loadingStats, setLoadingStats] = useState(true);
 
   const [health, setHealth] = useState<SystemHealth>({
@@ -124,7 +125,7 @@ const AdminDashboardMenu: React.FC = () => {
       }
 
       let totalLinks = 0;
-      let siteTitle = "Virtus Official";
+      let siteTitle = getCachedBranding()?.siteTitle || "";
       if (linktreeRes.status === "fulfilled" && linktreeRes.value.ok) {
         const data = await linktreeRes.value.json();
         totalLinks = data.links?.length || 0;

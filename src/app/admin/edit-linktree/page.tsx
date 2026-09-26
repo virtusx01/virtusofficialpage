@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Footer from "@/components/Footer";
 import { ChromaVideoAd } from "@/components/ChromaVideoAd";
+import { setCachedBranding } from "@/lib/brandingCache";
 import {
   ArrowLeft,
   ArrowRight,
@@ -808,6 +809,13 @@ export default function EditLinktreePage() {
         const updated = await res.json();
         setProfile(updated);
         setSaveSuccess(true);
+        if (updated.siteTitle || updated.siteSubtitle || updated.footerDesc !== undefined) {
+          setCachedBranding({
+            siteTitle: updated.siteTitle,
+            siteSubtitle: updated.siteSubtitle,
+            footerDesc: updated.footerDesc,
+          });
+        }
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         const errData = await res.json();
