@@ -43,11 +43,9 @@ export interface LinktreeItem {
   sectionBgColor?: string;
   sectionTextColor?: string;
   waCustomMessage?: string;
-  shakeEnable?: boolean;
-  shakeDirection?: 'vertical' | 'horizontal' | 'both' | string;
-  shakeDistance?: number;
-  shakeIntensity?: 'gentle' | 'medium' | 'strong' | string;
-  shakeFrequency?: 'rare' | 'normal' | 'frequent' | 'constant' | string;
+  animation?: 'none' | 'shake' | 'bounce' | 'pulse' | 'glow' | 'shake-bounce' | string;
+  animationSpeed?: 'slow' | 'normal' | 'fast' | string;
+  animationStrength?: number;
   showInHeaderIcons?: boolean;
   isEnabled: boolean;
   orderIndex: number;
@@ -659,130 +657,6 @@ const THEMES: Record<string, { bg: string; cardBg: string; textColor: string; su
   },
 };
 
-const SHAKE_KEYFRAMES = {
-  gentle: [0, -3, 3, -2, 2, -1, 1, 0],
-  medium: [0, -6, 6, -5, 5, -3, 3, 0],
-  strong: [0, -10, 10, -8, 8, -5, 5, -2, 2, 0],
-};
-
-const SHAKE_DURATIONS = {
-  gentle: 0.5,
-  medium: 0.6,
-  strong: 0.7,
-};
-
-const SHAKE_PAUSES = {
-  rare: 7,
-  normal: 4,
-  frequent: 2,
-  constant: 0.1,
-};
-
-function MotionShakeLink({
-  link,
-  children,
-  targetUrl,
-  itemVariants,
-  className,
-}: {
-  link: LinktreeItem;
-  children: React.ReactNode;
-  targetUrl: string;
-  itemVariants: any;
-  className: string;
-}) {
-  const isShake = Boolean(link.shakeEnable);
-  const direction = link.shakeDirection || 'vertical'; // 'vertical' | 'horizontal' | 'both'
-  const dist = typeof link.shakeDistance === 'number' && !isNaN(link.shakeDistance) ? link.shakeDistance : 8;
-  const intensity = (link.shakeIntensity as 'gentle' | 'medium' | 'strong') || 'medium';
-  const frequency = (link.shakeFrequency as 'rare' | 'normal' | 'frequent' | 'constant') || 'normal';
-
-  const shakeDur = SHAKE_DURATIONS[intensity] || 0.6;
-  const pauseDur = SHAKE_PAUSES[frequency] ?? 4;
-
-  const animationObject: any = {};
-  const transitionObject: any = {};
-
-  if (isShake) {
-    if (direction === 'vertical') {
-      // ↕️ Microboy Naik-Turun (Vertical Bounce)
-      const vertMultipliers =
-        intensity === 'gentle'
-          ? [0, -0.7, 0.4, -0.3, 0.2, 0]
-          : intensity === 'strong'
-          ? [0, -1.5, 1.1, -0.8, 0.5, -0.3, 0]
-          : [0, -1.0, 0.7, -0.5, 0.3, 0];
-
-      animationObject.y = vertMultipliers.map((m) => Math.round(m * dist * 10) / 10);
-      transitionObject.y = {
-        duration: shakeDur,
-        repeat: Infinity,
-        repeatDelay: pauseDur,
-        ease: 'easeInOut' as const,
-      };
-    } else if (direction === 'horizontal') {
-      // ↔️ Buzz / Vibrate Kiri-Kanan (Horizontal Shake)
-      const horizMultipliers =
-        intensity === 'gentle'
-          ? [0, -0.5, 0.5, -0.3, 0.3, -0.1, 0.1, 0]
-          : intensity === 'strong'
-          ? [0, -1.2, 1.2, -0.9, 0.9, -0.6, 0.6, -0.3, 0.3, 0]
-          : [0, -0.8, 0.8, -0.6, 0.6, -0.4, 0.4, -0.2, 0.2, 0];
-
-      animationObject.x = horizMultipliers.map((m) => Math.round(m * dist * 10) / 10);
-      transitionObject.x = {
-        duration: shakeDur,
-        repeat: Infinity,
-        repeatDelay: pauseDur,
-        ease: 'easeInOut' as const,
-      };
-    } else {
-      // 🔀 Kombinasi (Vertical + Horizontal + Rotation Wobble)
-      const vertMultipliers = intensity === 'strong' ? [0, -1.3, 0.9, -0.6, 0.4, 0] : [0, -0.9, 0.6, -0.4, 0.2, 0];
-      const horizMultipliers = intensity === 'strong' ? [0, 0.8, -0.8, 0.5, -0.5, 0] : [0, 0.5, -0.5, 0.3, -0.3, 0];
-      const rotMultipliers = intensity === 'strong' ? [0, -3.5, 3.5, -2, 2, 0] : [0, -2, 2, -1, 1, 0];
-
-      animationObject.y = vertMultipliers.map((m) => Math.round(m * dist * 10) / 10);
-      animationObject.x = horizMultipliers.map((m) => Math.round(m * dist * 10) / 10);
-      animationObject.rotate = rotMultipliers;
-
-      const transSpec = {
-        duration: shakeDur,
-        repeat: Infinity,
-        repeatDelay: pauseDur,
-        ease: 'easeInOut' as const,
-      };
-
-      transitionObject.y = transSpec;
-      transitionObject.x = transSpec;
-      transitionObject.rotate = transSpec;
-    }
-  }
-
-  const animateProp = isShake
-    ? {
-        ...animationObject,
-        transition: transitionObject,
-      }
-    : undefined;
-
-  return (
-    <motion.a
-      href={targetUrl}
-      target={targetUrl.startsWith('http') ? '_blank' : '_self'}
-      rel="noopener noreferrer"
-      variants={itemVariants}
-      animate={animateProp}
-      whileHover={{ scale: 1.025, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      className={`${className} block w-full relative z-10`}
-      style={{ isolation: 'isolate', transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}
-    >
-      {children}
-    </motion.a>
-  );
-}
-
 export default function LinktreeView({ profile: initialProfile }: { profile: LinktreeProfileData }) {
   const [profile, setProfile] = useState<LinktreeProfileData>(initialProfile);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
@@ -1093,8 +967,85 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                   targetUrl = `${targetUrl}${separator}text=${encodeURIComponent(link.waCustomMessage.trim())}`;
                 }
 
+                // Calculate animation properties
+                const animType = link.animation || 'none';
+                const animSpeed = link.animationSpeed || 'normal';
+                const animStrength = typeof link.animationStrength === 'number' ? link.animationStrength : 5;
+                const factor = animStrength / 5; // 1 is default (factor=1)
+
+                // Base duration in seconds for loop cycle
+                let cycleDuration = 3;
+                if (animSpeed === 'fast') cycleDuration = 1.8;
+                if (animSpeed === 'slow') cycleDuration = 4.5;
+
+                let linkAnimateProps: any = undefined;
+                let linkTransitionProps: any = undefined;
+
+                if (animType === 'shake') {
+                  const xDist = Math.round(5 * factor);
+                  linkAnimateProps = {
+                    x: [0, -xDist, xDist, -xDist, xDist, 0, 0],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    times: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 1],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                } else if (animType === 'bounce') {
+                  const yDist = Math.round(8 * factor);
+                  linkAnimateProps = {
+                    y: [0, -yDist, 0, Math.round(-yDist * 0.4), 0, 0],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    times: [0, 0.15, 0.3, 0.45, 0.6, 1],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                } else if (animType === 'shake-bounce') {
+                  const xDist = Math.round(4 * factor);
+                  const yDist = Math.round(7 * factor);
+                  const rotDeg = Math.round(2.5 * factor);
+                  linkAnimateProps = {
+                    x: [0, -xDist, xDist, -xDist, xDist, 0, 0],
+                    y: [0, -yDist, Math.round(-yDist * 0.3), -yDist, 0, 0],
+                    rotate: [0, -rotDeg, rotDeg, -rotDeg, 0, 0],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    times: [0, 0.1, 0.2, 0.3, 0.4, 1],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                } else if (animType === 'pulse') {
+                  const scaleVal = 1 + 0.04 * factor;
+                  linkAnimateProps = {
+                    scale: [1, scaleVal, 1, scaleVal, 1, 1],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    times: [0, 0.15, 0.3, 0.45, 0.6, 1],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                } else if (animType === 'glow') {
+                  linkAnimateProps = {
+                    boxShadow: [
+                      '0 0 0px rgba(56, 189, 248, 0)',
+                      `0 0 ${Math.round(15 * factor)}px rgba(56, 189, 248, 0.8)`,
+                      '0 0 0px rgba(56, 189, 248, 0)',
+                    ],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                }
+
                 return (
-                  <div key={link.id} className="w-full relative z-10" style={{ isolation: 'isolate' }}>
+                  <div key={link.id} className="w-full space-y-3.5">
                     {showHeader && headerText && (
                       <motion.div variants={itemVariants} className="pt-3 pb-1 text-center">
                         <span
@@ -1112,10 +1063,15 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                     )}
 
                     {link.layout === 'column' ? (
-                      <MotionShakeLink
-                        link={link}
-                        targetUrl={targetUrl}
-                        itemVariants={itemVariants}
+                      <motion.a
+                        href={targetUrl}
+                        target={targetUrl.startsWith('http') ? '_blank' : '_self'}
+                        rel="noopener noreferrer"
+                        variants={itemVariants}
+                        animate={linkAnimateProps}
+                        transition={linkTransitionProps}
+                        whileHover={{ scale: 1.025, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
                         className={`w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md ${currentTheme.cardBg}`}
                       >
                         {renderLinkIcon(link)}
@@ -1126,12 +1082,17 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         <div className="absolute top-3.5 right-4 opacity-30 group-hover:opacity-90 transition-opacity">
                           <MoreHorizontal className="w-4 h-4" />
                         </div>
-                      </MotionShakeLink>
+                      </motion.a>
                     ) : (
-                      <MotionShakeLink
-                        link={link}
-                        targetUrl={targetUrl}
-                        itemVariants={itemVariants}
+                      <motion.a
+                        href={targetUrl}
+                        target={targetUrl.startsWith('http') ? '_blank' : '_self'}
+                        rel="noopener noreferrer"
+                        variants={itemVariants}
+                        animate={linkAnimateProps}
+                        transition={linkTransitionProps}
+                        whileHover={{ scale: 1.025, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
                         className={`w-full py-4 px-6 rounded-full flex items-center transition-all duration-300 font-semibold text-base relative group shadow-md ${
                           link.itemAlign === 'center' ? 'justify-center' : 'justify-between'
                         } ${currentTheme.cardBg}`}
@@ -1163,7 +1124,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                             <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
                           </>
                         )}
-                      </MotionShakeLink>
+                      </motion.a>
                     )}
                   </div>
                 );

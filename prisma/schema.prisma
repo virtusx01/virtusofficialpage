@@ -117,11 +117,9 @@ model LinktreeLink {
   sectionBgColor  String          @default("")
   sectionTextColor String         @default("")
   waCustomMessage String          @default("")
-  shakeEnable     Boolean         @default(false)
-  shakeDirection  String          @default("vertical") // "vertical" | "horizontal" | "both"
-  shakeDistance   Int             @default(8) // Jarak gerakan px (misal 2px - 30px)
-  shakeIntensity  String          @default("medium") // "gentle" | "medium" | "strong"
-  shakeFrequency  String          @default("normal") // "rare" | "normal" | "frequent" | "constant"
+  animation       String          @default("none") // "none" | "shake" | "bounce" | "pulse" | "glow" | "shake-bounce"
+  animationSpeed  String          @default("normal") // "slow" | "normal" | "fast"
+  animationStrength Int           @default(5) // Rentang 1 (halus) s/d 10 (kuat)
   showInHeaderIcons Boolean       @default(true)
   isEnabled       Boolean         @default(true)
   orderIndex      Int             @default(0)
