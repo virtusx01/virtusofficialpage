@@ -12,6 +12,7 @@ interface HeaderProps {
   initialData?: {
     siteTitle?: string;
     siteSubtitle?: string;
+    siteLogoUrl?: string;
   };
 }
 
@@ -37,6 +38,7 @@ export default function Header({ initialData }: HeaderProps = {}) {
   );
 
   const [siteLogoUrl, setSiteLogoUrl] = useState(() => {
+    if (initialData?.siteLogoUrl) return initialData.siteLogoUrl;
     const cached = getCachedBranding();
     return cached?.siteLogoUrl || "/logo.png";
   });

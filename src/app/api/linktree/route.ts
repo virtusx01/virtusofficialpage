@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
 
 const isUUID = (str: any) =>
@@ -494,6 +495,13 @@ export async function PUT(request: Request) {
         videoAds: { orderBy: { orderIndex: 'asc' } },
       },
     });
+
+    try {
+      revalidatePath('/', 'layout');
+      revalidatePath('/');
+    } catch (e) {
+      // Revalidation error should not break the response
+    }
 
     return NextResponse.json(result);
   } catch (error: any) {

@@ -747,6 +747,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
         initialData={{
           siteTitle: profile.siteTitle,
           siteSubtitle: profile.siteSubtitle,
+          siteLogoUrl: profile.siteLogoUrl,
         }}
       />
       <main className={`flex-1 w-full flex items-center justify-center p-3 sm:p-6 ${profile.bgImageUrl ? 'bg-slate-950' : currentTheme.bg} font-sans relative overflow-hidden`}>
@@ -1521,6 +1522,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
           siteTitle: profile.siteTitle,
           siteSubtitle: profile.siteSubtitle,
           footerDesc: profile.footerDesc,
+          siteLogoUrl: profile.siteLogoUrl,
           links: profile.links,
         }}
       />

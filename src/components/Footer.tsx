@@ -20,6 +20,7 @@ interface FooterProps {
     siteTitle?: string;
     siteSubtitle?: string;
     footerDesc?: string;
+    siteLogoUrl?: string;
     links?: SocialLink[];
   };
 }
@@ -47,6 +48,7 @@ export default function Footer({ initialData }: FooterProps = {}) {
   );
 
   const [siteLogoUrl, setSiteLogoUrl] = useState(() => {
+    if (initialData?.siteLogoUrl) return initialData.siteLogoUrl;
     const cached = getCachedBranding();
     return cached?.siteLogoUrl || "/logo.png";
   });

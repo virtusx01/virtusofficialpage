@@ -48,21 +48,31 @@ export function applyDocumentBranding(branding?: Partial<SiteBranding> | null) {
   const current = branding || getCachedBranding();
   if (!current) return;
 
-  // Update browser tab document title
+  // Update browser tab document title immediately
   if (current.siteTitle) {
     const subtitle = current.siteSubtitle ? ` - ${current.siteSubtitle}` : "";
-    document.title = `${current.siteTitle}${subtitle}`;
+    const fullTitle = `${current.siteTitle}${subtitle}`;
+    if (document.title !== fullTitle) {
+      document.title = fullTitle;
+    }
   }
 
-  // Update favicon icon link
+  // Update favicon icon links immediately across all existing rel tags
   if (current.faviconUrl) {
-    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
-    if (!link) {
-      link = document.createElement("link");
+    const existingIcons = document.querySelectorAll("link[rel*='icon']");
+    if (existingIcons.length > 0) {
+      existingIcons.forEach((el) => {
+        const link = el as HTMLLinkElement;
+        if (link.href !== current.faviconUrl) {
+          link.href = current.faviconUrl!;
+        }
+      });
+    } else {
+      const link = document.createElement("link");
       link.rel = "icon";
-      document.getElementsByTagName("head")[0].appendChild(link);
+      link.href = current.faviconUrl;
+      document.head.appendChild(link);
     }
-    link.href = current.faviconUrl;
   }
 }
 
