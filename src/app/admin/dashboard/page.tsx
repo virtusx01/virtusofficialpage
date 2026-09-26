@@ -1,67 +1,53 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import {
+  Gamepad2,
+  Sparkles,
+  Cat,
   Users,
-  Plus,
-  Play,
-  Pause,
-  Clock,
-  Trash2,
-  Edit2,
-  Check,
-  X,
-  Tv,
-  Save,
-  ChevronUp,
-  ChevronDown,
-  Info,
-  Loader2,
-  PlusCircle,
-  MinusCircle,
-  FileText,
   Radio,
   ExternalLink,
+  ChevronRight,
+  Tv,
+  Clock,
+  Layers,
+  BarChart3,
+  Sliders,
+  CheckCircle2,
   Flame,
-  Cat,
-  Camera,
-  Image as ImageIcon,
-  Sparkles,
-  AlertCircle,
-  Scan,
-  Copy,
-  Timer,
-  RotateCcw
+  ArrowUpRight
 } from "lucide-react";
-import { parsePlayerTimer, updateNotesWithTimer, encodeTimerTag, formatRemainingTime, formatCompactTime } from "@/lib/timerHelpers";
 
-interface Player {
-  id: string;
-  name: string;
-  gameId: string;
-  vipType: "END_LIVE" | "PER_MATCH" | "PER_HOUR";
-  status: "PLAYING" | "PENDING" | "QUEUE" | "COMPLETED";
-  matchesPlayed: number;
-  matchesTotal: number;
-  queueOrder: number;
-  notes: string;
-}
-
-interface Settings {
+interface QuickStats {
+  totalPlayers: number;
+  playingCount: number;
+  queueCount: number;
   isLive: boolean;
   streamTitle: string;
-  streamUrl: string;
-  sociabuzz: string;
-  announcement: string;
+  totalLinks: number;
+  siteTitle: string;
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboardMenu() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  const [stats, setStats] = useState<QuickStats>({
+    totalPlayers: 0,
+    playingCount: 0,
+    queueCount: 0,
+    isLive: false,
+    streamTitle: "",
+    totalLinks: 0,
+    siteTitle: "Virtus Official",
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
 
   // Authentication Guard
   useEffect(() => {
@@ -70,1514 +56,314 @@ export default function AdminDashboard() {
     }
   }, [status, router]);
 
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [playing, setPlaying] = useState<Player[]>([]);
-  const [queue, setQueue] = useState<Player[]>([]);
-  const [pending, setPending] = useState<Player[]>([]);
-  const [completed, setCompleted] = useState<Player[]>([]);
-
-  const [settings, setSettings] = useState<Settings>({
-    isLive: false,
-    streamTitle: "Mabar VIP Stream!",
-    streamUrl: "",
-    sociabuzz: "",
-    announcement: "Welcome to the stream! Join VIP to play next."
-  });
-
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [settingsLoading, setSettingsLoading] = useState(false);
-
-  // Form State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    gameId: "",
-    vipType: "END_LIVE" as "END_LIVE" | "PER_MATCH" | "PER_HOUR",
-    status: "QUEUE" as "PLAYING" | "PENDING" | "QUEUE" | "COMPLETED",
-    matchesTotal: 1,
-    matchesPlayed: 0,
-    notes: ""
-  });
-
-  // Reorder Modal State
-  const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
-  const [reorderingPlayer, setReorderingPlayer] = useState<Player | null>(null);
-  const [reorderFormData, setReorderFormData] = useState({
-    vipType: "END_LIVE" as "END_LIVE" | "PER_MATCH" | "PER_HOUR",
-    status: "QUEUE" as "PLAYING" | "PENDING" | "QUEUE" | "COMPLETED",
-    matchesTotal: 1,
-    notes: ""
-  });
-
-  // Live Timer tick state (forces re-render every second for live countdowns)
-  const [, setTimerTick] = useState(0);
+  // Fetch quick summary for preview cards
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimerTick(t => t + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+    const fetchQuickStats = async () => {
+      try {
+        const [playersRes, settingsRes, linktreeRes] = await Promise.allSettled([
+          fetch("/api/players"),
+          fetch("/api/settings"),
+          fetch("/api/linktree"),
+        ]);
 
-  const [settingsFormData, setSettingsFormData] = useState<Settings>({
-    isLive: false,
-    streamTitle: "",
-    streamUrl: "",
-    sociabuzz: "",
-    announcement: ""
-  });
+        let totalPlayers = 0;
+        let playingCount = 0;
+        let queueCount = 0;
+        if (playersRes.status === "fulfilled" && playersRes.value.ok) {
+          const data = await playersRes.value.json();
+          totalPlayers = data.players?.length || 0;
+          playingCount = data.playing?.length || 0;
+          queueCount = data.queue?.length || 0;
+        }
 
-  // Real-time Duplicate Game ID check
-  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+        let isLive = false;
+        let streamTitle = "Stream Mabar VIP";
+        if (settingsRes.status === "fulfilled" && settingsRes.value.ok) {
+          const data = await settingsRes.value.json();
+          isLive = !!data.isLive;
+          if (data.streamTitle) streamTitle = data.streamTitle;
+        }
 
-  // Check duplicate gameId against players list
-  useEffect(() => {
-    if (!formData.gameId || formData.gameId.trim() === "") {
-      setDuplicateWarning(null);
-      return;
-    }
+        let totalLinks = 0;
+        let siteTitle = "Virtus Official";
+        if (linktreeRes.status === "fulfilled" && linktreeRes.value.ok) {
+          const data = await linktreeRes.value.json();
+          totalLinks = data.links?.length || 0;
+          if (data.siteTitle) siteTitle = data.siteTitle;
+        }
 
-    const currentId = formData.gameId.trim().toLowerCase();
-    const match = players.find(
-      p => p.gameId && p.gameId.trim().toLowerCase() === currentId && (!editingPlayer || p.id !== editingPlayer.id)
-    );
-
-    if (match) {
-      setDuplicateWarning(`⚠️ Game ID '${match.gameId}' sudah terdaftar atas nama "${match.name}" (Status: ${match.status})!`);
-    } else {
-      setDuplicateWarning(null);
-    }
-  }, [formData.gameId, players, editingPlayer]);
-
-  const fetchData = async () => {
-    try {
-      const playerRes = await fetch("/api/players");
-      if (playerRes.ok) {
-        const data = await playerRes.json();
-        setPlayers(data.players || []);
-        setPlaying(data.playing || []);
-        setQueue(data.queue || []);
-        setPending(data.pending || []);
-        setCompleted(data.completed || []);
+        setStats({
+          totalPlayers,
+          playingCount,
+          queueCount,
+          isLive,
+          streamTitle,
+          totalLinks,
+          siteTitle,
+        });
+      } catch (err) {
+        console.error("Failed to load dashboard preview stats:", err);
+      } finally {
+        setLoadingStats(false);
       }
+    };
 
-      const settingsRes = await fetch("/api/settings");
-      if (settingsRes.ok) {
-        const data = await settingsRes.json();
-        setSettings(data);
-        setSettingsFormData(data);
-      }
-    } catch (err) {
-      console.error("Error loading admin data:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
     if (status === "authenticated") {
-      fetchData();
+      fetchQuickStats();
     }
   }, [status]);
 
-  // Open modal for adding
-  const handleAddClick = () => {
-    setEditingPlayer(null);
-    setDuplicateWarning(null);
-    setFormData({
-      name: "",
-      gameId: "",
-      vipType: "END_LIVE",
-      status: "QUEUE",
-      matchesTotal: 1,
-      matchesPlayed: 0,
-      notes: ""
-    });
-    setIsModalOpen(true);
-  };
-
-  // Open modal for editing
-  const handleEditClick = (player: Player) => {
-    setEditingPlayer(player);
-    setDuplicateWarning(null);
-    setFormData({
-      name: player.name,
-      gameId: player.gameId,
-      vipType: player.vipType,
-      status: player.status,
-      matchesTotal: player.matchesTotal,
-      matchesPlayed: player.matchesPlayed,
-      notes: parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed).cleanNotes
-    });
-    setIsModalOpen(true);
-  };
-
-  // Open modal for reordering completed player
-  const handleReorderClick = (player: Player) => {
-    setReorderingPlayer(player);
-    setReorderFormData({
-      vipType: "END_LIVE",
-      status: "QUEUE",
-      matchesTotal: 1,
-      notes: parsePlayerTimer(player.notes || "").cleanNotes
-    });
-    setIsReorderModalOpen(true);
-  };
-
-  // Submit Reorder with custom VIP type, count, status, and notes
-  const handleConfirmReorder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reorderingPlayer) return;
-
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/players/${reorderingPlayer.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: reorderFormData.status,
-          vipType: reorderFormData.vipType,
-          matchesPlayed: 0,
-          matchesTotal: Number(reorderFormData.matchesTotal),
-          notes: reorderFormData.notes,
-        })
-      });
-
-      if (res.ok) {
-        setIsReorderModalOpen(false);
-        setReorderingPlayer(null);
-        fetchData();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Gagal memproses reorder.");
-      }
-    } catch (error) {
-      console.error("Reorder error:", error);
-      alert("Terjadi kesalahan koneksi.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Countdown timer controls for PER_HOUR
-  const handleStartTimer = async (player: Player) => {
-    const remainingHours = Math.max(0, player.matchesTotal - player.matchesPlayed);
-    const targetSeconds = remainingHours * 3600;
-    const timer = parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed);
-    const now = Date.now();
-    
-    let startTimestamp = now;
-    let totalSecs = targetSeconds;
-
-    if (timer.isPaused && timer.remainingSeconds > 0) {
-      totalSecs = timer.totalSeconds > 0 ? timer.totalSeconds : targetSeconds;
-      const elapsed = Math.max(0, totalSecs - timer.remainingSeconds);
-      startTimestamp = now - (elapsed * 1000);
-    } else {
-      totalSecs = targetSeconds;
-      startTimestamp = now;
-    }
-    const updatedNotes = updateNotesWithTimer(player.notes, "RUNNING", startTimestamp, totalSecs);
-
-    try {
-      const res = await fetch(`/api/players/${player.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: updatedNotes })
-      });
-      if (res.ok) fetchData();
-    } catch (err) {
-      console.error("Failed to start timer:", err);
-    }
-  };
-
-  const handlePauseTimer = async (player: Player) => {
-    const timer = parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed);
-    const updatedNotes = updateNotesWithTimer(player.notes, "PAUSED", timer.remainingSeconds, timer.totalSeconds);
-
-    try {
-      const res = await fetch(`/api/players/${player.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: updatedNotes })
-      });
-      if (res.ok) fetchData();
-    } catch (err) {
-      console.error("Failed to pause timer:", err);
-    }
-  };
-
-  const handleResetTimer = async (player: Player) => {
-    const remainingHours = Math.max(0, player.matchesTotal - player.matchesPlayed);
-    const targetSeconds = remainingHours * 3600;
-    const updatedNotes = updateNotesWithTimer(player.notes, "STOPPED", 0, targetSeconds);
-
-    try {
-      const res = await fetch(`/api/players/${player.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: updatedNotes })
-      });
-      if (res.ok) fetchData();
-    } catch (err) {
-      console.error("Failed to reset timer:", err);
-    }
-  };
-
-  // Save Player (Create or Edit)
-  const handleSavePlayer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setActionLoading(true);
-
-    try {
-      const url = editingPlayer ? `/api/players/${editingPlayer.id}` : "/api/players";
-      const method = editingPlayer ? "PUT" : "POST";
-
-      let finalNotes = formData.notes;
-      if (formData.vipType === "PER_HOUR") {
-        const clean = parsePlayerTimer(formData.notes).cleanNotes;
-        const prevRemainingHours = editingPlayer ? Math.max(0, editingPlayer.matchesTotal - editingPlayer.matchesPlayed) : -1;
-        const newRemainingHours = Math.max(0, Number(formData.matchesTotal) - Number(formData.matchesPlayed));
-        
-        if (editingPlayer && prevRemainingHours === newRemainingHours && editingPlayer.vipType === "PER_HOUR") {
-          const existingTimerMatch = editingPlayer.notes.match(/\[TIMER:(RUNNING|PAUSED|STOPPED):(-?\d+):(\d+)\]/);
-          if (existingTimerMatch) {
-            finalNotes = clean ? `${clean} ${existingTimerMatch[0]}` : existingTimerMatch[0];
-          } else {
-            finalNotes = clean;
-          }
-        } else {
-          const newTotalSecs = newRemainingHours * 3600;
-          const tag = encodeTimerTag("STOPPED", 0, newTotalSecs);
-          finalNotes = clean ? `${clean} ${tag}` : tag;
-        }
-      } else {
-        finalNotes = parsePlayerTimer(formData.notes).cleanNotes;
-      }
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          matchesTotal: Number(formData.matchesTotal),
-          matchesPlayed: Number(formData.matchesPlayed),
-          notes: finalNotes
-        })
-      });
-
-      if (res.ok) {
-        setIsModalOpen(false);
-        fetchData();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Gagal menyimpan data.");
-      }
-    } catch (error) {
-      console.error("Save error:", error);
-      alert("Terjadi kesalahan koneksi.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Quick status switch
-  const handleStatusChange = async (id: string, newStatus: "PLAYING" | "PENDING" | "QUEUE" | "COMPLETED") => {
-    try {
-      const res = await fetch(`/api/players/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (res.ok) {
-        fetchData();
-      }
-    } catch (error) {
-      console.error("Status update error:", error);
-    }
-  };
-
-  // Quick increment/decrement matches played
-  const handleMatchCountChange = async (player: Player, delta: number) => {
-    const newPlayed = Math.max(0, Math.min(player.matchesTotal, player.matchesPlayed + delta));
-    let updatedNotes = player.notes;
-
-    if (player.vipType === "PER_HOUR") {
-      const remainingHours = Math.max(0, player.matchesTotal - newPlayed);
-      const targetSeconds = remainingHours * 3600;
-      const clean = parsePlayerTimer(player.notes).cleanNotes;
-      const tag = encodeTimerTag("STOPPED", 0, targetSeconds);
-      updatedNotes = clean ? `${clean} ${tag}` : tag;
-    }
-
-    try {
-      const res = await fetch(`/api/players/${player.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matchesPlayed: newPlayed, notes: updatedNotes })
-      });
-      if (res.ok) {
-        fetchData();
-      }
-    } catch (error) {
-      console.error("Match count update error:", error);
-    }
-  };
-
-  // Delete Player
-  const handleDeletePlayer = async (id: string, name: string) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus "${name}" dari daftar VIP?`)) {
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/players/${id}`, {
-        method: "DELETE"
-      });
-      if (res.ok) {
-        fetchData();
-      } else {
-        alert("Gagal menghapus player.");
-      }
-    } catch (error) {
-      console.error("Delete error:", error);
-    }
-  };
-
-  // Reorder queue swap logic
-  const handleQueueSwap = async (index: number, direction: "UP" | "DOWN") => {
-    const swapTargetIndex = direction === "UP" ? index - 1 : index + 1;
-    if (swapTargetIndex < 0 || swapTargetIndex >= queue.length) return;
-
-    const currentPlayer = queue[index];
-    const targetPlayer = queue[swapTargetIndex];
-
-    try {
-      // Swap queue orders
-      const p1 = fetch(`/api/players/${currentPlayer.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ queueOrder: targetPlayer.queueOrder })
-      });
-
-      const p2 = fetch(`/api/players/${targetPlayer.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ queueOrder: currentPlayer.queueOrder })
-      });
-
-      await Promise.all([p1, p2]);
-      fetchData();
-    } catch (error) {
-      console.error("Queue reorder swap error:", error);
-    }
-  };
-
-  // Save Stream Settings
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSettingsLoading(true);
-
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settingsFormData)
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setSettings(data);
-        setSettingsFormData(data);
-        alert("Pengaturan Live Stream berhasil disimpan!");
-      } else {
-        alert("Gagal menyimpan pengaturan.");
-      }
-    } catch (error) {
-      console.error("Save settings error:", error);
-      alert("Terjadi kesalahan koneksi.");
-    } finally {
-      setSettingsLoading(false);
-    }
-  };
-
-  if (status === "loading" || loading) {
+  if (status === "loading") {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
-        <Loader2 className="h-10 w-10 text-violet-500 animate-spin" />
-        <p className="text-xs text-slate-400 mt-2">Memuat dashboard...</p>
+      <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-xs text-slate-400">Memuat Admin Dashboard...</p>
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
 
-  // Helper for filtering players by searchQuery
-  const filterBySearch = (list: Player[]) => {
-    if (!searchQuery || !searchQuery.trim()) return list;
-    const q = searchQuery.trim().toLowerCase();
-    return list.filter(
-      p => (p.name && p.name.toLowerCase().includes(q)) || (p.gameId && p.gameId.toLowerCase().includes(q))
-    );
-  };
-
-  const filteredPlaying = filterBySearch(playing);
-  const filteredQueue = filterBySearch(queue);
-  const filteredPending = filterBySearch(pending);
-  const filteredCompleted = filterBySearch(completed);
-
   return (
-    <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-violet-500/30 selection:text-white">
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+        {/* Welcome & Overview Header */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-950/40 via-slate-900/60 to-slate-950 border border-violet-500/20 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-0 left-1/3 -mb-16 w-64 h-64 bg-fuchsia-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* Dashboard Header Banner */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/40 border border-slate-900 p-6 rounded-2xl">
-          <div>
-            <h2 className="text-2xl font-black text-slate-100 tracking-tight">Admin Control Center</h2>
-            <p className="text-sm text-slate-400 mt-1">
-              Kelola daftar mabar VIP, status bermain, antrean, dan notifikasi stream secara real-time.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Search input for player name or gameId */}
-            <div className="relative min-w-[220px]">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari nama player / game ID..."
-                className="w-full bg-slate-950 border border-slate-800 focus:border-violet-500 text-xs px-3 py-2.5 rounded-xl outline-none text-slate-100 placeholder-slate-500 transition-all pr-8"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300 transition-colors"
-                  title="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            <a
-              href="/admin/edit-linktree"
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all px-4 py-2.5 rounded-xl cursor-pointer"
-            >
-              <ExternalLink className="h-4 w-4 text-amber-400" />
-              Edit Linktree Utama
-            </a>
-            <a
-              href="/edit/fanbase-cupidut-dudud"
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all px-4 py-2.5 rounded-xl cursor-pointer"
-            >
-              <Cat className="h-4 w-4 text-fuchsia-400" />
-              Edit Fanbase Cat
-            </a>
-            <button
-              onClick={handleAddClick}
-              id="add-vip-btn"
-              className="flex items-center gap-1.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 transition-all px-4 py-2.5 rounded-xl shadow-lg shadow-violet-600/20 cursor-pointer"
-            >
-              <Plus className="h-5 w-5" />
-              Tambah Player VIP
-            </button>
-          </div>
-        </div>
-
-        {/* Stream Banner (Only if streaming / live) */}
-        {settings.isLive && (
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600/30 via-fuchsia-600/20 to-slate-900 border border-violet-500/20 p-5 md:p-6 glow-purple">
-            <div className="absolute top-0 right-0 h-40 w-40 bg-fuchsia-600/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-600 shadow-md">
-                  <Radio className="h-6 w-6 text-white animate-pulse" />
-                  <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500 border border-white"></span>
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-red-400 bg-red-500/15 px-2 py-0.5 rounded-full border border-red-500/20">
-                      LIVE NOW
-                    </span>
-                    <h2 className="text-sm font-semibold text-slate-400">Streaming Active</h2>
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-100 mt-1">
-                    {settings.streamTitle}
-                  </h3>
-                </div>
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold mb-3">
+                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                <span>Portal Kontrol Administrator</span>
               </div>
-              <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
-                {settings.streamUrl && (
-                  <a
-                    href={settings.streamUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 transition-all px-4 py-2.5 rounded-xl shadow-lg shadow-violet-600/20 hover:shadow-violet-600/30 cursor-pointer border border-violet-500/20"
-                  >
-                    Watch Stream
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                )}
-                {settings.sociabuzz && (
-                  <a
-                    href={settings.sociabuzz}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm font-semibold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 transition-all px-4 py-2.5 rounded-xl shadow-lg shadow-orange-650/25 hover:shadow-orange-650/40 cursor-pointer glow-amber border border-orange-500/35"
-                  >
-                    Order VIP (Sociabuzz)
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Top Split Section: Settings & Active Players */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* COLUMN 1: STREAM SETTINGS */}
-          <div className="lg:col-span-1 glass-panel border border-slate-800 p-6 rounded-2xl flex flex-col gap-5">
-            <div className="flex items-center gap-2 border-b border-slate-900 pb-3">
-              <Tv className="h-5 w-5 text-violet-400" />
-              <h3 className="font-bold text-base text-slate-200">Live Stream Settings</h3>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+                Dashboard Menu
+              </h1>
+              <p className="text-sm text-slate-400 mt-2 max-w-xl leading-relaxed">
+                Pilih modul manajemen yang ingin Anda kelola. Atur sistem antrean Mabar VIP, konfigurasi live stream, atau modifikasi konten Linktree utama.
+              </p>
             </div>
 
-            <form onSubmit={handleSaveSettings} className="space-y-4">
-
-              {/* Toggle Live */}
-              <div className="flex items-center justify-between bg-slate-950/50 border border-slate-900 px-4 py-3 rounded-xl">
+            {/* Live Indicator Chip */}
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl border ${
+                stats.isLive
+                  ? "bg-red-500/10 border-red-500/30 text-red-400"
+                  : "bg-slate-900/80 border-slate-800 text-slate-400"
+              }`}>
+                <span className={`w-2.5 h-2.5 rounded-full ${
+                  stats.isLive ? "bg-red-500 animate-pulse" : "bg-slate-600"
+                }`}></span>
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Status Live</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5">Tampilkan status LIVE di beranda</span>
-                </div>
-                <button
-                  type="button"
-                  id="settings-live-toggle"
-                  onClick={() => setSettingsFormData(prev => ({ ...prev, isLive: !prev.isLive }))}
-                  className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all ${settingsFormData.isLive ? "bg-red-600 justify-end" : "bg-slate-800 justify-start"
-                    }`}
-                >
-                  <span className="bg-white w-4 h-4 rounded-full shadow-md"></span>
-                </button>
-              </div>
-
-              {/* Stream Title */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Stream Title
-                </label>
-                <input
-                  type="text"
-                  value={settingsFormData.streamTitle}
-                  onChange={(e) => setSettingsFormData(prev => ({ ...prev, streamTitle: e.target.value }))}
-                  placeholder="e.g. Mabar VIP Mobile Legends!"
-                  className="w-full bg-slate-950 border border-slate-900 px-3 py-2 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all"
-                />
-              </div>
-
-              {/* Stream URL */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Stream Link (YouTube/TikTok)
-                </label>
-                <input
-                  type="url"
-                  value={settingsFormData.streamUrl}
-                  onChange={(e) => setSettingsFormData(prev => ({ ...prev, streamUrl: e.target.value }))}
-                  placeholder="e.g. https://tiktok.com/@username/live"
-                  className="w-full bg-slate-950 border border-slate-900 px-3 py-2 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all"
-                />
-              </div>
-
-              {/* Sociabuzz Link */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Sociabuzz Donation Link
-                </label>
-                <input
-                  type="url"
-                  value={settingsFormData.sociabuzz}
-                  onChange={(e) => setSettingsFormData(prev => ({ ...prev, sociabuzz: e.target.value }))}
-                  placeholder="e.g. https://sociabuzz.com/onlyvirtus/tribe"
-                  className="w-full bg-slate-950 border border-slate-900 px-3 py-2 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all"
-                />
-              </div>
-
-              {/* Announcement Message */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Running Announcement
-                </label>
-                <textarea
-                  value={settingsFormData.announcement}
-                  onChange={(e) => setSettingsFormData(prev => ({ ...prev, announcement: e.target.value }))}
-                  placeholder="Informasi tambahan untuk penonton..."
-                  rows={2}
-                  className="w-full bg-slate-950 border border-slate-900 px-3 py-2 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all resize-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                id="settings-save-btn"
-                disabled={settingsLoading}
-                className="w-full flex items-center justify-center gap-1.5 py-2 px-4 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-sm font-semibold rounded-xl text-violet-400 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {settingsLoading ? (
-                  <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                ) : (
-                  <>
-                    <Save className="h-4.5 w-4.5" />
-                    Simpan Settings
-                  </>
-                )}
-              </button>
-
-            </form>
-          </div>
-
-          {/* COLUMN 2: ACTIVE MATCH / CURRENTLY PLAYING */}
-          <div className="lg:col-span-2 glass-panel border border-slate-800 p-6 rounded-2xl flex flex-col gap-4">
-            <div className="flex items-center gap-2 border-b border-slate-900 pb-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <h3 className="font-bold text-base text-slate-200">Sedang Bermain ({filteredPlaying.length})</h3>
-            </div>
-
-            {filteredPlaying.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center py-8 text-center bg-slate-950/30 border border-dashed border-slate-900 rounded-xl">
-                <Play className="h-8 w-8 text-slate-700 mb-2" />
-                <p className="text-sm font-medium text-slate-500">Tidak ada player yang sedang bermain</p>
-                <p className="text-xs text-slate-600 mt-0.5">Ubah status player di tabel antrean ke "Bermain".</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredPlaying.map((player) => (
-                  <div
-                    key={player.id}
-                    className="bg-slate-950/60 border border-slate-850 p-4 rounded-xl flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-bold text-slate-200 text-base">{player.name}</h4>
-                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${
-                          player.vipType === "PER_HOUR"
-                            ? "bg-amber-950/40 border-amber-800/50 text-amber-400"
-                            : player.vipType === "END_LIVE"
-                            ? "bg-purple-950/40 border-purple-800/50 text-purple-400"
-                            : "bg-fuchsia-950/40 border-fuchsia-800/50 text-fuchsia-400"
-                        }`}>
-                          {player.vipType === "PER_HOUR"
-                            ? (player.matchesPlayed > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed} Jam` : `${player.matchesTotal} Jam`)
-                            : player.vipType === "END_LIVE"
-                            ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x Live` : "Live")
-                            : "Per Match"}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5">IGN: {player.gameId || "-"}</p>
-
-                      {player.vipType === "END_LIVE" && player.matchesTotal > 0 && (
-                        <p className="text-[10px] font-bold text-purple-400 mt-1">
-                          Tersisa {player.matchesTotal - player.matchesPlayed}x mabar VIP end live
-                        </p>
-                      )}
-
-                      {/* VIP PER JAM (PER_HOUR) TIMER TRACKER */}
-                      {player.vipType === "PER_HOUR" && (() => {
-                        const timer = parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed);
-                        const remainingHours = Math.max(0, player.matchesTotal - player.matchesPlayed);
-                        return (
-                          <div className="mt-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                                <Timer className="h-3.5 w-3.5 text-amber-400" />
-                                Countdown Timer ({player.matchesPlayed > 0 ? `Sisa ${remainingHours} dari ${player.matchesTotal} Jam` : `${player.matchesTotal} Jam`}):
-                              </span>
-                              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
-                                timer.isRunning
-                                  ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 animate-pulse"
-                                  : timer.isPaused
-                                  ? "bg-amber-950/60 text-amber-400 border border-amber-800/50"
-                                  : "bg-slate-900 text-slate-400 border border-slate-800"
-                              }`}>
-                                {formatRemainingTime(timer.remainingSeconds)}
-                              </span>
-                            </div>
-
-                            {/* Timer Action Buttons */}
-                            <div className="flex items-center gap-1.5 pt-1">
-                              {!timer.isRunning ? (
-                                <button
-                                  onClick={() => handleStartTimer(player)}
-                                  className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow cursor-pointer"
-                                >
-                                  <Play className="h-3.5 w-3.5 fill-current" />
-                                  {timer.isPaused ? "Lanjutkan Countdown" : "Mulai Countdown"}
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handlePauseTimer(player)}
-                                  className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition-all shadow cursor-pointer"
-                                >
-                                  <Pause className="h-3.5 w-3.5 fill-current" />
-                                  Pause Countdown
-                                </button>
-                              )}
-
-                              <button
-                                onClick={() => handleResetTimer(player)}
-                                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded-lg text-xs transition-all border border-slate-700 cursor-pointer"
-                                title="Reset Timer ke Sisa Jam"
-                              >
-                                <RotateCcw className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {player.vipType === "PER_HOUR" ? (
-                        <div className="mt-3 flex items-center justify-between bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900">
-                          <span className="text-xs text-slate-400">Jam Selesai Tracker:</span>
-                          <div className="flex items-center gap-2.5">
-                            <button
-                              onClick={() => handleMatchCountChange(player, -1)}
-                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                              title="Kurangi jam selesai"
-                            >
-                              <MinusCircle className="h-4.5 w-4.5" />
-                            </button>
-                            <span className="text-xs font-bold text-amber-400">
-                              {player.matchesPlayed} <span className="text-slate-600">/</span> {player.matchesTotal} Jam
-                              {player.matchesTotal > player.matchesPlayed && (
-                                <span className="text-[10px] text-slate-400 ml-1">
-                                  (Sisa {player.matchesTotal - player.matchesPlayed} Jam)
-                                </span>
-                              )}
-                            </span>
-                            <button
-                              onClick={() => handleMatchCountChange(player, 1)}
-                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                              title="Tambah jam selesai"
-                            >
-                              <PlusCircle className="h-4.5 w-4.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : player.vipType === "PER_MATCH" ? (
-                        <div className="mt-3 flex items-center justify-between bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900">
-                          <span className="text-xs text-slate-450">Match Tracker:</span>
-                          <div className="flex items-center gap-2.5">
-                            <button
-                              onClick={() => handleMatchCountChange(player, -1)}
-                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                            >
-                              <MinusCircle className="h-4.5 w-4.5" />
-                            </button>
-                            <span className="text-xs font-bold text-fuchsia-400">
-                              {player.matchesPlayed} <span className="text-slate-600">/</span> {player.matchesTotal}
-                            </span>
-                            <button
-                              onClick={() => handleMatchCountChange(player, 1)}
-                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                            >
-                              <PlusCircle className="h-4.5 w-4.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : player.vipType === "END_LIVE" && player.matchesTotal > 0 ? (
-                        <div className="mt-3 flex items-center justify-between bg-slate-900/40 px-3 py-1.5 rounded-lg border border-slate-900">
-                          <span className="text-xs text-slate-450">Live Tracker:</span>
-                          <div className="flex items-center gap-2.5">
-                            <button
-                              onClick={() => handleMatchCountChange(player, -1)}
-                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                            >
-                              <MinusCircle className="h-4.5 w-4.5" />
-                            </button>
-                            <span className="text-xs font-bold text-purple-400">
-                              {player.matchesPlayed} <span className="text-slate-600">/</span> {player.matchesTotal}
-                            </span>
-                            <button
-                              onClick={() => handleMatchCountChange(player, 1)}
-                              className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                            >
-                              <PlusCircle className="h-4.5 w-4.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {player.notes && parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed).cleanNotes && (
-                        <p className="text-xs text-slate-400 italic bg-slate-900/20 p-2 rounded-lg border border-slate-900/30 mt-2">
-                          "{parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed).cleanNotes}"
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-slate-900 flex justify-end gap-2 flex-wrap">
-                      <button
-                        onClick={() => handleEditClick(player)}
-                        className="flex items-center gap-1 text-[10px] font-bold text-slate-300 bg-slate-900 hover:bg-slate-800 hover:text-white px-2.5 py-1 rounded border border-slate-800 transition-colors cursor-pointer"
-                        title="Edit Data Player"
-                      >
-                        <Edit2 className="h-3 w-3 text-violet-400" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(player.id, "QUEUE")}
-                        className="flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-900 hover:bg-slate-850 hover:text-slate-200 px-2 py-1 rounded transition-colors cursor-pointer"
-                      >
-                        <Clock className="h-3 w-3" />
-                        Kembali Antre
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(player.id, "PENDING")}
-                        className="flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded border border-amber-500/20 transition-colors cursor-pointer"
-                      >
-                        <Pause className="h-3 w-3" />
-                        Pause (AFK)
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(player.id, "COMPLETED")}
-                        className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/25 px-2 py-1 rounded border border-emerald-500/20 transition-colors cursor-pointer"
-                        title="Selesai VIP"
-                      >
-                        <Check className="h-3 w-3" />
-                        Selesai VIP
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-
-        {/* Bottom Split Section: Queue List & Pending List */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* QUEUE MANAGEMENT TABLE */}
-          <div className="lg:col-span-2 glass-panel border border-slate-800 p-6 rounded-2xl flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-slate-900 pb-3">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-violet-400" />
-                <h3 className="font-bold text-base text-slate-200">Daftar Antrean ({filteredQueue.length})</h3>
-              </div>
-              <span className="text-[10px] text-slate-500">Gunakan panah untuk memindahkan urutan antrean</span>
-            </div>
-
-            {filteredQueue.length === 0 ? (
-              <div className="py-12 text-center bg-slate-950/30 border border-dashed border-slate-900 rounded-xl">
-                <Users className="h-8 w-8 text-slate-700 mb-2 mx-auto" />
-                <p className="text-sm font-medium text-slate-500">Antrean kosong</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-900 text-slate-400 text-xs font-bold">
-                      <th className="py-2 px-3">No</th>
-                      <th className="py-2 px-3">Nama</th>
-                      <th className="py-2 px-3">Tipe</th>
-                      <th className="py-2 px-3 text-center">Reorder</th>
-                      <th className="py-2 px-3 text-right">Aksi Status / Edit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredQueue.map((player, idx) => (
-                      <tr
-                        key={player.id}
-                        className="border-b border-slate-900/60 hover:bg-slate-900/10 transition-colors group"
-                      >
-                        <td className="py-3 px-3 font-semibold text-slate-400">#{idx + 1}</td>
-                        <td className="py-3 px-3">
-                          <div className="font-bold text-slate-200">{player.name}</div>
-                          {player.gameId && <div className="text-[10px] text-slate-500 font-mono mt-0.5">{player.gameId}</div>}
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
-                              player.vipType === "PER_HOUR"
-                                ? "bg-amber-950/40 border-amber-900/40 text-amber-400"
-                                : player.vipType === "END_LIVE"
-                                ? "bg-purple-950/40 border-purple-900/40 text-purple-400"
-                                : "bg-fuchsia-950/40 border-fuchsia-900/40 text-fuchsia-400"
-                            }`}>
-                            {player.vipType === "PER_HOUR"
-                              ? `Per Jam: Sisa ${formatRemainingTime(parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed).remainingSeconds)}`
-                              : player.vipType === "END_LIVE"
-                              ? (player.matchesTotal > 0 ? `Sisa ${player.matchesTotal - player.matchesPlayed}x End Live` : "Sisa 1x End Live")
-                              : `Match: ${player.matchesTotal}`}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              disabled={idx === 0}
-                              onClick={() => handleQueueSwap(idx, "UP")}
-                              className="p-1 bg-slate-950 border border-slate-850 rounded text-slate-400 hover:text-white transition-colors hover:border-slate-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                              title="Pindah ke atas"
-                            >
-                              <ChevronUp className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              disabled={idx === filteredQueue.length - 1}
-                              onClick={() => handleQueueSwap(idx, "DOWN")}
-                              className="p-1 bg-slate-950 border border-slate-850 rounded text-slate-400 hover:text-white transition-colors hover:border-slate-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                              title="Pindah ke bawah"
-                            >
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="flex items-center justify-end gap-2">
-                            {/* Quick Play */}
-                            <button
-                              onClick={() => handleStatusChange(player.id, "PLAYING")}
-                              className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/20 hover:border-emerald-500/40 rounded-lg text-emerald-400 transition-all cursor-pointer"
-                              title="Set Sedang Bermain"
-                            >
-                              <Play className="h-3.5 w-3.5" />
-                            </button>
-
-                            {/* Quick Pause */}
-                            <button
-                              onClick={() => handleStatusChange(player.id, "PENDING")}
-                              className="p-1.5 bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/20 hover:border-amber-500/40 rounded-lg text-amber-400 transition-all cursor-pointer"
-                              title="Set Tertunda (AFK)"
-                            >
-                              <Pause className="h-3.5 w-3.5" />
-                            </button>
-
-                            {/* Quick Complete */}
-                            <button
-                              onClick={() => handleStatusChange(player.id, "COMPLETED")}
-                              className="p-1.5 bg-purple-500/10 hover:bg-purple-500/25 border border-purple-500/20 hover:border-purple-500/40 rounded-lg text-purple-400 transition-all cursor-pointer"
-                              title="Selesai VIP"
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </button>
-
-                            <div className="h-4 w-[1px] bg-slate-900 mx-1"></div>
-
-                            {/* Edit */}
-                            <button
-                              onClick={() => handleEditClick(player)}
-                              className="p-1.5 bg-slate-950 hover:bg-slate-900 border border-slate-850 hover:border-slate-750 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
-                              title="Edit Player"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </button>
-
-                            {/* Delete */}
-                            <button
-                              onClick={() => handleDeletePlayer(player.id, player.name)}
-                              className="p-1.5 bg-red-950/20 hover:bg-red-950/50 border border-red-900/30 hover:border-red-900/60 rounded-lg text-red-400 transition-all cursor-pointer"
-                              title="Hapus Player"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* STANDBY / PENDING LIST & ALL OTHER LISTS */}
-          <div className="lg:col-span-1 glass-panel border border-slate-800 p-6 rounded-2xl flex flex-col gap-4">
-            <div className="flex items-center gap-2 border-b border-slate-900 pb-3">
-              <Pause className="h-5 w-5 text-amber-500" />
-              <h3 className="font-bold text-base text-slate-200">Tertunda / AFK ({filteredPending.length})</h3>
-            </div>
-
-            {filteredPending.length === 0 ? (
-              <div className="py-8 text-center bg-slate-950/30 border border-dashed border-slate-900 rounded-xl">
-                <p className="text-sm font-medium text-slate-500">Tidak ada player tertunda</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {filteredPending.map((player) => (
-                  <div
-                    key={player.id}
-                    className="bg-slate-950/50 border border-slate-850 p-4 rounded-xl flex items-center justify-between gap-3 group"
-                  >
-                    <div className="truncate">
-                      <h4 className="font-semibold text-slate-250 text-sm truncate">{player.name}</h4>
-                      {player.gameId && <span className="text-[10px] text-slate-500 font-mono truncate block">{player.gameId}</span>}
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Set Active / Queue */}
-                      <button
-                        onClick={() => handleStatusChange(player.id, "QUEUE")}
-                        className="p-1.5 bg-violet-500/10 hover:bg-violet-500/25 border border-violet-500/20 rounded-lg text-violet-400 cursor-pointer"
-                        title="Masukkan kembali ke antrean"
-                      >
-                        <Clock className="h-3.5 w-3.5" />
-                      </button>
-
-                      {/* Quick Complete */}
-                      <button
-                        onClick={() => handleStatusChange(player.id, "COMPLETED")}
-                        className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/20 rounded-lg text-emerald-400 cursor-pointer"
-                        title="Selesai VIP"
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                      </button>
-
-                      {/* Edit */}
-                      <button
-                        onClick={() => handleEditClick(player)}
-                        className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer"
-                        title="Edit"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
-
-                      {/* Delete */}
-                      <button
-                        onClick={() => handleDeletePlayer(player.id, player.name)}
-                        className="p-1.5 bg-red-950/20 hover:bg-red-950/50 border border-red-900/30 rounded-lg text-red-400 cursor-pointer"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-
-        {/* COMPLETED VIP PLAYERS TABLE */}
-        <div className="glass-panel border border-slate-800 p-6 rounded-2xl flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-slate-900 pb-3">
-            <div className="flex items-center gap-2">
-              <Check className="h-5 w-5 text-emerald-500" />
-              <h3 className="font-bold text-base text-slate-200">Daftar VIP Selesai ({filteredCompleted.length})</h3>
-            </div>
-            <span className="text-xs text-slate-500">History player VIP yang sudah selesai bermain</span>
-          </div>
-
-          {filteredCompleted.length === 0 ? (
-            <div className="py-12 text-center bg-slate-950/30 border border-dashed border-slate-900 rounded-xl">
-              <Check className="h-8 w-8 text-slate-700 mb-2 mx-auto" />
-              <p className="text-sm font-medium text-slate-500">Belum ada player yang selesai</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-900 text-slate-400 text-xs font-bold">
-                    <th className="py-2 px-3">Nama</th>
-                    <th className="py-2 px-3">Game ID</th>
-                    <th className="py-2 px-3">Tipe VIP</th>
-                    <th className="py-2 px-3">Status Bermain</th>
-                    <th className="py-2 px-3">Catatan</th>
-                    <th className="py-2 px-3 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCompleted.map((player) => (
-                    <tr
-                      key={player.id}
-                      className="border-b border-slate-900/60 hover:bg-slate-900/10 transition-colors group opacity-75 hover:opacity-100"
-                    >
-                      <td className="py-3 px-3 font-bold text-slate-350">{player.name}</td>
-                      <td className="py-3 px-3 font-mono text-xs text-slate-500">{player.gameId || "-"}</td>
-                      <td className="py-3 px-3">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
-                            player.vipType === "PER_HOUR"
-                              ? "bg-amber-950/20 border-amber-900/30 text-amber-400"
-                              : player.vipType === "END_LIVE"
-                              ? "bg-purple-950/20 border-purple-900/30 text-purple-400"
-                              : "bg-fuchsia-950/20 border-fuchsia-900/30 text-fuchsia-400"
-                          }`}>
-                          {player.vipType === "PER_HOUR"
-                            ? `Per Jam: ${player.matchesTotal} Jam`
-                            : player.vipType === "END_LIVE"
-                            ? (player.matchesTotal > 0 ? `Live: ${player.matchesTotal}` : "Until End Live")
-                            : `Match: ${player.matchesTotal}`}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-xs text-slate-450">
-                        {player.vipType === "PER_HOUR"
-                          ? `${player.matchesTotal} Jam Selesai`
-                          : player.vipType === "END_LIVE"
-                          ? `${player.matchesPlayed}/${player.matchesTotal} Live Selesai`
-                          : `${player.matchesPlayed}/${player.matchesTotal} Match Selesai`}
-                      </td>
-                      <td className="py-3 px-3 text-xs text-slate-500 italic max-w-xs truncate" title={player.notes}>
-                        {player.notes && parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed).cleanNotes
-                          ? `"${parsePlayerTimer(player.notes, player.matchesTotal, player.matchesPlayed).cleanNotes}"`
-                          : "-"}
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* Edit Button */}
-                          <button
-                            onClick={() => handleEditClick(player)}
-                            className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
-                            title="Edit Data Player"
-                          >
-                            <Edit2 className="h-3.5 w-3.5 text-violet-400" />
-                          </button>
-
-                          {/* Reorder Button */}
-                          <button
-                            onClick={() => handleReorderClick(player)}
-                            className="flex items-center gap-1 text-xs font-semibold text-violet-400 bg-violet-950/30 hover:bg-violet-900/40 border border-violet-900/40 hover:border-violet-700/60 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
-                            title="Reorder / Main Lagi"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            Reorder
-                          </button>
-
-                          {/* Delete from history */}
-                          <button
-                            onClick={() => handleDeletePlayer(player.id, player.name)}
-                            className="p-1.5 bg-red-950/20 hover:bg-red-950/50 border border-red-900/30 hover:border-red-900/60 rounded-lg text-red-400 transition-all cursor-pointer"
-                            title="Hapus Permanen"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-      </main>
-
-      {/* CRUD MODAL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-6 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-600 to-fuchsia-600"></div>
-
-            <div className="flex items-center justify-between border-b border-slate-900 pb-3 mb-5">
-              <h3 className="text-lg font-black text-slate-100">
-                {editingPlayer ? "Edit Data VIP Player" : "Tambah VIP Player Baru"}
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-
-
-            <form onSubmit={handleSavePlayer} className="space-y-4">
-
-              {/* Player Name */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  Nama Player / Nickname
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g. Kenzy Gaming"
-                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all"
-                />
-              </div>
-
-              {/* Game ID */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Game ID / IGN (Angka Akun)
-                  </label>
-                  {formData.gameId && !duplicateWarning && (
-                    <span className="text-[10px] font-medium text-emerald-400 flex items-center gap-1">
-                      <Check className="h-3 w-3" /> Game ID Tersedia
-                    </span>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  value={formData.gameId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, gameId: e.target.value }))}
-                  placeholder="e.g. 1992879945533"
-                  className={`w-full bg-slate-900 border px-3 py-2.5 text-sm rounded-xl outline-none text-slate-100 placeholder-slate-600 transition-all ${
-                    duplicateWarning
-                      ? "border-red-500 focus:border-red-400 focus:ring-1 focus:ring-red-500"
-                      : "border-slate-800 focus:border-violet-500"
-                  }`}
-                />
-                {duplicateWarning && (
-                  <div className="mt-1.5 p-2 bg-red-950/50 border border-red-800/60 rounded-lg text-xs text-red-300 flex items-start gap-1.5 animate-shake">
-                    <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
-                    <span>{duplicateWarning}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Row Grid: Type & Status */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Tipe VIP
-                  </label>
-                  <select
-                    value={formData.vipType}
-                    onChange={(e) => setFormData(prev => ({ ...prev, vipType: e.target.value as any }))}
-                    className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all cursor-pointer"
-                  >
-                    <option value="END_LIVE">Until End Live</option>
-                    <option value="PER_HOUR">Per Jam</option>
-                    <option value="PER_MATCH">Per Match</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Status Awal
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                    className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all cursor-pointer"
-                  >
-                    <option value="QUEUE">Mengantri</option>
-                    <option value="PLAYING">Sedang Bermain</option>
-                    <option value="PENDING">Tertunda (AFK)</option>
-                    <option value="COMPLETED">Selesai VIP</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Matches played / total - For PER_HOUR, PER_MATCH or END_LIVE */}
-              <div className="grid grid-cols-2 gap-4 bg-slate-900/40 p-3 rounded-xl border border-slate-900">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    {formData.vipType === "PER_HOUR" ? "Jam Selesai" : formData.vipType === "END_LIVE" ? "Sudah Live (x)" : "Mainkan Match"}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={formData.matchesPlayed}
-                    onChange={(e) => setFormData(prev => ({ ...prev, matchesPlayed: Number(e.target.value) }))}
-                    className="w-full bg-slate-900 border border-slate-800 px-3 py-2 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    {formData.vipType === "PER_HOUR" ? "Total Jam (Durasi)" : formData.vipType === "END_LIVE" ? "Total Live (x)" : "Total Match"}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={formData.matchesTotal}
-                    onChange={(e) => setFormData(prev => ({ ...prev, matchesTotal: Number(e.target.value) }))}
-                    className="w-full bg-slate-900 border border-slate-800 px-3 py-2 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  Catatan Tambahan
-                </label>
-                <input
-                  type="text"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="e.g. Request Hero / Req Core"
-                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-3 border-t border-slate-900">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2.5 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-sm font-semibold rounded-xl text-slate-300 transition-all cursor-pointer text-center"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  id="modal-submit-btn"
-                  disabled={actionLoading || !!duplicateWarning}
-                  className="flex-1 py-2.5 px-4 bg-violet-600 hover:bg-violet-500 text-sm font-semibold rounded-xl text-white transition-all cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {actionLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                  ) : (
-                    "Simpan Data"
-                  )}
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* REORDER MODAL DIALOG */}
-      {isReorderModalOpen && reorderingPlayer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-6 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 via-violet-600 to-fuchsia-600"></div>
-
-            <div className="flex items-center justify-between border-b border-slate-900 pb-3 mb-5">
-              <div>
-                <h3 className="text-lg font-black text-slate-100">
-                  Konfirmasi Reorder VIP
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Player: <span className="text-violet-400 font-bold">{reorderingPlayer.name}</span> {reorderingPlayer.gameId && `(${reorderingPlayer.gameId})`}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setIsReorderModalOpen(false);
-                  setReorderingPlayer(null);
-                }}
-                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConfirmReorder} className="space-y-4">
-              {/* Order Tipe VIP apa? */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  1. Order Tipe VIP Apa?
-                </label>
-                <select
-                  value={reorderFormData.vipType}
-                  onChange={(e) => {
-                    const newType = e.target.value as "END_LIVE" | "PER_MATCH" | "PER_HOUR";
-                    setReorderFormData(prev => ({
-                      ...prev,
-                      vipType: newType,
-                      matchesTotal: 1
-                    }));
-                  }}
-                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all cursor-pointer font-semibold"
-                >
-                  <option value="END_LIVE">Until End Live (VIP Sampai Selesai Live)</option>
-                  <option value="PER_HOUR">Per Jam (VIP Durasi Jam)</option>
-                  <option value="PER_MATCH">Per Match (VIP Hitungan Match)</option>
-                </select>
-              </div>
-
-              {/* Status Awal saat Reorder */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  2. Status Awal
-                </label>
-                <select
-                  value={reorderFormData.status}
-                  onChange={(e) => setReorderFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 transition-all cursor-pointer font-semibold"
-                >
-                  <option value="QUEUE">Mengantri</option>
-                  <option value="PLAYING">Sedang Bermain</option>
-                  <option value="PENDING">Tertunda (AFK)</option>
-                  <option value="COMPLETED">Selesai VIP</option>
-                </select>
-              </div>
-
-              {/* Totalnya berapa? */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  3. Totalnya Berapa? (
-                  {reorderFormData.vipType === "PER_HOUR"
-                    ? "Berapa Jam"
-                    : reorderFormData.vipType === "PER_MATCH"
-                    ? "Berapa Match"
-                    : "Berapa Kali Live"}
-                  )
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min={1}
-                    required
-                    value={reorderFormData.matchesTotal}
-                    onChange={(e) => setReorderFormData(prev => ({ ...prev, matchesTotal: Number(e.target.value) }))}
-                    placeholder={reorderFormData.vipType === "PER_HOUR" ? "Contoh: 1 (untuk 1 Jam)" : "Contoh: 1"}
-                    className="w-full bg-slate-900 border border-slate-800 px-3 py-2.5 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all font-bold"
-                  />
-                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-semibold">
-                    {reorderFormData.vipType === "PER_HOUR" ? "Jam" : reorderFormData.vipType === "PER_MATCH" ? "Match" : "x Live"}
+                  <span className="text-[10px] uppercase font-bold tracking-wider">Status Live Stream</span>
+                  <span className="text-xs font-bold text-slate-200">
+                    {stats.isLive ? "Sedang Berlangsung" : "Tidak Aktif"}
                   </span>
                 </div>
               </div>
-
-              {/* Catatan tambahan */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  4. Catatan Tambahan (Opsional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={reorderFormData.notes}
-                  onChange={(e) => setReorderFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="e.g. Request Hero / Req Core / Catatan Khusus"
-                  className="w-full bg-slate-900 border border-slate-800 px-3 py-2 text-sm rounded-xl focus:border-violet-500 outline-none text-slate-100 placeholder-slate-600 transition-all resize-none"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-3 border-t border-slate-900">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsReorderModalOpen(false);
-                    setReorderingPlayer(null);
-                  }}
-                  className="flex-1 py-2.5 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-sm font-semibold rounded-xl text-slate-300 transition-all cursor-pointer text-center"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-sm font-bold rounded-xl text-white transition-all cursor-pointer text-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                >
-                  {actionLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4" />
-                      Masukkan Antrean
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Quick Stats Summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="glass-panel p-4 rounded-2xl border border-slate-800/80 bg-slate-900/40">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Sedang Main
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-emerald-400">{stats.playingCount}</span>
+              <span className="text-xs text-slate-500">Player</span>
+            </div>
+          </div>
+
+          <div className="glass-panel p-4 rounded-2xl border border-slate-800/80 bg-slate-900/40">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Dalam Antrean
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-amber-400">{stats.queueCount}</span>
+              <span className="text-xs text-slate-500">Player</span>
+            </div>
+          </div>
+
+          <div className="glass-panel p-4 rounded-2xl border border-slate-800/80 bg-slate-900/40">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Total Mabar VIP
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-violet-400">{stats.totalPlayers}</span>
+              <span className="text-xs text-slate-500">Data</span>
+            </div>
+          </div>
+
+          <div className="glass-panel p-4 rounded-2xl border border-slate-800/80 bg-slate-900/40">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Item Linktree
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-cyan-400">{stats.totalLinks}</span>
+              <span className="text-xs text-slate-500">Tautan</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Core Navigation Cards Menu */}
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
+            <Layers className="w-5 h-5 text-violet-400" />
+            <span>Pilih Pengaturan Menu</span>
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* CARD 1: EDIT MABAR VIP */}
+            <div className="group relative rounded-3xl bg-slate-900/50 border border-slate-800 hover:border-violet-500/50 transition-all duration-300 p-6 sm:p-7 flex flex-col justify-between overflow-hidden hover:shadow-2xl hover:shadow-violet-600/10">
+              <div className="absolute top-0 right-0 w-36 h-36 bg-violet-600/10 rounded-full blur-2xl group-hover:bg-violet-600/20 transition-all pointer-events-none"></div>
+
+              <div>
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-violet-600/30 group-hover:scale-105 transition-transform">
+                    <Gamepad2 className="w-7 h-7" />
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20 text-xs font-bold tracking-wide">
+                    Live Queue & Players
+                  </span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-black text-white group-hover:text-violet-300 transition-colors">
+                  Edit Mabar VIP
+                </h3>
+                <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+                  Kelola sistem antrean antrean VIP, status pemain (Sedang Main, Mengantri, AFK, Selesai), timer countdown, link Sociabuzz, dan pengaturan live stream.
+                </p>
+
+                {/* Preview Features List */}
+                <div className="mt-5 space-y-2 text-xs text-slate-300">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Kontrol status live TikTok & YouTube stream</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Tambah, edit, reorder & hapus player VIP</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Real-time live timer & running announcement</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-5 border-t border-slate-800/80 flex items-center justify-between">
+                <Link
+                  href="/mabarvip"
+                  target="_blank"
+                  className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-colors"
+                >
+                  <span>Lihat Halaman Publik</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+
+                <Link
+                  href="/admin/edit-mabarvip"
+                  id="btn-goto-edit-mabarvip"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-violet-600/30 hover:shadow-violet-600/50 transition-all cursor-pointer group-hover:translate-x-0.5"
+                >
+                  <span>Buka Edit Mabar VIP</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+
+            {/* CARD 2: EDIT LINKTREE UTAMA */}
+            <div className="group relative rounded-3xl bg-slate-900/50 border border-slate-800 hover:border-amber-500/50 transition-all duration-300 p-6 sm:p-7 flex flex-col justify-between overflow-hidden hover:shadow-2xl hover:shadow-amber-600/10">
+              <div className="absolute top-0 right-0 w-36 h-36 bg-amber-600/10 rounded-full blur-2xl group-hover:bg-amber-600/20 transition-all pointer-events-none"></div>
+
+              <div>
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-amber-600/30 group-hover:scale-105 transition-transform">
+                    <Sparkles className="w-7 h-7" />
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 text-xs font-bold tracking-wide">
+                    Homepage & Links
+                  </span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-black text-white group-hover:text-amber-300 transition-colors">
+                  Edit Linktree Utama
+                </h3>
+                <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+                  Kustomisasi tampilan homepage: bio profil, avatar, video ads dengan green screen (chroma key), tombol link medsos, leaderboard, kode sensitivitas, dan tema visual.
+                </p>
+
+                {/* Preview Features List */}
+                <div className="mt-5 space-y-2 text-xs text-slate-300">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Bio profile, avatar animasi & background styling</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Kelola tautan sosial, custom banner promo & video ads</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Kode sensitivitas game & tombol aksi cepat</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-5 border-t border-slate-800/80 flex items-center justify-between">
+                <Link
+                  href="/"
+                  target="_blank"
+                  className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-colors"
+                >
+                  <span>Lihat Halaman Publik</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
+
+                <Link
+                  href="/admin/edit-linktree"
+                  id="btn-goto-edit-linktree"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-sm shadow-lg shadow-amber-600/30 hover:shadow-amber-600/50 transition-all cursor-pointer group-hover:translate-x-0.5"
+                >
+                  <span>Buka Edit Linktree</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Admin Tools / Fanbase Card */}
+        <div className="rounded-2xl bg-slate-900/30 border border-slate-800/70 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-fuchsia-600/20 border border-fuchsia-500/30 flex items-center justify-center text-fuchsia-400 shrink-0">
+              <Cat className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-200">Kustomisasi Fanbase Cat (Cupidut & Dudud)</h4>
+              <p className="text-xs text-slate-400 mt-0.5">Kelola foto, video lucu, dan ucapan untuk fanbase kucing kesayangan</p>
+            </div>
+          </div>
+          <Link
+            href="/edit/fanbase-cupidut-dudud"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 shrink-0"
+          >
+            <span>Edit Fanbase</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </main>
 
       <Footer />
     </div>
