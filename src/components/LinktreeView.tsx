@@ -63,6 +63,19 @@ export interface LinktreeBannerItem {
   badgeText: string;
   targetUrl: string;
   imageUrl: string;
+  mediaType?: 'image' | 'video';
+  videoUrl?: string;
+  height?: number;
+  titleColor?: string;
+  titleSize?: 'sm' | 'base' | 'lg' | 'xl';
+  subtitleColor?: string;
+  badgeBgColor?: string;
+  badgeTextColor?: string;
+  btnText?: string;
+  btnTextColor?: string;
+  overlayDarkness?: number;
+  borderStyle?: 'rounded-xl' | 'rounded-2xl' | 'rounded-3xl' | 'rounded-none' | string;
+  borderColor?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -1365,12 +1378,105 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
               })}
             </motion.div>
 
-            {/* Live / Custom Banner Cards (Multiple Support) */}
+            {/* Live / Custom Banner Cards (Multiple Support with Video & Full Customization) */}
             {profile.showLiveBanner !== false && (() => {
               const activeBanners = (profile.banners || []).filter((banner) => banner.isEnabled !== false);
               if (activeBanners.length === 0) return null;
               return activeBanners.map((banner) => {
                 const isInternal = banner.targetUrl?.startsWith('/');
+                const bannerHeight = banner.height || 185;
+                const overlayOpacity = ((banner.overlayDarkness ?? 60) / 100).toFixed(2);
+                const titleSizeClass =
+                  banner.titleSize === 'sm'
+                    ? 'text-sm'
+                    : banner.titleSize === 'base'
+                    ? 'text-base'
+                    : banner.titleSize === 'xl'
+                    ? 'text-xl'
+                    : 'text-lg';
+                const roundedClass = banner.borderStyle || 'rounded-3xl';
+                const borderColorStyle = banner.borderColor || 'rgba(255, 255, 255, 0.2)';
+
+                const bannerContent = (
+                  <div
+                    className={`relative w-full overflow-hidden group shadow-2xl bg-slate-900 border ${roundedClass}`}
+                    style={{
+                      height: `${bannerHeight}px`,
+                      borderColor: borderColorStyle,
+                    }}
+                  >
+                    {/* Media Layer: Video vs Image */}
+                    {banner.mediaType === 'video' && banner.videoUrl ? (
+                      <video
+                        src={banner.videoUrl}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                    ) : banner.imageUrl ? (
+                      <img
+                        src={banner.imageUrl}
+                        alt=""
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950" />
+                    )}
+
+                    {/* Gradient Overlay for Text Readability */}
+                    <div
+                      className="absolute inset-0 p-5 flex flex-col justify-end text-left pointer-events-none"
+                      style={{
+                        background: `linear-gradient(to top, rgba(2, 6, 23, ${overlayOpacity}) 0%, rgba(2, 6, 23, ${Math.max(0, parseFloat(overlayOpacity) - 0.25)}) 50%, transparent 100%)`,
+                      }}
+                    >
+                      {/* Badge Pill */}
+                      {banner.badgeText && (
+                        <div className="mb-2">
+                          <span
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border border-cyan-400/30 backdrop-blur-md shadow-sm"
+                            style={{
+                              backgroundColor: banner.badgeBgColor || 'rgba(6, 182, 212, 0.25)',
+                              color: banner.badgeTextColor || '#22D3EE',
+                            }}
+                          >
+                            {banner.badgeText}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Title */}
+                      <h3
+                        className={`font-bold leading-snug drop-shadow-md ${titleSizeClass}`}
+                        style={{ color: banner.titleColor || '#FFFFFF' }}
+                      >
+                        {banner.title}
+                      </h3>
+
+                      {/* Subtitle / Description */}
+                      {banner.subtitle && (
+                        <p
+                          className="text-xs mt-0.5 line-clamp-2"
+                          style={{ color: banner.subtitleColor || '#CBD5E1' }}
+                        >
+                          {banner.subtitle}
+                        </p>
+                      )}
+
+                      {/* Action Button */}
+                      <div
+                        className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold group-hover:translate-x-0.5 transition-transform"
+                        style={{ color: banner.btnTextColor || '#22D3EE' }}
+                      >
+                        <span>{banner.btnText || 'Kunjungi'}</span>
+                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </div>
+                );
+
                 return (
                   <motion.div
                     key={banner.id}
@@ -1383,58 +1489,18 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                       <Link
                         href={banner.targetUrl || '/mabarvip'}
                         prefetch={true}
-                        className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
+                        className="block w-full"
                       >
-                        {banner.imageUrl && (
-                          <img
-                            src={banner.imageUrl}
-                            alt=""
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
-                          <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
-                            {banner.title}
-                          </h3>
-                          {banner.subtitle && (
-                            <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
-                              {banner.subtitle}
-                            </p>
-                          )}
-                          <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
-                            <span>Kunjungi</span>
-                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                        </div>
+                        {bannerContent}
                       </Link>
                     ) : (
                       <a
                         href={banner.targetUrl || '/mabarvip'}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block relative w-full h-44 sm:h-48 rounded-3xl overflow-hidden group shadow-2xl border border-white/20 bg-slate-900"
+                        className="block w-full"
                       >
-                        {banner.imageUrl && (
-                          <img
-                            src={banner.imageUrl}
-                            alt=""
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-5 flex flex-col justify-end text-left">
-                          <h3 className="text-white font-bold text-lg leading-snug drop-shadow-md">
-                            {banner.title}
-                          </h3>
-                          {banner.subtitle && (
-                            <p className="text-slate-300 text-xs mt-0.5 line-clamp-1">
-                              {banner.subtitle}
-                            </p>
-                          )}
-                          <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 group-hover:text-cyan-200">
-                            <span>Kunjungi</span>
-                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                        </div>
+                        {bannerContent}
                       </a>
                     )}
                   </motion.div>
