@@ -34,6 +34,13 @@ import {
   Columns3,
   Maximize2,
   Trophy,
+  Palette,
+  Share2,
+  Code2,
+  Layers,
+  ChevronRight,
+  ChevronLeft,
+  Menu,
 } from "lucide-react";
 
 interface LinkItem {
@@ -213,6 +220,18 @@ export default function EditLinktreePage() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [activeSection, setActiveSection] = useState("sec-branding");
+  const [isNavOpen, setIsNavOpen] = useState(true);
+
+  const scrollToSection = (id: string) => {
+    setActiveSection(id);
+    const element = document.getElementById(id);
+    if (element) {
+      const yOffset = -90;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  };
 
   const [profile, setProfile] = useState<ProfileData>({
     id: "profile",
@@ -949,6 +968,78 @@ export default function EditLinktreePage() {
         </div>
       </header>
 
+      {/* Floating Shortcuts Navigation Sidebar (Disebelah Kiri) */}
+      <aside
+        className={`fixed left-3 sm:left-5 top-28 z-40 transition-all duration-300 ease-in-out select-none ${
+          isNavOpen ? "translate-x-0" : "-translate-x-[calc(100%-12px)] sm:-translate-x-[calc(100%-14px)]"
+        }`}
+      >
+        <div className="flex items-start">
+          <div className="w-52 sm:w-56 p-2 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 shadow-2xl space-y-1 text-xs">
+            <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+              <span className="flex items-center gap-1.5 text-cyan-400">
+                <Layers className="w-3.5 h-3.5" />
+                <span>Pintasan Menu</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsNavOpen(false)}
+                className="p-1 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Tutup Navigasi"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="max-h-[68vh] overflow-y-auto pr-1 space-y-1 custom-scrollbar">
+              {[
+                { id: "sec-branding", label: "Branding Web", icon: Globe, color: "text-fuchsia-400" },
+                { id: "sec-video-ads", label: "Iklan Video Overlay", icon: Video, color: "text-purple-400" },
+                { id: "sec-profile", label: "Profil & Banner", icon: User, color: "text-indigo-400" },
+                { id: "sec-background", label: "Background & Efek", icon: Sparkles, color: "text-amber-400" },
+                { id: "sec-social-icons", label: "Icon Social Header", icon: Share2, color: "text-blue-400" },
+                { id: "sec-leaderboard", label: "Leaderboard Top", icon: Trophy, color: "text-yellow-400" },
+                { id: "sec-top-buttons", label: "Tombol Aksi Atas", icon: Gamepad2, color: "text-cyan-400" },
+                { id: "sec-game-codes", label: "Kode Sensitivitas", icon: Code2, color: "text-violet-400" },
+                { id: "sec-themes", label: "Pilihan Tema", icon: Palette, color: "text-pink-400" },
+                { id: "sec-links", label: "Daftar Link", icon: LinkIcon, color: "text-emerald-400" },
+                { id: "sec-banners", label: "Kartu Banner Live", icon: ImageIcon, color: "text-orange-400" },
+              ].map((item) => {
+                const IconComponent = item.icon;
+                const isActive = activeSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => scrollToSection(item.id)}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-medium text-left transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-gradient-to-r from-violet-600/30 to-cyan-600/20 text-white border border-cyan-500/40 shadow-sm"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent"
+                    }`}
+                  >
+                    <IconComponent className={`w-3.5 h-3.5 shrink-0 ${item.color}`} />
+                    <span className="truncate text-[11px]">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Toggle Tab Button when closed */}
+          {!isNavOpen && (
+            <button
+              type="button"
+              onClick={() => setIsNavOpen(true)}
+              className="ml-1 p-2 rounded-r-xl bg-slate-900/90 hover:bg-slate-800 backdrop-blur-xl border border-l-0 border-slate-700/80 text-cyan-400 shadow-2xl transition-all cursor-pointer flex items-center justify-center group"
+              title="Buka Pintasan Navigasi"
+            >
+              <ChevronRight className="w-4 h-4 group-hover:scale-125 transition-transform" />
+            </button>
+          )}
+        </div>
+      </aside>
+
       {/* Main Content Form */}
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8 space-y-8">
         {error && (
@@ -967,7 +1058,7 @@ export default function EditLinktreePage() {
           {/* Left / Middle: Configuration Panel */}
           <div className="lg:col-span-2 space-y-8">
             {/* Section 0.5: Branding Website (Header & Footer) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-branding" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
                 <Globe className="w-5 h-5 text-fuchsia-400" />
                 <span>Branding Header & Footer Website</span>
@@ -1047,7 +1138,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 0.8: Iklan Video Overlay (Chroma Key MP4) */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl relative overflow-hidden">
+            <div id="sec-video-ads" className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl relative overflow-hidden scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400">
@@ -1531,7 +1622,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 1: Profil */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-profile" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
                 <User className="w-5 h-5 text-indigo-400" />
                 <span>Informasi Profil</span>
@@ -2029,7 +2120,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 2: Custom Background & Visual Effects */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl">
+            <div id="sec-background" className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-purple-950/40 border border-purple-800/40 space-y-6 shadow-xl scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-fuchsia-400" />
@@ -2192,7 +2283,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 1.1: Deretan Icon Social Media (Bawah Judul Virtus Official) */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-blue-800/40 space-y-6 shadow-xl">
+            <div id="sec-social-icons" className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-blue-950/40 border border-blue-800/40 space-y-6 shadow-xl scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400">
@@ -2472,7 +2563,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 1.2: Pengaturan Leaderboard (Top Supporters) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-5">
+            <div id="sec-leaderboard" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-5 scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <div className="flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-amber-400" />
@@ -2738,7 +2829,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 1.5: Tombol Aksi Atas (Header Top Buttons) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-top-buttons" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <Gamepad2 className="w-5 h-5 text-cyan-400" />
@@ -2860,7 +2951,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 1.7: Kode Sensitivitas & Kode Game (Dibawah Bio) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-game-codes" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <Gamepad2 className="w-5 h-5 text-violet-400" />
@@ -2952,7 +3043,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 2.5: Tema Visual */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-themes" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800/80 pb-3">
                 <Layout className="w-5 h-5 text-purple-400" />
                 <span>Pilih Tema Warna Standar</span>
@@ -2978,7 +3069,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 3: Daftar Link (Social & Custom) */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-links" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
                 <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <LinkIcon className="w-5 h-5 text-emerald-400" />
@@ -3781,7 +3872,7 @@ export default function EditLinktreePage() {
             </div>
 
             {/* Section 4: Banner Cards CRUD Manager */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
+            <div id="sec-banners" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
               <div className="flex flex-wrap items-center justify-between border-b border-slate-800/80 pb-3 gap-3">
                 <div className="flex items-center gap-3">
                   <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
