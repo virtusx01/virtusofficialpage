@@ -617,6 +617,49 @@ export default function EditLinktreePage() {
     fetchLinktreeData();
   }, []);
 
+  // Real-time ScrollSpy: Memperbarui highlight menu pintasan secara realtime sesuai posisi scroll layar
+  useEffect(() => {
+    const sectionIds = [
+      "sec-branding",
+      "sec-video-ads",
+      "sec-profile",
+      "sec-background",
+      "sec-social-icons",
+      "sec-leaderboard",
+      "sec-top-buttons",
+      "sec-game-codes",
+      "sec-themes",
+      "sec-links",
+      "sec-banners",
+    ];
+
+    const handleScroll = () => {
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      const targetPoint = scrollY + 160; // Titik deteksi di area atas viewport
+
+      let currentSecId = sectionIds[0];
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const top = el.offsetTop;
+          if (targetPoint >= top) {
+            currentSecId = id;
+          }
+        }
+      }
+
+      setActiveSection(currentSecId);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    // Run once on load to initialize active section
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
     setError("");
