@@ -1734,7 +1734,11 @@ export default function EditLinktreePage() {
                         </div>
                         <div
                           className="relative w-full rounded-2xl overflow-hidden border border-slate-800 shadow-md group"
-                          style={{ height: `${Math.min(profile.bannerHeight || 260, 200)}px` }}
+                          style={{
+                            height: `${Math.min(profile.bannerHeight || 260, 200)}px`,
+                            WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 70%, rgba(0,0,0,0) 100%)`,
+                            maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 70%, rgba(0,0,0,0) 100%)`,
+                          }}
                         >
                           <img
                             src={profile.bannerImageUrl}
@@ -1745,9 +1749,7 @@ export default function EditLinktreePage() {
                           <div 
                             className="absolute inset-0 pointer-events-none flex items-end justify-center pb-2"
                             style={{
-                              background: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 40%, rgba(15,23,42,${((profile.bannerOpacity ?? 50) / 100).toFixed(2)}) 70%, rgba(15,23,42,1) 100%)`,
-                              WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${(1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`,
-                              maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${(1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`
+                              background: `linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(0,0,0,${((profile.bannerOpacity ?? 50) / 100).toFixed(2)}) 100%)`,
                             }}
                           >
                             <span className="text-[10px] text-white/90 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/20 backdrop-blur-sm shadow">

@@ -723,37 +723,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
           siteSubtitle: profile.siteSubtitle,
         }}
       />
-      <main className={`flex-1 w-full flex flex-col items-center p-3 sm:p-6 ${profile.bgImageUrl ? 'bg-slate-950' : currentTheme.bg} font-sans relative overflow-hidden`}>
-        {/* Profile Header Cover Banner (Full-Width Edge-to-Edge with smooth bottom gradient fade like TikTok / X) */}
-        {profile.showBannerImage && profile.bannerImageUrl && (
-          <div
-            className="absolute top-0 inset-x-0 w-full overflow-hidden pointer-events-none select-none z-0"
-            style={{
-              height: `${profile.bannerHeight || 280}px`,
-              transform: `translateY(${profile.bannerOffsetTop ?? 0}px)`,
-            }}
-          >
-            {/* Banner Cover Image */}
-            <img
-              src={profile.bannerImageUrl}
-              alt="Profile Cover Banner"
-              className="w-full h-full object-cover object-center"
-            />
-
-            {/* Seamless Bottom Gradient Fade:
-                Atas: Jernih tanpa transparan / original foto cover
-                Bawah: Bertransisi halus memudar (sesuai persentase transparansi yang dikustom) menyatu ke background & di belakang avatar */}
-            <div 
-              className="absolute inset-0 pointer-events-none" 
-              style={{
-                background: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 35%, rgba(15,23,42,${((profile.bannerOpacity ?? 60) / 100).toFixed(2)}) 70%, rgba(15,23,42,1) 100%)`,
-                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,${(1 - ((profile.bannerOpacity ?? 60) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`,
-                maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,${(1 - ((profile.bannerOpacity ?? 60) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`
-              }}
-            />
-          </div>
-        )}
-
+      <main className={`flex-1 w-full flex items-center justify-center p-3 sm:p-6 ${profile.bgImageUrl ? 'bg-slate-950' : currentTheme.bg} font-sans relative overflow-hidden`}>
         {/* Custom Background Image & Ultra-fast Visual Effects Layer */}
         <BackgroundEffects
           bgImageUrl={profile.bgImageUrl}
@@ -789,6 +759,34 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
 
         {/* Main Container Card */}
         <div className="w-full max-w-md my-auto relative z-10 py-6">
+          {/* Profile Header Banner (Posisi dari paling atas di belakang tombol aksi atas & avatar) */}
+          {profile.showBannerImage && profile.bannerImageUrl && (
+            <div
+              className="absolute left-0 right-0 w-full overflow-hidden pointer-events-none select-none -z-10 transition-all duration-300"
+              style={{
+                top: `${profile.bannerOffsetTop ?? 0}px`,
+                height: `${profile.bannerHeight || 260}px`,
+                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 70%, rgba(0,0,0,0) 100%)`,
+                maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 70%, rgba(0,0,0,0) 100%)`,
+              }}
+            >
+              {/* Banner Image */}
+              <img
+                src={profile.bannerImageUrl}
+                alt="Profile Banner"
+                className="w-full h-full object-cover object-center rounded-3xl"
+              />
+
+              {/* Smooth Bottom Shadow Overlay */}
+              <div 
+                className="absolute inset-0 pointer-events-none rounded-3xl" 
+                style={{
+                  background: `linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(0,0,0,${((profile.bannerOpacity ?? 50) / 100).toFixed(2)}) 100%)`,
+                }}
+              />
+            </div>
+          )}
+
           <motion.div
             initial="hidden"
             animate="visible"
