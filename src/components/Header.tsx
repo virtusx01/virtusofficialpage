@@ -83,7 +83,7 @@ export default function Header({ initialData }: HeaderProps = {}) {
       isLive,
     },
     {
-      href: "/fanbase-cupidut-dudud",
+
       label: "Cupidut & Dudud",
       icon: Cat,
     },
