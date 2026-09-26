@@ -744,6 +744,20 @@ export default function EditLinktreePage() {
         }
       }
 
+      // Deteksi lebih spesifik jika user sedang berada di link item tertentu
+      if (profile.links && profile.links.length > 0) {
+        for (let i = 0; i < profile.links.length; i++) {
+          const itemEl = document.getElementById(`link-item-${i}`);
+          if (itemEl) {
+            const itemTop = itemEl.offsetTop;
+            if (targetPoint >= itemTop && targetPoint <= itemTop + itemEl.offsetHeight) {
+              currentSecId = `link-item-${i}`;
+              break;
+            }
+          }
+        }
+      }
+
       setActiveSection(currentSecId);
     };
 
@@ -1226,25 +1240,73 @@ export default function EditLinktreePage() {
                 { id: "sec-top-buttons", label: "Tombol Aksi Atas", icon: Gamepad2, color: "text-cyan-400" },
                 { id: "sec-game-codes", label: "Kode Sensitivitas", icon: Code2, color: "text-violet-400" },
                 { id: "sec-themes", label: "Pilihan Tema", icon: Palette, color: "text-pink-400" },
-                { id: "sec-links", label: "Daftar Link", icon: LinkIcon, color: "text-emerald-400" },
-                { id: "sec-banners", label: "Kartu Banner Live", icon: ImageIcon, color: "text-orange-400" },
+                { id: "sec-links", label: `Daftar Link (${profile.links.length})`, icon: LinkIcon, color: "text-emerald-400" },
               ].map((item) => {
                 const IconComponent = item.icon;
                 const isActive = activeSection === item.id;
+                const isLinksSec = item.id === "sec-links";
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => scrollToSection(item.id)}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-medium text-left transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-gradient-to-r from-violet-600/30 to-cyan-600/20 text-white border border-cyan-500/40 shadow-sm"
-                        : "text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent"
-                    }`}
-                  >
-                    <IconComponent className={`w-3.5 h-3.5 shrink-0 ${item.color}`} />
-                    <span className="truncate text-[11px]">{item.label}</span>
-                  </button>
+                  <div key={item.id} className="space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => scrollToSection(item.id)}
+                      className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-xl font-medium text-left transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-gradient-to-r from-violet-600/30 to-cyan-600/20 text-white border border-cyan-500/40 shadow-sm"
+                          : "text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <IconComponent className={`w-3.5 h-3.5 shrink-0 ${item.color}`} />
+                        <span className="truncate text-[11px] font-semibold">{item.label}</span>
+                      </div>
+                      {isLinksSec && profile.links.length > 0 && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/40">
+                          {profile.links.length}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Sub-menu Urutan Item di Bawah Daftar Link */}
+                    {isLinksSec && profile.links && profile.links.length > 0 && (
+                      <div className="ml-3 pl-2.5 border-l border-emerald-500/30 space-y-1 py-1">
+                        {profile.links.map((link, idx) => {
+                          const isBannerType = link.itemType === "video_banner";
+                          const isItemActive = activeSection === `link-item-${idx}`;
+                          return (
+                            <button
+                              key={link.id || idx}
+                              type="button"
+                              onClick={() => scrollToSection(`link-item-${idx}`)}
+                              className={`w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-left transition-all cursor-pointer text-[10px] group ${
+                                isItemActive
+                                  ? "bg-emerald-900/40 text-emerald-200 font-bold border border-emerald-500/50 shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                              }`}
+                              title={`Lompat ke #${idx + 1} ${link.title}`}
+                            >
+                              <span className="font-mono text-[9px] text-slate-500 group-hover:text-emerald-400 shrink-0">
+                                #{idx + 1}
+                              </span>
+                              {isBannerType ? (
+                                <Video className="w-2.5 h-2.5 text-purple-400 shrink-0" />
+                              ) : (
+                                <LinkIcon className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+                              )}
+                              <span className="truncate flex-1">
+                                {link.title || (isBannerType ? "Banner Promo" : "Link")}
+                              </span>
+                              {isBannerType && (
+                                <span className="text-[8px] bg-purple-950 text-purple-300 px-1 rounded uppercase font-bold shrink-0">
+                                  Promo
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -3313,7 +3375,8 @@ export default function EditLinktreePage() {
                 {profile.links.map((link, idx) => (
                   <div
                     key={link.id || idx}
-                    className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 relative group"
+                    id={`link-item-${idx}`}
+                    className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 relative group scroll-mt-24"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
@@ -4476,521 +4539,7 @@ export default function EditLinktreePage() {
               </div>
             </div>
 
-            {/* Section 4: Banner Cards CRUD Manager */}
-            <div id="sec-banners" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4 scroll-mt-24">
-              <div className="flex flex-wrap items-center justify-between border-b border-slate-800/80 pb-3 gap-3">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5 text-amber-400" />
-                    <span>Kelola Kartu Banner Live / Promo ({(profile.banners || []).length})</span>
-                  </h2>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={profile.showLiveBanner ?? true}
-                      onChange={(e) => setProfile({ ...profile, showLiveBanner: e.target.checked })}
-                      className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
-                    />
-                    <span className="text-xs font-semibold text-slate-200">
-                      {(profile.showLiveBanner ?? true) ? "Tampilkan Banner" : "Sembunyikan Banner"}
-                    </span>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={addBanner}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Tambah Banner</span>
-                  </button>
-                </div>
-              </div>
-
-              {(profile.banners || []).length === 0 ? (
-                <div className="p-6 text-center bg-slate-950/60 border border-dashed border-slate-800 rounded-xl space-y-2">
-                  <p className="text-xs text-slate-400">Belum ada kartu banner. Klik tombol di atas untuk membuat banner baru.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {(profile.banners || []).map((banner, idx) => (
-                    <div
-                      key={banner.id || idx}
-                      className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 relative group"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/50">
-                            #{idx + 1}
-                          </span>
-                          <input
-                            type="text"
-                            value={banner.title}
-                            onChange={(e) => updateBanner(idx, "title", e.target.value)}
-                            className="bg-transparent font-bold text-sm text-slate-100 border-b border-transparent focus:border-amber-500 outline-none px-1 py-0.5"
-                            placeholder="Judul Banner"
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={banner.isEnabled}
-                              onChange={(e) => updateBanner(idx, "isEnabled", e.target.checked)}
-                              className="rounded border-slate-700 text-amber-500 focus:ring-amber-500"
-                            />
-                            <span>{banner.isEnabled ? "Aktif" : "Non-aktif"}</span>
-                          </label>
-
-                          <button
-                            type="button"
-                            onClick={() => moveBanner(idx, "up")}
-                            disabled={idx === 0}
-                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
-                            title="Geser Ke Atas"
-                          >
-                            <MoveUp className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveBanner(idx, "down")}
-                            disabled={idx === (profile.banners || []).length - 1}
-                            className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
-                            title="Geser Ke Bawah"
-                          >
-                            <MoveDown className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => removeBanner(idx)}
-                            className="p-1 rounded bg-red-950/50 hover:bg-red-900/60 text-red-400 hover:text-red-200 transition-colors"
-                            title="Hapus Banner"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">Sub Judul / Deskripsi</label>
-                          <input
-                            type="text"
-                            value={banner.subtitle}
-                            onChange={(e) => updateBanner(idx, "subtitle", e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
-                            placeholder="Deskripsi promo"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">Text Badge Pill</label>
-                          <input
-                            type="text"
-                            value={banner.badgeText}
-                            onChange={(e) => updateBanner(idx, "badgeText", e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
-                            placeholder="LIVE / QUEUE, PROMO, dll"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">URL Target Klik</label>
-                          <input
-                            type="text"
-                            value={banner.targetUrl}
-                            onChange={(e) => updateBanner(idx, "targetUrl", e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
-                            placeholder="/mabarvip"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Pilihan Jenis Media: Gambar atau Video Promo */}
-                      <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Format Media Promo</span>
-                          </label>
-                          <div className="flex rounded-lg bg-slate-950 p-0.5 border border-slate-800">
-                            <button
-                              type="button"
-                              onClick={() => updateBanner(idx, "mediaType", "image")}
-                              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                                (banner.mediaType || "image") === "image"
-                                  ? "bg-amber-600 text-white shadow-sm"
-                                  : "text-slate-400 hover:text-slate-200"
-                              }`}
-                            >
-                              Gambar / Poster
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => updateBanner(idx, "mediaType", "video")}
-                              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                                banner.mediaType === "video"
-                                  ? "bg-purple-600 text-white shadow-sm"
-                                  : "text-slate-400 hover:text-slate-200"
-                              }`}
-                            >
-                              <Video className="w-3 h-3" />
-                              <span>Video Promo</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Input Gambar jika mode image */}
-                        {(banner.mediaType || "image") === "image" ? (
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">Gambar Background URL</label>
-                            <div className="flex flex-wrap gap-2">
-                              <input
-                                type="text"
-                                value={banner.imageUrl}
-                                onChange={(e) => updateBanner(idx, "imageUrl", e.target.value)}
-                                className="flex-1 min-w-[200px] px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
-                                placeholder="https://..."
-                              />
-                              <button
-                                type="button"
-                                onClick={() => openMediaPicker(idx, "imageUrl", "image")}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
-                                title="Pilih foto yang sudah ada di Bucket Storage"
-                              >
-                                <Folder className="w-3.5 h-3.5 text-amber-400" />
-                                <span>Pilih Dari Bucket</span>
-                              </button>
-                              <label className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm">
-                                {uploadingField === `banner-${idx}` ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <Upload className="w-3.5 h-3.5" />
-                                )}
-                                <span>Upload Gambar</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    if (e.target.files?.[0]) handleBannerImageUpload(e.target.files[0], idx);
-                                  }}
-                                />
-                              </label>
-                              {banner.imageUrl && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    deleteUploadedFile(banner.imageUrl);
-                                    updateBanner(idx, "imageUrl", "");
-                                  }}
-                                  className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                                  title="Hapus Gambar Banner dari Bucket Supabase"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                                  <span>Hapus</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          /* Input Video Promo jika mode video */
-                          <div className="space-y-2">
-                            <div>
-                              <label className="block text-[11px] text-slate-400 mb-1">
-                                Video Promo URL (MP4 / WebM / Supabase Upload)
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                <input
-                                  type="text"
-                                  value={banner.videoUrl || ""}
-                                  onChange={(e) => updateBanner(idx, "videoUrl", e.target.value)}
-                                  className="flex-1 min-w-[200px] px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono outline-none text-slate-200 focus:border-purple-500"
-                                  placeholder="https://.../promo-video.mp4"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => openMediaPicker(idx, "videoUrl", "video")}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
-                                  title="Pilih video yang sudah ada di Bucket Storage"
-                                >
-                                  <Folder className="w-3.5 h-3.5 text-purple-400" />
-                                  <span>Pilih Dari Bucket</span>
-                                </button>
-                                <label className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-md">
-                                  {uploadingField === `banner-video-${idx}` ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <Upload className="w-3.5 h-3.5" />
-                                  )}
-                                  <span>Upload MP4</span>
-                                  <input
-                                    type="file"
-                                    accept="video/mp4,video/webm,video/ogg"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      if (e.target.files?.[0]) handleBannerVideoUpload(e.target.files[0], idx);
-                                    }}
-                                  />
-                                </label>
-                                {banner.videoUrl && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      deleteUploadedFile(banner.videoUrl || "");
-                                      updateBanner(idx, "videoUrl", "");
-                                    }}
-                                    className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                                    title="Hapus Video Promo dari Bucket Supabase"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                                    <span>Hapus</span>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            <p className="text-[10px] text-purple-300/80">
-                              * Video promo akan diputar otomatis tanpa suara (autoplay loop muted playsinline) di kartu banner.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Full Kustomisasi Tulisan, Warna & Gaya Kartu Banner */}
-                      <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-3">
-                        <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                          <Palette className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>Kustomisasi Tampilan Tulisan & Banner Promo</span>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {/* Tinggi Kartu Banner */}
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">
-                              Tinggi Kartu ({banner.height || 185}px)
-                            </label>
-                            <input
-                              type="range"
-                              min="130"
-                              max="380"
-                              step="5"
-                              value={banner.height || 185}
-                              onChange={(e) => updateBanner(idx, "height", parseInt(e.target.value))}
-                              className="w-full accent-amber-500"
-                            />
-                          </div>
-
-                          {/* Ukuran Judul */}
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">Ukuran Judul</label>
-                            <select
-                              value={banner.titleSize || "lg"}
-                              onChange={(e) => updateBanner(idx, "titleSize", e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none"
-                            >
-                              <option value="sm">Kecil (Small)</option>
-                              <option value="base">Sedang (Base)</option>
-                              <option value="lg">Besar (Large - Default)</option>
-                              <option value="xl">Ekstra Besar (XL)</option>
-                            </select>
-                          </div>
-
-                          {/* Warna Judul */}
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">Warna Judul</label>
-                            <div className="flex items-center gap-1.5">
-                              <input
-                                type="color"
-                                value={banner.titleColor || "#FFFFFF"}
-                                onChange={(e) => updateBanner(idx, "titleColor", e.target.value)}
-                                className="w-7 h-7 rounded border border-slate-800 bg-slate-950 cursor-pointer p-0.5 shrink-0"
-                              />
-                              <input
-                                type="text"
-                                value={banner.titleColor || "#FFFFFF"}
-                                onChange={(e) => updateBanner(idx, "titleColor", e.target.value)}
-                                className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded text-xs font-mono text-slate-200 outline-none"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Warna Deskripsi / Sub Judul */}
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">Warna Deskripsi</label>
-                            <div className="flex items-center gap-1.5">
-                              <input
-                                type="color"
-                                value={banner.subtitleColor || "#CBD5E1"}
-                                onChange={(e) => updateBanner(idx, "subtitleColor", e.target.value)}
-                                className="w-7 h-7 rounded border border-slate-800 bg-slate-950 cursor-pointer p-0.5 shrink-0"
-                              />
-                              <input
-                                type="text"
-                                value={banner.subtitleColor || "#CBD5E1"}
-                                onChange={(e) => updateBanner(idx, "subtitleColor", e.target.value)}
-                                className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded text-xs font-mono text-slate-200 outline-none"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-                          {/* Label Tombol Kunjungi */}
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">Teks Tombol Aksi</label>
-                            <input
-                              type="text"
-                              value={banner.btnText || "Kunjungi"}
-                              onChange={(e) => updateBanner(idx, "btnText", e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none focus:border-cyan-500"
-                              placeholder="Kunjungi / Tonton / Beli"
-                            />
-                          </div>
-
-                          {/* Warna Tombol Aksi */}
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">Warna Tombol Aksi</label>
-                            <div className="flex items-center gap-1.5">
-                              <input
-                                type="color"
-                                value={banner.btnTextColor || "#22D3EE"}
-                                onChange={(e) => updateBanner(idx, "btnTextColor", e.target.value)}
-                                className="w-7 h-7 rounded border border-slate-800 bg-slate-950 cursor-pointer p-0.5 shrink-0"
-                              />
-                              <input
-                                type="text"
-                                value={banner.btnTextColor || "#22D3EE"}
-                                onChange={(e) => updateBanner(idx, "btnTextColor", e.target.value)}
-                                className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded text-xs font-mono text-slate-200 outline-none"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Kegelapan Lapisan Overlay (Agar Teks Jelas) */}
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">
-                              Kegelapan Bayangan Teks ({banner.overlayDarkness ?? 60}%)
-                            </label>
-                            <input
-                              type="range"
-                              min="10"
-                              max="95"
-                              step="5"
-                              value={banner.overlayDarkness ?? 60}
-                              onChange={(e) => updateBanner(idx, "overlayDarkness", parseInt(e.target.value))}
-                              className="w-full accent-cyan-500"
-                            />
-                          </div>
-
-                          {/* Sudut Lengkung Kartu (Border Radius) */}
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">Lengkungan Kartu</label>
-                            <select
-                              value={banner.borderStyle || "rounded-3xl"}
-                              onChange={(e) => updateBanner(idx, "borderStyle", e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none"
-                            >
-                              <option value="rounded-3xl">Bulat Mewah (Rounded 3XL - Default)</option>
-                              <option value="rounded-2xl">Sedang (Rounded 2XL)</option>
-                              <option value="rounded-xl">Kecil (Rounded XL)</option>
-                              <option value="rounded-none">Kotak Persegi (Sharp Square)</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Live Mini Preview Kartu Promo */}
-                        <div className="pt-2">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                            Live Preview Kartu Promo #{idx + 1}:
-                          </span>
-                          <div
-                            className={`relative w-full overflow-hidden shadow-xl bg-slate-950 border border-white/20 ${banner.borderStyle || "rounded-3xl"}`}
-                            style={{ height: `${banner.height || 185}px` }}
-                          >
-                            {banner.mediaType === "video" && banner.videoUrl ? (
-                              <video
-                                src={banner.videoUrl}
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                                className="w-full h-full object-cover"
-                              />
-                            ) : banner.imageUrl ? (
-                              <img
-                                src={banner.imageUrl}
-                                alt="Preview"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 flex items-center justify-center text-slate-600 text-xs">
-                                Belum ada media (Upload gambar atau video)
-                              </div>
-                            )}
-
-                            {/* Overlay */}
-                            <div
-                              className="absolute inset-0 p-4 flex flex-col justify-end text-left pointer-events-none"
-                              style={{
-                                background: `linear-gradient(to top, rgba(2, 6, 23, ${((banner.overlayDarkness ?? 60) / 100).toFixed(2)}) 0%, rgba(2, 6, 23, ${Math.max(0, ((banner.overlayDarkness ?? 60) / 100) - 0.25).toFixed(2)}) 50%, transparent 100%)`,
-                              }}
-                            >
-                              {banner.badgeText && (
-                                <div className="mb-1.5">
-                                  <span
-                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase border border-cyan-400/30"
-                                    style={{
-                                      backgroundColor: banner.badgeBgColor || "rgba(6, 182, 212, 0.25)",
-                                      color: banner.badgeTextColor || "#22D3EE",
-                                    }}
-                                  >
-                                    {banner.badgeText}
-                                  </span>
-                                </div>
-                              )}
-                              <h4
-                                className={`font-bold leading-snug drop-shadow ${
-                                  banner.titleSize === "sm"
-                                    ? "text-sm"
-                                    : banner.titleSize === "base"
-                                    ? "text-base"
-                                    : banner.titleSize === "xl"
-                                    ? "text-xl"
-                                    : "text-lg"
-                                }`}
-                                style={{ color: banner.titleColor || "#FFFFFF" }}
-                              >
-                                {banner.title || "Judul Banner Promo"}
-                              </h4>
-                              {banner.subtitle && (
-                                <p
-                                  className="text-xs mt-0.5 line-clamp-1"
-                                  style={{ color: banner.subtitleColor || "#CBD5E1" }}
-                                >
-                                  {banner.subtitle}
-                                </p>
-                              )}
-                              <div
-                                className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold"
-                                style={{ color: banner.btnTextColor || "#22D3EE" }}
-                              >
-                                <span>{banner.btnText || "Kunjungi"}</span>
-                                <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Right Column: Live Mockup / Summary */}
