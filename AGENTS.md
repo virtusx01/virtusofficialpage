@@ -19,3 +19,22 @@ Patuhi aturan dari `anti-slop-writing` (.agents/skills/anti-slop-writing/indones
 6. **Tone Register Konsisten:** Gunakan register yang tepat (formal / semi-formal / informal). Default untuk interaksi dan teks web santai: semi-formal/informal tanpa terkesan kaku buatan AI.
 <!-- END:anti-slop-writing-rules -->
 
+<!-- BEGIN:avoid-ai-design-and-antislop -->
+# Aturan Desain & Koding Anti-Slop (UI & Code Architecture)
+
+Gunakan panduan dari `.agents/skills/avoid-ai-design/SKILL.md` dan `.agents/skills/antislop/SKILL.md`:
+1. **Hindari Template Desain AI Generik (First & Second Order Tells):**
+   - Hindari gradien ungu-ke-biru default tanpa alasan visual yang jelas.
+   - Hindari clip-text gradient di setiap headline judul.
+   - Hindari layout kaku 3 kartu fitur generik yang selalu berjejer di bawah hero.
+   - Hindari badge pil "NEXT-GEN / AI / BETA" di atas headline jika tidak dibutuhkan.
+   - Hindari efek shadow-lg dan rounded-2xl yang dipasang berlebihan ke semua kontainer.
+2. **Kualitas Koding & Komentar Bersih:**
+   - Dilarang membuat banner komentar ASCII box-drawing atau emoji di dalam file kode.
+   - Jangan menambahkan komentar redundan yang hanya mengulang baris kode di bawahnya.
+   - Pertahankan kode yang ringkas, modular, dan langsung fokus pada logika bisnis.
+3. **Scanner Audit:**
+   - Jalankan `node .agents/skills/avoid-ai-design/scripts/detect.mjs src/` untuk mengecek tanda-tanda desain AI yang tidak sengaja terpasang.
+<!-- END:avoid-ai-design-and-antislop -->
+
+
