@@ -3168,28 +3168,39 @@ export default function EditLinktreePage() {
                               onChange={(e) => updateLink(idx, "animationSpeed", e.target.value)}
                               className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:border-fuchsia-500 disabled:opacity-30"
                             >
-                              <option value="ultra-slow">🐌 Sangat Santai / Lambat (6.0s cycle)</option>
                               <option value="slow">🐢 Lambat / Jarang (4.5s cycle)</option>
                               <option value="normal">⚡ Normal / Sedang (3.0s cycle)</option>
                               <option value="fast">🚀 Cepat / Sering (1.8s cycle)</option>
-                              <option value="ultra-fast">⚡⚡ Kencang / Sangat Cepat (1.0s cycle)</option>
                             </select>
                           </div>
 
-                          {/* Jumlah Getaran Lonceng Slider */}
+                          {/* Jumlah Getaran Lonceng Slider + Manual Input */}
                           <div>
                             <div className="flex items-center justify-between mb-1">
                               <label className="block text-[11px] font-semibold text-slate-300">
                                 Jumlah Getar Lonceng
                               </label>
-                              <span className="text-xs font-mono font-bold text-fuchsia-400">
-                                {link.animationCount ?? 3}x Getar
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={20}
+                                  step={1}
+                                  disabled={!link.animation || link.animation === "none"}
+                                  value={link.animationCount ?? 3}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
+                                    updateLink(idx, "animationCount", val);
+                                  }}
+                                  className="w-14 px-2 py-0.5 bg-slate-900 border border-fuchsia-700/60 rounded-md text-xs font-mono font-bold text-fuchsia-300 outline-none focus:border-fuchsia-400 text-center disabled:opacity-30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <span className="text-xs font-mono font-bold text-fuchsia-400">x Getar</span>
+                              </div>
                             </div>
                             <input
                               type="range"
                               min={1}
-                              max={8}
+                              max={20}
                               step={1}
                               disabled={!link.animation || link.animation === "none"}
                               value={link.animationCount ?? 3}

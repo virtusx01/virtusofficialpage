@@ -980,10 +980,8 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
 
                 // Base duration in seconds for loop cycle
                 let cycleDuration = 3;
-                if (animSpeed === 'ultra-fast') cycleDuration = 1.0;
-                else if (animSpeed === 'fast') cycleDuration = 1.8;
-                else if (animSpeed === 'slow') cycleDuration = 4.5;
-                else if (animSpeed === 'ultra-slow') cycleDuration = 6.0;
+                if (animSpeed === 'fast') cycleDuration = 1.8;
+                if (animSpeed === 'slow') cycleDuration = 4.5;
 
                 let linkAnimateProps: any = undefined;
                 let linkTransitionProps: any = undefined;
@@ -1011,34 +1009,34 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                     ease: 'easeInOut',
                   };
                 } else if (animType === 'shake-bounce' || animType === 'bell-shake') {
-                  // Authentic Bell Swing Pendulum Physics (Shake Lonceng Resmi 100% Mirip Linktree)
-                  // Berporos dari atas (transform-origin: top center) sehingga mengayun seperti lonceng sungguhan
+                  // Authentic Bell Swing Pendulum Physics
+                  // NOTE: transformOrigin MUST be set via CSS style, NOT inside animate prop (framer-motion ignores it there)
                   const count = typeof link.animationCount === 'number' && link.animationCount > 0 ? link.animationCount : 3;
                   const maxDeg = Math.max(3, Math.round(7 * factor));
 
                   const rotateArray: number[] = [0];
                   const timesArray: number[] = [0];
 
-                  // Porsi durasi getar aktif (misal 60% waktu aktif berayun, 40% istirahat diam di 0)
+                  // 60% of the cycle: active swings, 40%: rest at 0
                   const activeShare = 0.6;
-                  const swings = count * 2; // bolak-balik
+                  const swings = count * 2; // back-and-forth
                   const swingTime = activeShare / swings;
 
                   for (let i = 1; i <= swings; i++) {
-                    const damp = Math.pow(0.75, i - 1); // Damping alami gaya gesek udara lonceng
+                    const damp = Math.pow(0.75, i - 1); // natural air-resistance damping
                     const direction = i % 2 === 1 ? -1 : 1;
                     const angle = Number((direction * maxDeg * damp).toFixed(2));
                     rotateArray.push(angle);
                     timesArray.push(Number((i * swingTime).toFixed(3)));
                   }
 
-                  // Mendarat kembali di posisi 0 (upright) dan diam tanpa cela
+                  // Land back at 0 cleanly
                   rotateArray.push(0, 0);
                   timesArray.push(Number((activeShare + 0.08).toFixed(3)), 1);
 
+                  // Only rotate goes in animate; transformOrigin is set via style prop on the element
                   linkAnimateProps = {
                     rotate: rotateArray,
-                    transformOrigin: 'top center',
                   };
                   linkTransitionProps = {
                     duration: cycleDuration,
@@ -1122,6 +1120,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         transition={linkTransitionProps}
                         whileHover={{ scale: 1.025, y: -2 }}
                         whileTap={{ scale: 0.98 }}
+                        style={(animType === 'bell-shake' || animType === 'shake-bounce') ? { transformOrigin: 'top center' } : undefined}
                         className="w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md overflow-hidden"
                       >
                         {/* Background Base Container with Opacity */}
@@ -1169,6 +1168,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         transition={linkTransitionProps}
                         whileHover={{ scale: 1.025, y: -2 }}
                         whileTap={{ scale: 0.98 }}
+                        style={(animType === 'bell-shake' || animType === 'shake-bounce') ? { transformOrigin: 'top center' } : undefined}
                         className={`w-full py-4 px-6 rounded-full flex items-center transition-all duration-300 font-semibold text-base relative group shadow-md overflow-hidden ${
                           link.itemAlign === 'center' ? 'justify-center' : 'justify-between'
                         }`}

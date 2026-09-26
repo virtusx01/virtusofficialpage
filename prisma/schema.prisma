@@ -120,7 +120,7 @@ model LinktreeLink {
   animation       String          @default("none") // "none" | "shake" | "bounce" | "pulse" | "glow" | "shake-bounce" | "bell-shake"
   animationSpeed  String          @default("normal") // "slow" | "normal" | "fast"
   animationStrength Int           @default(5) // Rentang 1 (halus) s/d 10 (kuat)
-  animationCount   Int           @default(3) // Berapa kali getar lonceng per siklus (rentang 1 s/d 8)
+  animationCount   Int           @default(3) // Berapa kali getar lonceng per siklus (rentang 1 s/d 20)
   bgImageUrl      String          @default("") // Background image khusus untuk kartu link (Banner Link)
   bgOpacity       Int             @default(100) // 0 s/d 100 opacity background image / container
   textShadow      String          @default("none") // "none" | "subtle" | "medium" | "glow" | "heavy"
