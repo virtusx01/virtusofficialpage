@@ -707,11 +707,11 @@ function MotionShakeLink({
             duration: shakeDur,
             repeat: Infinity,
             repeatDelay: pauseDur,
-            ease: 'easeInOut',
+            ease: 'easeInOut' as const,
           },
         },
       }
-    : {};
+    : undefined;
 
   return (
     <motion.a
