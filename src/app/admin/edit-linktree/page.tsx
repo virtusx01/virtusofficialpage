@@ -3209,26 +3209,42 @@ export default function EditLinktreePage() {
                             />
                           </div>
 
-                          {/* Kekuatan Gerakan Slider */}
+                          {/* Kekuatan Gerakan Slider + Manual Input */}
                           <div>
                             <div className="flex items-center justify-between mb-1">
                               <label className="block text-[11px] font-semibold text-slate-300">
-                                Kekuatan Gerakan
+                                Kekuatan Gerakan (Amplitudo)
                               </label>
-                              <span className="text-xs font-mono font-bold text-fuchsia-400">
-                                {link.animationStrength ?? 5}/10
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={20}
+                                  step={1}
+                                  disabled={!link.animation || link.animation === "none"}
+                                  value={link.animationStrength ?? 5}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
+                                    updateLink(idx, "animationStrength", val);
+                                  }}
+                                  className="w-14 px-2 py-0.5 bg-slate-900 border border-fuchsia-700/60 rounded-md text-xs font-mono font-bold text-fuchsia-300 outline-none focus:border-fuchsia-400 text-center disabled:opacity-30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <span className="text-xs font-mono font-bold text-fuchsia-400">/20</span>
+                              </div>
                             </div>
                             <input
                               type="range"
                               min={1}
-                              max={10}
+                              max={20}
                               step={1}
                               disabled={!link.animation || link.animation === "none"}
                               value={link.animationStrength ?? 5}
                               onChange={(e) => updateLink(idx, "animationStrength", parseInt(e.target.value))}
                               className="w-full accent-fuchsia-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer disabled:opacity-30"
                             />
+                            <p className="text-[10px] text-slate-500 mt-1">
+                              Bisa diatur 1 (sangat halus) hingga 20 (getaran ekstra kuat/heboh).
+                            </p>
                           </div>
                         </div>
                       </div>

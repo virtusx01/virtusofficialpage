@@ -345,7 +345,7 @@ export async function PUT(request: Request) {
             waCustomMessage: typeof link.waCustomMessage === 'string' ? link.waCustomMessage : '',
             animation: typeof link.animation === 'string' ? link.animation : 'none',
             animationSpeed: typeof link.animationSpeed === 'string' ? link.animationSpeed : 'normal',
-            animationStrength: typeof link.animationStrength === 'number' && !isNaN(link.animationStrength) ? Math.max(1, Math.min(Math.round(link.animationStrength), 10)) : 5,
+            animationStrength: typeof link.animationStrength === 'number' && !isNaN(link.animationStrength) ? Math.max(1, Math.min(Math.round(link.animationStrength), 20)) : 5,
             animationCount: typeof link.animationCount === 'number' && !isNaN(link.animationCount) ? Math.max(1, Math.min(Math.round(link.animationCount), 20)) : 3,
             bgImageUrl: typeof link.bgImageUrl === 'string' ? link.bgImageUrl : '',
             bgOpacity: typeof link.bgOpacity === 'number' && !isNaN(link.bgOpacity) ? Math.max(0, Math.min(Math.round(link.bgOpacity), 100)) : 100,
