@@ -122,7 +122,7 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    const files = (data || [])
+    const allFiles = (data || [])
       .filter((file) => file.name !== '.emptyFolderPlaceholder')
       .map((file) => {
         const { data: publicUrlData } = supabase.storage
@@ -137,15 +137,26 @@ export async function GET(request: Request) {
           url: publicUrlData.publicUrl,
           size: file.metadata?.size || 0,
           createdAt: file.created_at,
-          type: isVideo ? 'video' : 'image',
+          type: (isVideo ? 'video' : 'image') as 'video' | 'image',
         };
-      })
-      .filter((file) => {
-        if (!filterType) return true;
-        return file.type === filterType;
       });
 
-    return NextResponse.json({ files });
+    const imageCount = allFiles.filter(f => f.type === 'image').length;
+    const videoCount = allFiles.filter(f => f.type === 'video').length;
+
+    const files = allFiles.filter((file) => {
+      if (!filterType) return true;
+      return file.type === filterType;
+    });
+
+    return NextResponse.json({
+      files,
+      counts: {
+        total: allFiles.length,
+        image: imageCount,
+        video: videoCount,
+      }
+    });
   } catch (error: any) {
     console.error('Error listing files from Supabase:', error);
     return NextResponse.json({ error: error?.message || 'Failed to list bucket files' }, { status: 500 });

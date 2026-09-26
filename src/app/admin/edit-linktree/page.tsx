@@ -364,15 +364,20 @@ export default function EditLinktreePage() {
     field: "imageUrl" | "videoUrl" | "bgImageUrl" | "customIconUrl";
   } | null>(null);
   const [bucketFiles, setBucketFiles] = useState<Array<{ name: string; url: string; size: number; createdAt: string; type: "image" | "video" }>>([]);
+  const [bucketCounts, setBucketCounts] = useState<{ total: number; image: number; video: number }>({ total: 0, image: 0, video: 0 });
   const [loadingBucketFiles, setLoadingBucketFiles] = useState(false);
 
-  const fetchBucketFiles = async (type: "image" | "video") => {
+  const fetchBucketFiles = async (type?: "image" | "video") => {
     setLoadingBucketFiles(true);
     try {
-      const res = await fetch(`/api/upload?type=${type}`);
+      const url = type ? `/api/upload?type=${type}` : `/api/upload`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setBucketFiles(data.files || []);
+        if (data.counts) {
+          setBucketCounts(data.counts);
+        }
       }
     } catch (e) {
       console.error("Failed to load bucket files:", e);
@@ -393,27 +398,44 @@ export default function EditLinktreePage() {
     fetchBucketFiles(type);
   };
 
+  const updateMultipleLinkFields = (index: number, fields: Partial<LinkItem>) => {
+    setProfile((prev) => {
+      const updatedLinks = [...prev.links];
+      if (updatedLinks[index]) {
+        updatedLinks[index] = { ...updatedLinks[index], ...fields };
+      }
+      return { ...prev, links: updatedLinks };
+    });
+  };
+
+  const updateMultipleBannerFields = (index: number, fields: Partial<BannerItem>) => {
+    setProfile((prev) => {
+      const updatedBanners = [...(prev.banners || [])];
+      if (updatedBanners[index]) {
+        updatedBanners[index] = { ...updatedBanners[index], ...fields };
+      }
+      return { ...prev, banners: updatedBanners };
+    });
+  };
+
   const selectMediaFromBucket = (url: string) => {
     if (mediaPickerTarget) {
-      if (mediaPickerTarget.targetType === "link") {
-        if (mediaPickerTarget.field === "videoUrl") {
-          updateLink(mediaPickerTarget.index, "videoUrl", url);
-          updateLink(mediaPickerTarget.index, "mediaType", "video");
-        } else if (mediaPickerTarget.field === "bgImageUrl") {
-          updateLink(mediaPickerTarget.index, "bgImageUrl", url);
-          updateLink(mediaPickerTarget.index, "mediaType", "image");
-        } else if (mediaPickerTarget.field === "customIconUrl") {
-          updateLink(mediaPickerTarget.index, "customIconUrl", url);
-          updateLink(mediaPickerTarget.index, "icon", "custom");
+      const { targetType, index, field } = mediaPickerTarget;
+      if (targetType === "link") {
+        if (field === "videoUrl") {
+          updateMultipleLinkFields(index, { videoUrl: url, mediaType: "video" });
+        } else if (field === "bgImageUrl") {
+          updateMultipleLinkFields(index, { bgImageUrl: url, mediaType: "image" });
+        } else if (field === "customIconUrl") {
+          updateMultipleLinkFields(index, { customIconUrl: url, icon: "custom" });
         } else {
-          updateLink(mediaPickerTarget.index, mediaPickerTarget.field as any, url);
+          updateMultipleLinkFields(index, { [field]: url } as any);
         }
       } else {
-        updateBanner(mediaPickerTarget.index, mediaPickerTarget.field as any, url);
-        if (mediaPickerTarget.field === "videoUrl") {
-          updateBanner(mediaPickerTarget.index, "mediaType", "video");
+        if (field === "videoUrl") {
+          updateMultipleBannerFields(index, { videoUrl: url, mediaType: "video" });
         } else {
-          updateBanner(mediaPickerTarget.index, "mediaType", "image");
+          updateMultipleBannerFields(index, { [field]: url, mediaType: "image" } as any);
         }
       }
       setSaveSuccess(false);
@@ -932,9 +954,13 @@ export default function EditLinktreePage() {
   };
 
   const updateLink = (index: number, key: keyof LinkItem, value: any) => {
-    const updatedLinks = [...profile.links];
-    updatedLinks[index] = { ...updatedLinks[index], [key]: value };
-    setProfile({ ...profile, links: updatedLinks });
+    setProfile((prev) => {
+      const updatedLinks = [...prev.links];
+      if (updatedLinks[index]) {
+        updatedLinks[index] = { ...updatedLinks[index], [key]: value };
+      }
+      return { ...prev, links: updatedLinks };
+    });
   };
 
   const removeLink = (index: number) => {
@@ -942,8 +968,10 @@ export default function EditLinktreePage() {
     if (targetLink?.customIconUrl) {
       deleteUploadedFile(targetLink.customIconUrl);
     }
-    const updatedLinks = profile.links.filter((_, i) => i !== index);
-    setProfile({ ...profile, links: updatedLinks });
+    setProfile((prev) => ({
+      ...prev,
+      links: prev.links.filter((_, i) => i !== index),
+    }));
   };
 
   const moveLink = (index: number, direction: "up" | "down") => {
@@ -954,14 +982,14 @@ export default function EditLinktreePage() {
       return;
     }
     const targetIdx = direction === "up" ? index - 1 : index + 1;
-    const updatedLinks = [...profile.links];
-    const temp = updatedLinks[index];
-    updatedLinks[index] = updatedLinks[targetIdx];
-    updatedLinks[targetIdx] = temp;
-
-    // re-index
-    updatedLinks.forEach((item, idx) => (item.orderIndex = idx));
-    setProfile({ ...profile, links: updatedLinks });
+    setProfile((prev) => {
+      const updatedLinks = [...prev.links];
+      const temp = updatedLinks[index];
+      updatedLinks[index] = updatedLinks[targetIdx];
+      updatedLinks[targetIdx] = temp;
+      updatedLinks.forEach((item, idx) => (item.orderIndex = idx));
+      return { ...prev, links: updatedLinks };
+    });
   };
 
   const addBanner = () => {
@@ -988,7 +1016,7 @@ export default function EditLinktreePage() {
       isEnabled: true,
       orderIndex: profile.banners?.length || 0,
     };
-    setProfile({ ...profile, banners: [...(profile.banners || []), newBanner] });
+    setProfile((prev) => ({ ...prev, banners: [...(prev.banners || []), newBanner] }));
   };
 
   const handleBannerVideoUpload = async (file: File, index: number) => {
@@ -1009,8 +1037,7 @@ export default function EditLinktreePage() {
       const data = await res.json();
 
       if (res.ok && data.url) {
-        updateBanner(index, "videoUrl", data.url);
-        updateBanner(index, "mediaType", "video");
+        updateMultipleBannerFields(index, { videoUrl: data.url, mediaType: "video" });
         setSaveSuccess(false);
       } else {
         alert(`Gagal mengunggah video promo: ${data.error || "Server error"}`);
@@ -1024,9 +1051,13 @@ export default function EditLinktreePage() {
   };
 
   const updateBanner = (index: number, key: keyof BannerItem, value: any) => {
-    const updated = [...(profile.banners || [])];
-    updated[index] = { ...updated[index], [key]: value };
-    setProfile({ ...profile, banners: updated });
+    setProfile((prev) => {
+      const updated = [...(prev.banners || [])];
+      if (updated[index]) {
+        updated[index] = { ...updated[index], [key]: value };
+      }
+      return { ...prev, banners: updated };
+    });
   };
 
   const removeBanner = (index: number) => {
@@ -3885,35 +3916,44 @@ export default function EditLinktreePage() {
                                 className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none focus:border-violet-500 placeholder-slate-600 font-mono"
                                 placeholder="Masukkan URL gambar icon (https://...)"
                               />
-                              <label
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm ${
-                                  uploadingField === `link-icon-${idx}`
-                                    ? "bg-violet-800 text-violet-200 cursor-not-allowed"
-                                    : "bg-violet-600 hover:bg-violet-500 text-white"
-                                }`}
-                              >
-                                {uploadingField === `link-icon-${idx}` ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    <span>Upload...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Upload className="w-3.5 h-3.5" />
-                                    <span>Upload Icon</span>
-                                  </>
-                                )}
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  disabled={uploadingField === `link-icon-${idx}`}
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleLinkIconUpload(file, idx);
-                                  }}
-                                />
-                              </label>
+                                <button
+                                  type="button"
+                                  onClick={() => openMediaPicker(idx, "customIconUrl", "image", "link")}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-violet-300 border border-violet-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                  title="Pilih ikon yang sudah ada di Bucket Storage"
+                                >
+                                  <Folder className="w-3.5 h-3.5 text-violet-400" />
+                                  <span>Pilih Dari Bucket</span>
+                                </button>
+                                <label
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm ${
+                                    uploadingField === `link-icon-${idx}`
+                                      ? "bg-violet-800 text-violet-200 cursor-not-allowed"
+                                      : "bg-violet-600 hover:bg-violet-500 text-white"
+                                  }`}
+                                >
+                                  {uploadingField === `link-icon-${idx}` ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      <span>Upload...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-3.5 h-3.5" />
+                                      <span>Upload Icon</span>
+                                    </>
+                                  )}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    disabled={uploadingField === `link-icon-${idx}`}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleLinkIconUpload(file, idx);
+                                    }}
+                                  />
+                                </label>
                               {link.customIconUrl && (
                                 <button
                                   type="button"
@@ -4226,6 +4266,15 @@ export default function EditLinktreePage() {
                                 className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none focus:border-cyan-500 placeholder-slate-600 font-mono"
                                 placeholder="Paste URL gambar banner (https://...)"
                               />
+                              <button
+                                type="button"
+                                onClick={() => openMediaPicker(idx, "bgImageUrl", "image", "link")}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                title="Pilih background banner dari Bucket Storage"
+                              >
+                                <Folder className="w-3.5 h-3.5 text-cyan-400" />
+                                <span>Pilih Dari Bucket</span>
+                              </button>
                               <label
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm ${
                                   uploadingField === `link-cardbg-${idx}`
@@ -4653,13 +4702,13 @@ export default function EditLinktreePage() {
                     setMediaPickerType('image');
                     fetchBucketFiles('image');
                   }}
-                  className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
                     mediaPickerType === 'image'
                       ? 'bg-amber-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'
                   }`}
                 >
-                  Gambar ({bucketFiles.filter(f => f.type === 'image').length || (mediaPickerType === 'image' ? bucketFiles.length : 0)})
+                  Gambar ({bucketCounts.image || bucketFiles.filter(f => f.type === 'image').length})
                 </button>
                 <button
                   type="button"
@@ -4667,17 +4716,17 @@ export default function EditLinktreePage() {
                     setMediaPickerType('video');
                     fetchBucketFiles('video');
                   }}
-                  className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
                     mediaPickerType === 'video'
                       ? 'bg-purple-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'
                   }`}
                 >
-                  Video ({bucketFiles.filter(f => f.type === 'video').length || (mediaPickerType === 'video' ? bucketFiles.length : 0)})
+                  Video ({bucketCounts.video || bucketFiles.filter(f => f.type === 'video').length})
                 </button>
               </div>
               <span className="text-[11px] text-slate-400">
-                Total {bucketFiles.length} file ditemukan
+                Total {bucketCounts.total || bucketFiles.length} file di Supabase
               </span>
             </div>
 
@@ -4693,7 +4742,7 @@ export default function EditLinktreePage() {
                   <Folder className="w-10 h-10 text-slate-600" />
                   <p className="text-xs font-semibold text-slate-300">Belum ada file {mediaPickerType === 'video' ? 'video' : 'gambar'} di bucket</p>
                   <p className="text-[11px] text-slate-500 max-w-xs">
-                    Silakan upload file baru lewat tombol "Upload" pada form banner promo.
+                    Silakan upload file baru lewat tombol "Upload" pada form.
                   </p>
                 </div>
               ) : (
@@ -4702,18 +4751,18 @@ export default function EditLinktreePage() {
                     <div
                       key={file.name}
                       onClick={() => selectMediaFromBucket(file.url)}
-                      className="group relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 hover:border-cyan-500/80 transition-all cursor-pointer shadow-md flex flex-col"
+                      className="group relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 hover:border-cyan-500/80 transition-all cursor-pointer shadow-md flex flex-col text-left select-none"
                     >
-                      <div className="relative aspect-video w-full bg-slate-900 overflow-hidden flex items-center justify-center">
+                      <div className="relative aspect-video w-full bg-slate-900 overflow-hidden flex items-center justify-center pointer-events-none">
                         {file.type === 'video' ? (
                           <>
                             <video
                               src={file.url}
                               muted
                               playsInline
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform pointer-events-none"
                             />
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition-colors">
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition-colors pointer-events-none">
                               <div className="w-8 h-8 rounded-full bg-purple-600/90 text-white flex items-center justify-center shadow-lg">
                                 <Play className="w-4 h-4 ml-0.5 fill-current" />
                               </div>
@@ -4723,11 +4772,11 @@ export default function EditLinktreePage() {
                           <img
                             src={file.url}
                             alt={file.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform pointer-events-none"
                           />
                         )}
 
-                        <div className="absolute inset-0 bg-cyan-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="absolute inset-0 bg-cyan-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                           <span className="px-2.5 py-1 rounded-full bg-cyan-500 text-slate-950 font-bold text-[10px] shadow-lg">
                             Pilih File Ini
                           </span>
@@ -4740,8 +4789,18 @@ export default function EditLinktreePage() {
                         </span>
                         <div className="flex items-center justify-between text-[9px] text-slate-500">
                           <span>{(file.size / (1024 * 1024)).toFixed(1)} MB</span>
-                          <span className="uppercase font-mono text-cyan-400/80">{file.type}</span>
+                          <span className="uppercase font-mono text-cyan-400/80 font-bold">{file.type}</span>
                         </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectMediaFromBucket(file.url);
+                          }}
+                          className="mt-1.5 w-full py-1 rounded bg-slate-900 hover:bg-cyan-600 hover:text-white text-[10px] font-bold text-slate-300 border border-slate-800 transition-colors text-center cursor-pointer"
+                        >
+                          Pilih Media
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -4752,12 +4811,12 @@ export default function EditLinktreePage() {
             {/* Footer Modal */}
             <div className="px-5 py-3 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
               <span className="text-[11px] text-slate-500">
-                Klik salah satu file untuk langsung menerapkannya pada banner promo.
+                Klik pada file atau tombol "Pilih Media" untuk langsung menerapkannya.
               </span>
               <button
                 type="button"
                 onClick={() => setShowMediaPicker(false)}
-                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
               >
                 Batal
               </button>
