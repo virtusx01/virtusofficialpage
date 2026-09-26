@@ -801,7 +801,7 @@ export default function EditLinktreePage() {
       const res = await fetch("/api/linktree", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
+        body: JSON.stringify({ ...profile, banners: [] }),
       });
 
       if (res.ok) {

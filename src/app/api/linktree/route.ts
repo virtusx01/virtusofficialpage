@@ -12,17 +12,7 @@ const DEFAULT_LINKS = [
   { title: 'Mabar VIP Queue', url: '/mabarvip', icon: 'gamepad', customIconUrl: '', layout: 'row', textAlign: 'left', itemAlign: 'left', iconWidth: 48, category: 'custom', sectionTitle: '', orderIndex: 3 },
 ];
 
-const DEFAULT_BANNERS = [
-  {
-    title: 'Cupidut & Dudud Lovers',
-    subtitle: 'Galeri album foto eksklusif dua kucing kesayangan Virtus',
-    badgeText: 'LIVE / QUEUE',
-    targetUrl: '/fanbase-cupidut-dudud',
-    imageUrl: 'https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80',
-    isEnabled: true,
-    orderIndex: 0,
-  },
-];
+const DEFAULT_BANNERS: any[] = [];
 
 const DEFAULT_TOP_BUTTONS = [
   {
