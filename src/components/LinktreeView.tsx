@@ -768,32 +768,19 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
             {/* Profile Header Cover Banner (Gaya Twitter/X & TikTok) */}
             {profile.showBannerImage && profile.bannerImageUrl ? (
               <div className="w-full relative select-none">
-                {/* Banner Image Container */}
+                {/* Banner Image Container - Masked directly so it fades to transparent revealing website background */}
                 <div
-                  className="w-full overflow-hidden rounded-3xl relative"
+                  className="w-full relative rounded-t-3xl overflow-hidden"
                   style={{
                     height: `${profile.bannerHeight || 180}px`,
+                    WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 80%, rgba(0,0,0,0) 100%)`,
+                    maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 80%, rgba(0,0,0,0) 100%)`,
                   }}
                 >
                   <img
                     src={profile.bannerImageUrl}
                     alt="Profile Banner"
                     className="w-full h-full object-cover object-center"
-                  />
-
-                  {/* Gradasi Transparan Bawah (Menyatu Lembut ke Belakang Avatar) */}
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      background: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 30%, rgba(15,23,42,${((profile.bannerOpacity ?? 50) / 100).toFixed(2)}) 75%, rgba(15,23,42,1) 100%)`,
-                    }}
-                  />
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`,
-                      maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`,
-                    }}
                   />
 
                   {/* Top Bar / Actions (di dalam area banner bagian atas) */}
