@@ -44,6 +44,8 @@ export interface LinktreeItem {
   sectionTextColor?: string;
   waCustomMessage?: string;
   shakeEnable?: boolean;
+  shakeDirection?: 'vertical' | 'horizontal' | 'both' | string;
+  shakeDistance?: number;
   shakeIntensity?: 'gentle' | 'medium' | 'strong' | string;
   shakeFrequency?: 'rare' | 'normal' | 'frequent' | 'constant' | string;
   showInHeaderIcons?: boolean;
@@ -690,26 +692,51 @@ function MotionShakeLink({
   className: string;
 }) {
   const isShake = Boolean(link.shakeEnable);
+  const direction = link.shakeDirection || 'vertical'; // default 'vertical' (naik-turun)
+  const dist = typeof link.shakeDistance === 'number' && !isNaN(link.shakeDistance) ? link.shakeDistance : 8;
   const intensity = (link.shakeIntensity as 'gentle' | 'medium' | 'strong') || 'medium';
   const frequency = (link.shakeFrequency as 'rare' | 'normal' | 'frequent' | 'constant') || 'normal';
 
-  const xKeyframes = SHAKE_KEYFRAMES[intensity] || SHAKE_KEYFRAMES.medium;
+  // Multiplier keyframes sequence based on intensity
+  const multipliers =
+    intensity === 'gentle'
+      ? [0, -0.6, 0.6, -0.4, 0.4, -0.2, 0.2, 0]
+      : intensity === 'strong'
+      ? [0, -1.3, 1.3, -1.0, 1.0, -0.7, 0.7, -0.3, 0.3, 0]
+      : [0, -1.0, 1.0, -0.8, 0.8, -0.5, 0.5, 0];
+
+  const keyframes = multipliers.map((m) => Math.round(m * dist * 10) / 10);
   const shakeDur = SHAKE_DURATIONS[intensity] || 0.6;
   const pauseDur = SHAKE_PAUSES[frequency] ?? 4;
-  const totalPeriod = shakeDur + pauseDur;
 
-  // Animate x displacement in Framer Motion repeat cycle
+  const animationObject: any = {};
+  const transitionObject: any = {};
+
+  if (direction === 'vertical' || direction === 'both') {
+    animationObject.y = keyframes;
+    transitionObject.y = {
+      duration: shakeDur,
+      repeat: Infinity,
+      repeatDelay: pauseDur,
+      ease: 'easeInOut' as const,
+    };
+  }
+
+  if (direction === 'horizontal' || direction === 'both') {
+    // If both, alternate horizontal keyframes slightly for natural bounce
+    animationObject.x = direction === 'both' ? keyframes.map((k) => -k * 0.7) : keyframes;
+    transitionObject.x = {
+      duration: shakeDur,
+      repeat: Infinity,
+      repeatDelay: pauseDur,
+      ease: 'easeInOut' as const,
+    };
+  }
+
   const animateProp = isShake
     ? {
-        x: xKeyframes,
-        transition: {
-          x: {
-            duration: shakeDur,
-            repeat: Infinity,
-            repeatDelay: pauseDur,
-            ease: 'easeInOut' as const,
-          },
-        },
+        ...animationObject,
+        transition: transitionObject,
       }
     : undefined;
 
@@ -719,7 +746,7 @@ function MotionShakeLink({
       target={targetUrl.startsWith('http') ? '_blank' : '_self'}
       rel="noopener noreferrer"
       variants={itemVariants}
-      animate={isShake ? animateProp : undefined}
+      animate={animateProp}
       whileHover={{ scale: 1.025, y: -2 }}
       whileTap={{ scale: 0.98 }}
       className={className}

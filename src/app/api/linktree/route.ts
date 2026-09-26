@@ -344,6 +344,8 @@ export async function PUT(request: Request) {
             sectionTextColor: typeof link.sectionTextColor === 'string' ? link.sectionTextColor : '',
             waCustomMessage: typeof link.waCustomMessage === 'string' ? link.waCustomMessage : '',
             shakeEnable: link.shakeEnable ?? false,
+            shakeDirection: link.shakeDirection || 'vertical',
+            shakeDistance: typeof link.shakeDistance === 'number' && !isNaN(link.shakeDistance) ? Math.max(2, Math.min(Math.round(link.shakeDistance), 40)) : 8,
             shakeIntensity: link.shakeIntensity || 'medium',
             shakeFrequency: link.shakeFrequency || 'normal',
             showInHeaderIcons: link.showInHeaderIcons ?? true,

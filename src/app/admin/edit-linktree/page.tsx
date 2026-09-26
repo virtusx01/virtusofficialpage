@@ -52,6 +52,8 @@ interface LinkItem {
   sectionTextColor?: string;
   waCustomMessage?: string;
   shakeEnable?: boolean;
+  shakeDirection?: "vertical" | "horizontal" | "both";
+  shakeDistance?: number;
   shakeIntensity?: "gentle" | "medium" | "strong";
   shakeFrequency?: "rare" | "normal" | "frequent" | "constant";
   showInHeaderIcons?: boolean;
@@ -664,6 +666,8 @@ export default function EditLinktreePage() {
       sectionTextColor: "",
       waCustomMessage: "",
       shakeEnable: false,
+      shakeDirection: "vertical",
+      shakeDistance: 8,
       shakeIntensity: "medium",
       shakeFrequency: "normal",
       isEnabled: true,
@@ -3108,59 +3112,124 @@ export default function EditLinktreePage() {
                         </div>
 
                         {link.shakeEnable && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-800/60">
-                            {/* Kekuatan Shake */}
-                            <div>
-                              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                                Kekuatan Getar (Intensity)
-                              </label>
-                              <div className="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-lg border border-slate-800">
-                                {[
-                                  { id: "gentle", label: "Halus" },
-                                  { id: "medium", label: "Sedang" },
-                                  { id: "strong", label: "Kuat" },
-                                ].map((int) => (
-                                  <button
-                                    key={int.id}
-                                    type="button"
-                                    onClick={() => updateLink(idx, "shakeIntensity", int.id)}
-                                    className={`py-1 px-1.5 rounded text-[11px] font-semibold transition-all ${
-                                      (link.shakeIntensity || "medium") === int.id
-                                        ? "bg-amber-600 text-white font-bold shadow-sm"
-                                        : "text-slate-400 hover:text-slate-200"
-                                    }`}
-                                  >
-                                    {int.label}
-                                  </button>
-                                ))}
+                          <div className="space-y-3 pt-1 border-t border-slate-800/60">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {/* Arah Gerakan Shake */}
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                                  Arah Gerakan Shake
+                                </label>
+                                <div className="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                                  {[
+                                    { id: "vertical", label: "↕️ Naik-Turun" },
+                                    { id: "horizontal", label: "↔️ Kiri-Kanan" },
+                                    { id: "both", label: "🔀 Kombinasi" },
+                                  ].map((dir) => (
+                                    <button
+                                      key={dir.id}
+                                      type="button"
+                                      onClick={() => updateLink(idx, "shakeDirection", dir.id)}
+                                      className={`py-1.5 px-1 rounded text-[10px] font-semibold transition-all ${
+                                        (link.shakeDirection || "vertical") === dir.id
+                                          ? "bg-amber-600 text-white font-bold shadow-sm"
+                                          : "text-slate-400 hover:text-slate-200"
+                                      }`}
+                                    >
+                                      {dir.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Manual Jarak Gerak (Pixel) */}
+                              <div>
+                                <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                                  <span>Jarak Gerak Manual (Amplitude)</span>
+                                  <span className="font-mono text-amber-400 font-bold">
+                                    {link.shakeDistance ?? 8}px
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="range"
+                                    min={2}
+                                    max={35}
+                                    step={1}
+                                    value={link.shakeDistance ?? 8}
+                                    onChange={(e) => updateLink(idx, "shakeDistance", parseInt(e.target.value))}
+                                    className="flex-1 accent-amber-500 h-1.5 bg-slate-950 rounded cursor-pointer"
+                                  />
+                                  <input
+                                    type="number"
+                                    min={2}
+                                    max={35}
+                                    value={link.shakeDistance ?? 8}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value);
+                                      if (!isNaN(val)) {
+                                        updateLink(idx, "shakeDistance", Math.max(2, Math.min(val, 35)));
+                                      }
+                                    }}
+                                    className="w-12 px-1.5 py-0.5 bg-slate-950 border border-slate-800 rounded text-xs font-mono text-center text-amber-300 outline-none"
+                                  />
+                                </div>
                               </div>
                             </div>
 
-                            {/* Frekuensi Shake */}
-                            <div>
-                              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                                Jeda / Frekuensi Shake
-                              </label>
-                              <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950 rounded-lg border border-slate-800">
-                                {[
-                                  { id: "rare", label: "Jarang" },
-                                  { id: "normal", label: "Sedang" },
-                                  { id: "frequent", label: "Sering" },
-                                  { id: "constant", label: "Terus" },
-                                ].map((freq) => (
-                                  <button
-                                    key={freq.id}
-                                    type="button"
-                                    onClick={() => updateLink(idx, "shakeFrequency", freq.id)}
-                                    className={`py-1 px-1 rounded text-[10px] font-semibold transition-all ${
-                                      (link.shakeFrequency || "normal") === freq.id
-                                        ? "bg-amber-600 text-white font-bold shadow-sm"
-                                        : "text-slate-400 hover:text-slate-200"
-                                    }`}
-                                  >
-                                    {freq.label}
-                                  </button>
-                                ))}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800/40">
+                              {/* Kekuatan Shake */}
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                                  Kekuatan Getar (Intensity)
+                                </label>
+                                <div className="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                                  {[
+                                    { id: "gentle", label: "Halus" },
+                                    { id: "medium", label: "Sedang" },
+                                    { id: "strong", label: "Kuat" },
+                                  ].map((int) => (
+                                    <button
+                                      key={int.id}
+                                      type="button"
+                                      onClick={() => updateLink(idx, "shakeIntensity", int.id)}
+                                      className={`py-1 px-1.5 rounded text-[11px] font-semibold transition-all ${
+                                        (link.shakeIntensity || "medium") === int.id
+                                          ? "bg-amber-600 text-white font-bold shadow-sm"
+                                          : "text-slate-400 hover:text-slate-200"
+                                      }`}
+                                    >
+                                      {int.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Frekuensi Shake */}
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                                  Jeda / Frekuensi Shake
+                                </label>
+                                <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950 rounded-lg border border-slate-800">
+                                  {[
+                                    { id: "rare", label: "Jarang" },
+                                    { id: "normal", label: "Sedang" },
+                                    { id: "frequent", label: "Sering" },
+                                    { id: "constant", label: "Terus" },
+                                  ].map((freq) => (
+                                    <button
+                                      key={freq.id}
+                                      type="button"
+                                      onClick={() => updateLink(idx, "shakeFrequency", freq.id)}
+                                      className={`py-1 px-1 rounded text-[10px] font-semibold transition-all ${
+                                        (link.shakeFrequency || "normal") === freq.id
+                                          ? "bg-amber-600 text-white font-bold shadow-sm"
+                                          : "text-slate-400 hover:text-slate-200"
+                                      }`}
+                                    >
+                                      {freq.label}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           </div>

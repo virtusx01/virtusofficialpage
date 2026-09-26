@@ -118,6 +118,8 @@ model LinktreeLink {
   sectionTextColor String         @default("")
   waCustomMessage String          @default("")
   shakeEnable     Boolean         @default(false)
+  shakeDirection  String          @default("vertical") // "vertical" | "horizontal" | "both"
+  shakeDistance   Int             @default(8) // Jarak gerakan px (misal 2px - 30px)
   shakeIntensity  String          @default("medium") // "gentle" | "medium" | "strong"
   shakeFrequency  String          @default("normal") // "rare" | "normal" | "frequent" | "constant"
   showInHeaderIcons Boolean       @default(true)
