@@ -132,6 +132,19 @@ model LinktreeLink {
   textShadow      String          @default("none") // "none" | "subtle" | "medium" | "glow" | "heavy"
   iconShadow      String          @default("none") // "none" | "subtle" | "medium" | "glow" | "heavy"
   showInHeaderIcons Boolean       @default(true)
+  itemType        String          @default("link") // "link" | "video_banner"
+  subtitle        String          @default("") // Deskripsi / sub-judul banner
+  mediaType       String          @default("image") // "image" | "video"
+  videoUrl        String          @default("") // Video promo URL (mp4 / webm)
+  bannerHeight    Int             @default(185) // Height in pixels for banner card (130 to 380)
+  badgeText       String          @default("PROMO / LIVE")
+  badgeBgColor    String          @default("rgba(6, 182, 212, 0.25)")
+  badgeTextColor  String          @default("#22D3EE")
+  btnText         String          @default("Kunjungi")
+  btnTextColor    String          @default("#22D3EE")
+  overlayDarkness Int             @default(60) // 0 to 95 %
+  borderStyle     String          @default("rounded-3xl") // "rounded-xl" | "rounded-2xl" | "rounded-3xl" | "rounded-none"
+  borderColor     String          @default("rgba(255, 255, 255, 0.2)")
   isEnabled       Boolean         @default(true)
   orderIndex      Int             @default(0)
   profileId       String          @default("profile")

@@ -52,6 +52,19 @@ export interface LinktreeItem {
   textShadow?: 'none' | 'subtle' | 'medium' | 'glow' | 'heavy' | string;
   iconShadow?: 'none' | 'subtle' | 'medium' | 'glow' | 'heavy' | string;
   showInHeaderIcons?: boolean;
+  itemType?: 'link' | 'video_banner' | string;
+  subtitle?: string;
+  mediaType?: 'image' | 'video' | string;
+  videoUrl?: string;
+  bannerHeight?: number;
+  badgeText?: string;
+  badgeBgColor?: string;
+  badgeTextColor?: string;
+  btnText?: string;
+  btnTextColor?: string;
+  overlayDarkness?: number;
+  borderStyle?: 'rounded-xl' | 'rounded-2xl' | 'rounded-3xl' | 'rounded-none' | string;
+  borderColor?: string;
   isEnabled: boolean;
   orderIndex: number;
 }
@@ -1254,7 +1267,118 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                       </motion.div>
                     )}
 
-                    {link.layout === 'column' ? (
+                    {link.itemType === 'video_banner' ? (() => {
+                      const isInternal = link.url?.startsWith('/');
+                      const bannerHeight = link.bannerHeight || 185;
+                      const overlayOpacity = ((link.overlayDarkness ?? 60) / 100).toFixed(2);
+                      const roundedClass = link.borderStyle || 'rounded-3xl';
+                      const borderColorStyle = link.borderColor || 'rgba(255, 255, 255, 0.2)';
+                      const mediaSrc = link.mediaType === 'video' ? link.videoUrl : (link.bgImageUrl || link.customIconUrl);
+
+                      const bannerCardContent = (
+                        <div
+                          className={`relative w-full overflow-hidden group shadow-2xl bg-slate-900 border ${roundedClass} transition-all duration-300`}
+                          style={{
+                            height: `${bannerHeight}px`,
+                            borderColor: borderColorStyle,
+                            opacity: cardOpacity,
+                          }}
+                        >
+                          {/* Media: Video Promo vs Gambar Banner */}
+                          {link.mediaType === 'video' && link.videoUrl ? (
+                            <video
+                              src={link.videoUrl}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                          ) : mediaSrc ? (
+                            <img
+                              src={mediaSrc}
+                              alt={link.title || 'Banner Promo'}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950" />
+                          )}
+
+                          {/* Gradient Overlay for Text Readability */}
+                          <div
+                            className="absolute inset-0 p-5 flex flex-col justify-end text-left pointer-events-none"
+                            style={{
+                              background: `linear-gradient(to top, rgba(2, 6, 23, ${overlayOpacity}) 0%, rgba(2, 6, 23, ${Math.max(0, parseFloat(overlayOpacity) - 0.25)}) 50%, transparent 100%)`,
+                            }}
+                          >
+                            {/* Badge Pill */}
+                            {link.badgeText && (
+                              <div className="mb-2">
+                                <span
+                                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border border-cyan-400/30 backdrop-blur-md shadow-sm"
+                                  style={{
+                                    backgroundColor: link.badgeBgColor || 'rgba(6, 182, 212, 0.25)',
+                                    color: link.badgeTextColor || '#22D3EE',
+                                  }}
+                                >
+                                  {link.badgeText}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Title */}
+                            <h3
+                              className="font-bold leading-snug drop-shadow-md text-lg text-white"
+                              style={{ filter: textShadowCss }}
+                            >
+                              {link.title}
+                            </h3>
+
+                            {/* Subtitle / Description */}
+                            {link.subtitle && (
+                              <p className="text-xs mt-0.5 line-clamp-2 text-slate-300 drop-shadow-sm">
+                                {link.subtitle}
+                              </p>
+                            )}
+
+                            {/* Action Button */}
+                            <div
+                              className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold group-hover:translate-x-0.5 transition-transform"
+                              style={{ color: link.btnTextColor || '#22D3EE' }}
+                            >
+                              <span>{link.btnText || 'Kunjungi'}</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+
+                      return (
+                        <motion.div
+                          variants={itemVariants}
+                          animate={linkAnimateProps}
+                          transition={linkTransitionProps}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full"
+                        >
+                          {isInternal ? (
+                            <Link href={targetUrl} prefetch={true} className="block w-full">
+                              {bannerCardContent}
+                            </Link>
+                          ) : (
+                            <a
+                              href={targetUrl}
+                              target={targetUrl.startsWith('http') ? '_blank' : '_self'}
+                              rel="noopener noreferrer"
+                              className="block w-full"
+                            >
+                              {bannerCardContent}
+                            </a>
+                          )}
+                        </motion.div>
+                      );
+                    })() : link.layout === 'column' ? (
                       <motion.a
                         href={targetUrl}
                         target={targetUrl.startsWith('http') ? '_blank' : '_self'}
