@@ -54,6 +54,7 @@ interface LinkItem {
   animation?: "none" | "shake" | "bounce" | "pulse" | "glow" | "shake-bounce" | "bell-shake" | string;
   animationSpeed?: "slow" | "normal" | "fast" | string;
   animationStrength?: number;
+  animationCount?: number;
   bgImageUrl?: string;
   bgOpacity?: number;
   textShadow?: "none" | "subtle" | "medium" | "glow" | "heavy" | string;
@@ -3135,7 +3136,7 @@ export default function EditLinktreePage() {
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                           {/* Jenis Animasi */}
                           <div>
                             <label className="block text-[11px] font-semibold text-slate-300 mb-1">
@@ -3171,6 +3172,28 @@ export default function EditLinktreePage() {
                               <option value="normal">⚡ Normal / Sedang (3.0s cycle)</option>
                               <option value="fast">🚀 Cepat / Sering (1.8s cycle)</option>
                             </select>
+                          </div>
+
+                          {/* Jumlah Getaran Lonceng Slider */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[11px] font-semibold text-slate-300">
+                                Jumlah Getar Lonceng
+                              </label>
+                              <span className="text-xs font-mono font-bold text-fuchsia-400">
+                                {link.animationCount ?? 3}x Getar
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={1}
+                              max={8}
+                              step={1}
+                              disabled={!link.animation || link.animation === "none"}
+                              value={link.animationCount ?? 3}
+                              onChange={(e) => updateLink(idx, "animationCount", parseInt(e.target.value))}
+                              className="w-full accent-fuchsia-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer disabled:opacity-30"
+                            />
                           </div>
 
                           {/* Kekuatan Gerakan Slider */}

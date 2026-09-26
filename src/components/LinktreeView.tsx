@@ -46,6 +46,7 @@ export interface LinktreeItem {
   animation?: 'none' | 'shake' | 'bounce' | 'pulse' | 'glow' | 'shake-bounce' | 'bell-shake' | string;
   animationSpeed?: 'slow' | 'normal' | 'fast' | string;
   animationStrength?: number;
+  animationCount?: number;
   bgImageUrl?: string;
   bgOpacity?: number;
   textShadow?: 'none' | 'subtle' | 'medium' | 'glow' | 'heavy' | string;
@@ -1008,18 +1009,48 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                     ease: 'easeInOut',
                   };
                 } else if (animType === 'shake-bounce' || animType === 'bell-shake') {
-                  // Bell Shake (Shake Lonceng) 100% mirip Linktree Microboy
-                  const rotDeg = Math.round(4.5 * factor);
-                  const xDist = Math.round(3 * factor);
-                  const yDist = Math.round(4 * factor);
+                  // Perfect Bell Shake (Shake Lonceng) 100% mirip Linktree Microboy
+                  // Dimulai persis dari titik asal (0,0,0) & diakhiri di titik asal (0,0,0) agar seamless loop
+                  const count = typeof link.animationCount === 'number' && link.animationCount > 0 ? link.animationCount : 3;
+                  const rotDeg = Math.max(2, Math.round(4.5 * factor));
+                  const xDist = Math.max(1, Math.round(3 * factor));
+                  const yDist = Math.max(2, Math.round(4 * factor));
+
+                  const rotateArray: number[] = [0];
+                  const xArray: number[] = [0];
+                  const yArray: number[] = [0];
+                  const timesArray: number[] = [0];
+
+                  // Porsi waktu aktif getaran (misal 50% aktif getar, 50% istirahat di 0)
+                  const activeShare = 0.55; 
+                  const totalSteps = count * 2; 
+                  const stepDuration = activeShare / totalSteps;
+
+                  for (let i = 1; i <= totalSteps; i++) {
+                    const progress = i / totalSteps;
+                    const damp = Math.pow(0.72, i - 1); // Damping efek lonceng asli
+                    const direction = i % 2 === 1 ? -1 : 1;
+
+                    rotateArray.push(Number((direction * rotDeg * damp).toFixed(2)));
+                    xArray.push(Number((direction * xDist * damp).toFixed(2)));
+                    yArray.push(Number((-yDist * damp).toFixed(2)));
+                    timesArray.push(Number((i * stepDuration).toFixed(3)));
+                  }
+
+                  // Kembali ke 0 dengan sempurna
+                  rotateArray.push(0, 0);
+                  xArray.push(0, 0);
+                  yArray.push(0, 0);
+                  timesArray.push(Number((activeShare + 0.05).toFixed(3)), 1);
+
                   linkAnimateProps = {
-                    rotate: [0, -rotDeg, rotDeg, -rotDeg, Math.round(rotDeg * 0.7), Math.round(-rotDeg * 0.4), 0, 0],
-                    x: [0, -xDist, xDist, -xDist, Math.round(xDist * 0.5), 0, 0],
-                    y: [0, -yDist, Math.round(-yDist * 0.5), Math.round(-yDist * 0.2), 0, 0],
+                    rotate: rotateArray,
+                    x: xArray,
+                    y: yArray,
                   };
                   linkTransitionProps = {
                     duration: cycleDuration,
-                    times: [0, 0.08, 0.16, 0.24, 0.32, 0.4, 0.48, 1],
+                    times: timesArray,
                     repeat: Infinity,
                     ease: 'easeInOut',
                   };
