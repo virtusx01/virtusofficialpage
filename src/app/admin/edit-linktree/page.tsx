@@ -112,6 +112,9 @@ interface ProfileData {
   bio: string;
   avatarUrl: string;
   avatarBorderColor: string;
+  bannerImageUrl?: string;
+  showBannerImage?: boolean;
+  bannerHeight?: number;
   theme: string;
   socialHeaderTitle: string;
   categoryBgColor?: string;
@@ -215,6 +218,9 @@ export default function EditLinktreePage() {
     bio: "Streamer TIDAK KIKIR | Mobile Legends & Gaming Content Creator 🔥",
     avatarUrl: "/logo.png",
     avatarBorderColor: "from-cyan-400 via-indigo-500 to-purple-500",
+    bannerImageUrl: "",
+    showBannerImage: false,
+    bannerHeight: 180,
     theme: "ocean",
     socialHeaderTitle: "Social Media Handles",
     categoryBgColor: "",
@@ -373,10 +379,10 @@ export default function EditLinktreePage() {
     }
   };
 
-  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl") => {
+  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl" | "bannerImageUrl") => {
     setUploadingField(field);
     try {
-      const compressedBlob = await compressImage(file, 800, 800, 0.85);
+      const compressedBlob = await compressImage(file, field === "bannerImageUrl" ? 1200 : 800, field === "bannerImageUrl" ? 600 : 800, 0.85);
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
       if (profile[field]) {
@@ -1581,6 +1587,122 @@ export default function EditLinktreePage() {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Banner Profile (Header Cover Image with Gradient) */}
+              <div className="p-4 rounded-xl bg-slate-950/80 border border-indigo-500/20 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-indigo-400" />
+                      <span>Banner Header Profil (Cover Banner)</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Tambahkan foto banner atas profil dengan efek gradasi transparan (gradasi halus dari atas ke bawah transparan menyatu ke background).
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer select-none shrink-0 ml-3">
+                    <input
+                      type="checkbox"
+                      checked={profile.showBannerImage || false}
+                      onChange={(e) => setProfile({ ...profile, showBannerImage: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+
+                {profile.showBannerImage && (
+                  <div className="space-y-4 animate-in fade-in duration-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          URL Gambar Banner Profil / Upload
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={profile.bannerImageUrl || ""}
+                            onChange={(e) => setProfile({ ...profile, bannerImageUrl: e.target.value })}
+                            className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-100 focus:border-indigo-500 font-mono"
+                            placeholder="https://images.unsplash.com/..."
+                          />
+                          <label className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-md">
+                            {uploadingField === "bannerImageUrl" ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Upload className="w-3.5 h-3.5" />
+                            )}
+                            <span>Upload Banner</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) handleImageUpload(e.target.files[0], "bannerImageUrl");
+                              }}
+                            />
+                          </label>
+                          {profile.bannerImageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                deleteUploadedFile(profile.bannerImageUrl);
+                                setProfile({ ...profile, bannerImageUrl: "" });
+                              }}
+                              className="px-2.5 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 rounded-lg text-xs font-semibold shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Hapus Banner"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                              <span>Hapus</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                          <span>Tinggi Banner</span>
+                          <span className="text-indigo-400 font-mono">{profile.bannerHeight || 180}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="120"
+                          max="300"
+                          step="10"
+                          value={profile.bannerHeight || 180}
+                          onChange={(e) => setProfile({ ...profile, bannerHeight: parseInt(e.target.value) || 180 })}
+                          className="w-full accent-indigo-500 mt-2"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Preview Mini Banner Profil */}
+                    {profile.bannerImageUrl && (
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Preview Gradasi Transparan Banner:
+                        </span>
+                        <div
+                          className="relative w-full rounded-2xl overflow-hidden border border-slate-800 shadow-md group"
+                          style={{ height: `${Math.min(profile.bannerHeight || 180, 160)}px` }}
+                        >
+                          <img
+                            src={profile.bannerImageUrl}
+                            alt="Banner Preview"
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Gradasi dari atas transparan tipis menuju ke bawah transparan 50% hingga solid hitam */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 via-60% to-black/90 pointer-events-none flex items-end justify-center pb-2">
+                            <span className="text-[10px] text-white/80 bg-black/60 px-2 py-0.5 rounded-full border border-white/20 backdrop-blur-sm">
+                              Gradasi Transparan Bawah (Menyatu ke Card Avatar)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
