@@ -876,7 +876,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         : profile.avatarBorderColor
                         ? profile.avatarBorderColor
                         : 'bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500'
-                    } shadow-2xl ring-4 ring-slate-950/80`}
+                    } shadow-2xl`}
                   >
                     <img
                       src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
