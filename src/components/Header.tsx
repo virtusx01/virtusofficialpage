@@ -36,17 +36,24 @@ export default function Header({ initialData }: HeaderProps = {}) {
     () => !!initialData?.siteTitle || !!getCachedBranding()?.siteTitle
   );
 
+  const [siteLogoUrl, setSiteLogoUrl] = useState(() => {
+    const cached = getCachedBranding();
+    return cached?.siteLogoUrl || "/logo.png";
+  });
+
   useEffect(() => {
     const cached = getCachedBranding();
     if (cached) {
       if (cached.siteTitle && !initialData?.siteTitle) setSiteTitle(cached.siteTitle);
       if (cached.siteSubtitle && !initialData?.siteSubtitle) setSiteSubtitle(cached.siteSubtitle);
+      if (cached.siteLogoUrl) setSiteLogoUrl(cached.siteLogoUrl);
       setIsBrandingReady(true);
     }
 
     const unsubscribe = subscribeBrandingUpdate((branding) => {
       if (branding.siteTitle) setSiteTitle(branding.siteTitle);
       if (branding.siteSubtitle) setSiteSubtitle(branding.siteSubtitle);
+      if (branding.siteLogoUrl) setSiteLogoUrl(branding.siteLogoUrl);
       setIsBrandingReady(true);
     });
 
@@ -79,11 +86,14 @@ export default function Header({ initialData }: HeaderProps = {}) {
           if (data && !data.error) {
             if (data.siteTitle) setSiteTitle(data.siteTitle);
             if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
+            if (data.siteLogoUrl) setSiteLogoUrl(data.siteLogoUrl);
             setIsBrandingReady(true);
             setCachedBranding({
               siteTitle: data.siteTitle,
               siteSubtitle: data.siteSubtitle,
               footerDesc: data.footerDesc,
+              siteLogoUrl: data.siteLogoUrl,
+              faviconUrl: data.faviconUrl,
             });
           }
         }
@@ -142,7 +152,14 @@ export default function Header({ initialData }: HeaderProps = {}) {
             className="flex items-center gap-3 group shrink-0 py-1"
           >
             <div className="h-10 w-10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0 border border-slate-800/60 bg-slate-900">
-              <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
+              <img
+                src={siteLogoUrl || "/logo.png"}
+                alt={siteTitle || "Logo"}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/logo.png";
+                }}
+              />
             </div>
             <div className={`flex flex-col justify-center transition-opacity duration-200 ${isBrandingReady ? "opacity-100" : "opacity-0"}`}>
               <h1 className="text-sm sm:text-base font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent tracking-tight leading-tight min-h-[1.25rem]">

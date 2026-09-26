@@ -168,6 +168,7 @@ interface ProfileData {
   siteTitle?: string;
   siteSubtitle?: string;
   siteLogoUrl?: string;
+  faviconUrl?: string;
   footerDesc?: string;
   showLeaderboard?: boolean;
   leaderboardTitle?: string;
@@ -288,6 +289,7 @@ export default function EditLinktreePage() {
     siteTitle: "Virtus Official",
     siteSubtitle: "Streamer TIDAK KIKIR",
     siteLogoUrl: "",
+    faviconUrl: "",
     footerDesc: "Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.",
     showLeaderboard: true,
     leaderboardTitle: "TOP SUPPORTERS BULAN INI",
@@ -521,10 +523,16 @@ export default function EditLinktreePage() {
     }
   };
 
-  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl" | "bannerImageUrl") => {
+  const handleImageUpload = async (file: File, field: "avatarUrl" | "liveBannerImage" | "bgImageUrl" | "bannerImageUrl" | "siteLogoUrl" | "faviconUrl") => {
     setUploadingField(field);
     try {
-      const compressedBlob = await compressImage(file, field === "bannerImageUrl" ? 1200 : 800, field === "bannerImageUrl" ? 600 : 800, 0.85);
+      const isSquareIcon = field === "siteLogoUrl" || field === "faviconUrl";
+      const compressedBlob = await compressImage(
+        file,
+        field === "bannerImageUrl" ? 1200 : isSquareIcon ? 400 : 800,
+        field === "bannerImageUrl" ? 600 : isSquareIcon ? 400 : 800,
+        0.85
+      );
       const formData = new FormData();
       formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
       if (profile[field]) {
@@ -540,6 +548,9 @@ export default function EditLinktreePage() {
 
       if (res.ok && data.url) {
         setProfile((prev) => ({ ...prev, [field]: data.url }));
+        if (field === "siteLogoUrl" || field === "faviconUrl") {
+          setCachedBranding({ [field]: data.url });
+        }
         setSaveSuccess(false);
       } else {
         alert(`Gagal mengunggah gambar: ${data.error || "Server error"}`);
@@ -809,11 +820,19 @@ export default function EditLinktreePage() {
         const updated = await res.json();
         setProfile(updated);
         setSaveSuccess(true);
-        if (updated.siteTitle || updated.siteSubtitle || updated.footerDesc !== undefined) {
+        if (
+          updated.siteTitle ||
+          updated.siteSubtitle ||
+          updated.footerDesc !== undefined ||
+          updated.siteLogoUrl !== undefined ||
+          updated.faviconUrl !== undefined
+        ) {
           setCachedBranding({
             siteTitle: updated.siteTitle,
             siteSubtitle: updated.siteSubtitle,
             footerDesc: updated.footerDesc,
+            siteLogoUrl: updated.siteLogoUrl,
+            faviconUrl: updated.faviconUrl,
           });
         }
         setTimeout(() => setSaveSuccess(false), 3000);
@@ -1416,16 +1435,45 @@ export default function EditLinktreePage() {
               {/* Logo Website */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Logo Website <span className="text-slate-500 font-normal">(disimpan statis di /public/logo.png – dimuat instan)</span>
+                  Logo Website Header & Footer
                 </label>
-                <div className="flex items-center gap-3">
-                  {/* Preview logo */}
-                  <div className="h-12 w-12 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center overflow-hidden shrink-0">
-                    <img src="/logo.png" alt="Logo Statis" className="w-full h-full object-cover" />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="h-14 w-14 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center overflow-hidden shrink-0">
+                    <img
+                      src={profile.siteLogoUrl || "/logo.png"}
+                      alt="Logo Website"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/logo.png";
+                      }}
+                    />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-slate-300 font-medium">Logo Aktif: <code className="text-violet-400 font-mono text-[11px]">/public/logo.png</code></p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Logo Header dan Footer sekarang otomatis memuat file statis dari folder public agar instan dan tanpa jeda.</p>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={profile.siteLogoUrl || ""}
+                        onChange={(e) => {
+                          setProfile({ ...profile, siteLogoUrl: e.target.value });
+                          setCachedBranding({ siteLogoUrl: e.target.value });
+                        }}
+                        className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-xs outline-none text-slate-100"
+                        placeholder="Default: /logo.png (atau paste URL custom)"
+                      />
+                      <label className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold cursor-pointer shrink-0 transition-colors">
+                        {uploadingField === "siteLogoUrl" ? "Mengunggah..." : "Upload Logo"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(file, "siteLogoUrl");
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Logo otomatis dicache di browser sehingga langsung tampil instan tanpa jeda saat halaman dibuka.</p>
                   </div>
                 </div>
               </div>
@@ -1444,19 +1492,45 @@ export default function EditLinktreePage() {
               {/* Favicon / Icon Tab Browser */}
               <div className="pt-3 border-t border-slate-800/60">
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Icon Tab Browser (Favicon) <span className="text-slate-500 font-normal">(disimpan statis di /public/favicon.ico)</span>
+                  Icon Tab Browser (Favicon)
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                     <img
-                      src="/favicon.ico"
+                      src={profile.faviconUrl || "/favicon.ico"}
                       alt="Favicon"
-                      className="w-8 h-8 object-contain"
+                      className="w-7 h-7 object-contain"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/favicon.ico";
+                      }}
                     />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-slate-300 font-medium">Favicon Aktif: <code className="text-violet-400 font-mono text-[11px]">/public/favicon.ico</code></p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Favicon otomatis tampil di tab browser untuk semua pengunjung website.</p>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={profile.faviconUrl || ""}
+                        onChange={(e) => {
+                          setProfile({ ...profile, faviconUrl: e.target.value });
+                          setCachedBranding({ faviconUrl: e.target.value });
+                        }}
+                        className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-xs outline-none text-slate-100"
+                        placeholder="Default: /favicon.ico (atau paste URL custom)"
+                      />
+                      <label className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold cursor-pointer shrink-0 transition-colors">
+                        {uploadingField === "faviconUrl" ? "Mengunggah..." : "Upload Favicon"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(file, "faviconUrl");
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Favicon otomatis tampil di tab browser untuk semua pengunjung website dan tersinkronisasi instan.</p>
                   </div>
                 </div>
               </div>

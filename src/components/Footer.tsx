@@ -46,12 +46,18 @@ export default function Footer({ initialData }: FooterProps = {}) {
     () => !!initialData?.siteTitle || !!getCachedBranding()?.siteTitle
   );
 
+  const [siteLogoUrl, setSiteLogoUrl] = useState(() => {
+    const cached = getCachedBranding();
+    return cached?.siteLogoUrl || "/logo.png";
+  });
+
   useEffect(() => {
     const cached = getCachedBranding();
     if (cached) {
       if (cached.siteTitle && !initialData?.siteTitle) setSiteTitle(cached.siteTitle);
       if (cached.siteSubtitle && !initialData?.siteSubtitle) setSiteSubtitle(cached.siteSubtitle);
       if (cached.footerDesc !== undefined && initialData?.footerDesc === undefined) setFooterDesc(cached.footerDesc);
+      if (cached.siteLogoUrl) setSiteLogoUrl(cached.siteLogoUrl);
       setIsBrandingReady(true);
     }
 
@@ -59,6 +65,7 @@ export default function Footer({ initialData }: FooterProps = {}) {
       if (branding.siteTitle) setSiteTitle(branding.siteTitle);
       if (branding.siteSubtitle) setSiteSubtitle(branding.siteSubtitle);
       if (branding.footerDesc !== undefined) setFooterDesc(branding.footerDesc);
+      if (branding.siteLogoUrl) setSiteLogoUrl(branding.siteLogoUrl);
       setIsBrandingReady(true);
     });
 
@@ -74,11 +81,14 @@ export default function Footer({ initialData }: FooterProps = {}) {
           if (data.siteTitle) setSiteTitle(data.siteTitle);
           if (data.siteSubtitle) setSiteSubtitle(data.siteSubtitle);
           if (data.footerDesc !== undefined) setFooterDesc(data.footerDesc || "");
+          if (data.siteLogoUrl) setSiteLogoUrl(data.siteLogoUrl);
           setIsBrandingReady(true);
           setCachedBranding({
             siteTitle: data.siteTitle,
             siteSubtitle: data.siteSubtitle,
             footerDesc: data.footerDesc,
+            siteLogoUrl: data.siteLogoUrl,
+            faviconUrl: data.faviconUrl,
           });
         }
       } catch (err) {
@@ -105,7 +115,14 @@ export default function Footer({ initialData }: FooterProps = {}) {
           <div className="md:col-span-2 space-y-4">
             <Link href="/" prefetch={true} className="flex items-center gap-3 group">
               <div className="h-10 w-10 rounded-xl  flex items-center justify-center  group-hover:scale-105 transition-all duration-300 overflow-hidden shrink-0">
-                <img src="/logo.png" alt="Virtus Logo" className="w-full h-full object-cover" />
+                <img
+                  src={siteLogoUrl || "/logo.png"}
+                  alt={siteTitle || "Logo"}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/logo.png";
+                  }}
+                />
               </div>
               <div className={`transition-opacity duration-200 ${isBrandingReady ? "opacity-100" : "opacity-0"}`}>
                 <h3 className="text-lg font-bold bg-gradient-to-r from-violet-200 via-fuchsia-200 to-white bg-clip-text text-transparent min-h-[1.75rem]">
