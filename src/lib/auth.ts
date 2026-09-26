@@ -41,6 +41,28 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).role = token.role;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      const prodUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL;
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      try {
+        const targetUrl = new URL(url);
+        const baseHost = new URL(baseUrl).host;
+        if (targetUrl.host === baseHost) {
+          return url;
+        }
+        if (prodUrl) {
+          const prodHost = new URL(prodUrl).host;
+          if (targetUrl.host === prodHost) {
+            return url;
+          }
+        }
+      } catch {
+        return baseUrl;
+      }
+      return baseUrl;
     }
   },
   secret: process.env.NEXTAUTH_SECRET || "virtus-official-mabarvip-secret-key-2026-supersecret",

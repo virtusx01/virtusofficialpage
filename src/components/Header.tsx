@@ -67,6 +67,15 @@ export default function Header({ initialData }: HeaderProps = {}) {
     return () => clearInterval(interval);
   }, []);
 
+  const handleLogout = async () => {
+    const prodUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    let target = "/";
+    if (typeof window !== "undefined") {
+      target = prodUrl ? `${prodUrl.replace(/\/$/, "")}/` : `${window.location.origin}/`;
+    }
+    await signOut({ callbackUrl: target });
+  };
+
   const isActive = (path: string) => {
     if (path === "/" && pathname === "/") return true;
     if (path !== "/" && pathname.startsWith(path)) return true;
@@ -163,7 +172,7 @@ export default function Header({ initialData }: HeaderProps = {}) {
                 <span>Dashboard Admin</span>
               </Link>
               <button
-                onClick={() => signOut({ callbackUrl: window.location.origin + "/" })}
+                onClick={handleLogout}
                 id="nav-logout-btn"
                 className="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 bg-red-950/30 border border-red-900/40 hover:border-red-900/70 transition-all px-3.5 py-2 rounded-xl cursor-pointer"
               >
@@ -236,7 +245,7 @@ export default function Header({ initialData }: HeaderProps = {}) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  signOut({ callbackUrl: window.location.origin + "/" });
+                  handleLogout();
                 }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-950/40 text-red-300 font-semibold text-sm border border-red-900/50 text-left"
               >
