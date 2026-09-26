@@ -19,7 +19,8 @@ import {
   Cpu,
   RefreshCw,
   Server,
-  Link2
+  Link2,
+  Palette
 } from "lucide-react";
 
 interface QuickStats {
@@ -30,6 +31,7 @@ interface QuickStats {
   streamTitle: string;
   totalLinks: number;
   siteTitle: string;
+  theme: string;
 }
 
 interface SystemHealth {
@@ -52,6 +54,44 @@ interface SystemHealth {
   lastChecked: Date | null;
 }
 
+const THEME_ACCENTS: Record<string, {
+  badge: string;
+  button: string;
+  glow: string;
+  name: string;
+}> = {
+  ocean: {
+    badge: "border-blue-500/40 bg-blue-950/40 text-blue-300",
+    button: "bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-950/50",
+    glow: "border-blue-900/40 hover:border-blue-600/50",
+    name: "Ocean Blue",
+  },
+  dark: {
+    badge: "border-slate-700 bg-slate-800 text-slate-300",
+    button: "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700",
+    glow: "border-slate-800 hover:border-slate-700",
+    name: "Midnight Dark",
+  },
+  neon: {
+    badge: "border-purple-500/40 bg-purple-950/40 text-purple-300",
+    button: "bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-950/50",
+    glow: "border-purple-900/40 hover:border-purple-500/50",
+    name: "Cyber Neon",
+  },
+  sunset: {
+    badge: "border-amber-500/40 bg-amber-950/40 text-amber-300",
+    button: "bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-950/50",
+    glow: "border-amber-900/40 hover:border-amber-500/50",
+    name: "Sunset Glow",
+  },
+  glass: {
+    badge: "border-cyan-500/40 bg-cyan-950/40 text-cyan-300",
+    button: "bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-950/50",
+    glow: "border-cyan-900/40 hover:border-cyan-500/50",
+    name: "Glassmorphism",
+  },
+};
+
 export default function AdminDashboardMenu() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -64,6 +104,7 @@ export default function AdminDashboardMenu() {
     streamTitle: "",
     totalLinks: 0,
     siteTitle: "Virtus Official",
+    theme: "ocean",
   });
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -123,10 +164,12 @@ export default function AdminDashboardMenu() {
 
       let totalLinks = 0;
       let siteTitle = "Virtus Official";
+      let theme = "ocean";
       if (linktreeRes.status === "fulfilled" && linktreeRes.value.ok) {
         const data = await linktreeRes.value.json();
         totalLinks = data.links?.length || 0;
         if (data.siteTitle) siteTitle = data.siteTitle;
+        if (data.theme) theme = data.theme;
       }
 
       setStats({
@@ -137,6 +180,7 @@ export default function AdminDashboardMenu() {
         streamTitle,
         totalLinks,
         siteTitle,
+        theme,
       });
     } catch (err) {
       console.error("Gagal memuat ringkasan dashboard:", err);
@@ -208,16 +252,24 @@ export default function AdminDashboardMenu() {
     );
   }
 
+  const activeTheme = THEME_ACCENTS[stats.theme] || THEME_ACCENTS.ocean;
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 font-sans">
       <Header />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         {/* Banner Ringkas Navigasi */}
-        <section className="rounded-2xl bg-slate-900 border border-slate-800 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <section className={`rounded-2xl bg-slate-900 border ${activeTheme.glow} p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all`}>
           <div>
-            <span className="text-xs text-slate-400 font-medium">Panel Kendali Admin</span>
-            <h1 className="text-2xl font-bold text-white mt-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium">Panel Kendali Admin</span>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${activeTheme.badge}`}>
+                <Palette className="w-3 h-3" />
+                <span>Tema: {activeTheme.name}</span>
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-white mt-1.5">
               Dashboard Utama
             </h1>
             <p className="text-sm text-slate-400 mt-2 max-w-xl leading-relaxed">
@@ -408,11 +460,11 @@ export default function AdminDashboardMenu() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* KARTU 1: EDIT MABAR VIP */}
-            <div className="rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors p-6 flex flex-col justify-between">
+            <div className={`rounded-2xl bg-slate-900 border ${activeTheme.glow} transition-colors p-6 flex flex-col justify-between`}>
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <Gamepad2 className="w-6 h-6 text-slate-300" />
-                  <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 text-xs font-medium">
+                  <span className={`px-2.5 py-1 rounded-md text-xs font-medium border ${activeTheme.badge}`}>
                     Queue & Stream
                   </span>
                 </div>
@@ -453,7 +505,7 @@ export default function AdminDashboardMenu() {
                 <Link
                   href="/admin/edit-mabarvip"
                   id="btn-goto-edit-mabarvip"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs border border-slate-700 transition-colors"
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-xs transition-colors ${activeTheme.button}`}
                 >
                   <span>Buka Edit Mabar VIP</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -462,11 +514,11 @@ export default function AdminDashboardMenu() {
             </div>
 
             {/* KARTU 2: EDIT LINKTREE UTAMA */}
-            <div className="rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors p-6 flex flex-col justify-between">
+            <div className={`rounded-2xl bg-slate-900 border ${activeTheme.glow} transition-colors p-6 flex flex-col justify-between`}>
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <Link2 className="w-6 h-6 text-slate-300" />
-                  <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 text-xs font-medium">
+                  <span className={`px-2.5 py-1 rounded-md text-xs font-medium border ${activeTheme.badge}`}>
                     Homepage & Links
                   </span>
                 </div>
@@ -507,7 +559,7 @@ export default function AdminDashboardMenu() {
                 <Link
                   href="/admin/edit-linktree"
                   id="btn-goto-edit-linktree"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs border border-slate-700 transition-colors"
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-xs transition-colors ${activeTheme.button}`}
                 >
                   <span>Buka Edit Linktree</span>
                   <ChevronRight className="w-3.5 h-3.5" />
