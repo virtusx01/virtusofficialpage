@@ -697,15 +697,25 @@ function MotionShakeLink({
   const intensity = (link.shakeIntensity as 'gentle' | 'medium' | 'strong') || 'medium';
   const frequency = (link.shakeFrequency as 'rare' | 'normal' | 'frequent' | 'constant') || 'normal';
 
-  // Multiplier keyframes sequence based on intensity
-  const multipliers =
+  // Keyframes for Microboy-style linktree shake:
+  // Quick energetic bounce/wiggle upwards & tilt angle, returning smoothly to 0
+  const vertMultipliers =
     intensity === 'gentle'
-      ? [0, -0.6, 0.6, -0.4, 0.4, -0.2, 0.2, 0]
+      ? [0, -0.7, 0.4, -0.3, 0.2, -0.1, 0]
       : intensity === 'strong'
-      ? [0, -1.3, 1.3, -1.0, 1.0, -0.7, 0.7, -0.3, 0.3, 0]
-      : [0, -1.0, 1.0, -0.8, 0.8, -0.5, 0.5, 0];
+      ? [0, -1.4, 1.0, -0.7, 0.5, -0.3, 0.1, 0]
+      : [0, -1.0, 0.7, -0.5, 0.3, -0.2, 0];
 
-  const keyframes = multipliers.map((m) => Math.round(m * dist * 10) / 10);
+  const rotateMultipliers =
+    intensity === 'gentle'
+      ? [0, -1.5, 1.5, -1, 1, 0]
+      : intensity === 'strong'
+      ? [0, -4, 4, -3, 3, -1.5, 1.5, 0]
+      : [0, -2.5, 2.5, -1.8, 1.8, -0.8, 0.8, 0];
+
+  const yKeyframes = vertMultipliers.map((m) => Math.round(m * dist * 10) / 10);
+  const rotKeyframes = rotateMultipliers;
+
   const shakeDur = SHAKE_DURATIONS[intensity] || 0.6;
   const pauseDur = SHAKE_PAUSES[frequency] ?? 4;
 
@@ -713,8 +723,17 @@ function MotionShakeLink({
   const transitionObject: any = {};
 
   if (direction === 'vertical' || direction === 'both') {
-    animationObject.y = keyframes;
+    animationObject.y = yKeyframes;
     transitionObject.y = {
+      duration: shakeDur,
+      repeat: Infinity,
+      repeatDelay: pauseDur,
+      ease: 'easeInOut' as const,
+    };
+
+    // Add subtle rotational wobble for Microboy linktree effect
+    animationObject.rotate = rotKeyframes;
+    transitionObject.rotate = {
       duration: shakeDur,
       repeat: Infinity,
       repeatDelay: pauseDur,
@@ -723,8 +742,8 @@ function MotionShakeLink({
   }
 
   if (direction === 'horizontal' || direction === 'both') {
-    // If both, alternate horizontal keyframes slightly for natural bounce
-    animationObject.x = direction === 'both' ? keyframes.map((k) => -k * 0.7) : keyframes;
+    const horizMultipliers = intensity === 'gentle' ? [0, -0.5, 0.5, -0.3, 0.3, 0] : [0, -1, 1, -0.7, 0.7, 0];
+    animationObject.x = horizMultipliers.map((m) => Math.round(m * dist * 10) / 10);
     transitionObject.x = {
       duration: shakeDur,
       repeat: Infinity,
@@ -749,7 +768,8 @@ function MotionShakeLink({
       animate={animateProp}
       whileHover={{ scale: 1.025, y: -2 }}
       whileTap={{ scale: 0.98 }}
-      className={className}
+      className={`${className} relative z-10`}
+      style={{ isolation: 'isolate' }}
     >
       {children}
     </motion.a>
