@@ -770,7 +770,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
               <div className="w-full relative select-none">
                 {/* Banner Image Container */}
                 <div
-                  className="w-full overflow-hidden rounded-3xl relative shadow-xl border border-white/10"
+                  className="w-full overflow-hidden rounded-3xl relative"
                   style={{
                     height: `${profile.bannerHeight || 180}px`,
                   }}

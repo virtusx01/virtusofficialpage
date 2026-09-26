@@ -1733,7 +1733,7 @@ export default function EditLinktreePage() {
                           </span>
                         </div>
                         <div
-                          className="relative w-full rounded-2xl overflow-hidden border border-slate-800 shadow-md group"
+                          className="relative w-full rounded-2xl overflow-hidden group"
                           style={{
                             height: `${Math.min(profile.bannerHeight || 260, 200)}px`,
                             WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 70%, rgba(0,0,0,0) 100%)`,
