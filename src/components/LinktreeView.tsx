@@ -1009,44 +1009,34 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                     ease: 'easeInOut',
                   };
                 } else if (animType === 'shake-bounce' || animType === 'bell-shake') {
-                  // Perfect Bell Shake (Shake Lonceng) 100% mirip Linktree Microboy
-                  // Dimulai persis dari titik asal (0,0,0) & diakhiri di titik asal (0,0,0) agar seamless loop
+                  // Authentic Bell Swing Pendulum Physics (Shake Lonceng Resmi 100% Mirip Linktree)
+                  // Berporos dari atas (transform-origin: top center) sehingga mengayun seperti lonceng sungguhan
                   const count = typeof link.animationCount === 'number' && link.animationCount > 0 ? link.animationCount : 3;
-                  const rotDeg = Math.max(2, Math.round(4.5 * factor));
-                  const xDist = Math.max(1, Math.round(3 * factor));
-                  const yDist = Math.max(2, Math.round(4 * factor));
+                  const maxDeg = Math.max(3, Math.round(7 * factor));
 
                   const rotateArray: number[] = [0];
-                  const xArray: number[] = [0];
-                  const yArray: number[] = [0];
                   const timesArray: number[] = [0];
 
-                  // Porsi waktu aktif getaran (misal 50% aktif getar, 50% istirahat di 0)
-                  const activeShare = 0.55; 
-                  const totalSteps = count * 2; 
-                  const stepDuration = activeShare / totalSteps;
+                  // Porsi durasi getar aktif (misal 60% waktu aktif berayun, 40% istirahat diam di 0)
+                  const activeShare = 0.6;
+                  const swings = count * 2; // bolak-balik
+                  const swingTime = activeShare / swings;
 
-                  for (let i = 1; i <= totalSteps; i++) {
-                    const progress = i / totalSteps;
-                    const damp = Math.pow(0.72, i - 1); // Damping efek lonceng asli
+                  for (let i = 1; i <= swings; i++) {
+                    const damp = Math.pow(0.75, i - 1); // Damping alami gaya gesek udara lonceng
                     const direction = i % 2 === 1 ? -1 : 1;
-
-                    rotateArray.push(Number((direction * rotDeg * damp).toFixed(2)));
-                    xArray.push(Number((direction * xDist * damp).toFixed(2)));
-                    yArray.push(Number((-yDist * damp).toFixed(2)));
-                    timesArray.push(Number((i * stepDuration).toFixed(3)));
+                    const angle = Number((direction * maxDeg * damp).toFixed(2));
+                    rotateArray.push(angle);
+                    timesArray.push(Number((i * swingTime).toFixed(3)));
                   }
 
-                  // Kembali ke 0 dengan sempurna
+                  // Mendarat kembali di posisi 0 (upright) dan diam tanpa cela
                   rotateArray.push(0, 0);
-                  xArray.push(0, 0);
-                  yArray.push(0, 0);
-                  timesArray.push(Number((activeShare + 0.05).toFixed(3)), 1);
+                  timesArray.push(Number((activeShare + 0.08).toFixed(3)), 1);
 
                   linkAnimateProps = {
                     rotate: rotateArray,
-                    x: xArray,
-                    y: yArray,
+                    transformOrigin: 'top center',
                   };
                   linkTransitionProps = {
                     duration: cycleDuration,
