@@ -980,8 +980,10 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
 
                 // Base duration in seconds for loop cycle
                 let cycleDuration = 3;
-                if (animSpeed === 'fast') cycleDuration = 1.8;
-                if (animSpeed === 'slow') cycleDuration = 4.5;
+                if (animSpeed === 'ultra-fast') cycleDuration = 1.0;
+                else if (animSpeed === 'fast') cycleDuration = 1.8;
+                else if (animSpeed === 'slow') cycleDuration = 4.5;
+                else if (animSpeed === 'ultra-slow') cycleDuration = 6.0;
 
                 let linkAnimateProps: any = undefined;
                 let linkTransitionProps: any = undefined;

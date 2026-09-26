@@ -3168,9 +3168,11 @@ export default function EditLinktreePage() {
                               onChange={(e) => updateLink(idx, "animationSpeed", e.target.value)}
                               className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:border-fuchsia-500 disabled:opacity-30"
                             >
+                              <option value="ultra-slow">🐌 Sangat Santai / Lambat (6.0s cycle)</option>
                               <option value="slow">🐢 Lambat / Jarang (4.5s cycle)</option>
                               <option value="normal">⚡ Normal / Sedang (3.0s cycle)</option>
                               <option value="fast">🚀 Cepat / Sering (1.8s cycle)</option>
+                              <option value="ultra-fast">⚡⚡ Kencang / Sangat Cepat (1.0s cycle)</option>
                             </select>
                           </div>
 
