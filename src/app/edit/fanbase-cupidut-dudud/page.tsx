@@ -20,6 +20,7 @@ import {
   CheckCircle,
   X,
   Sparkles,
+  Folder,
 } from "lucide-react";
 
 interface CatPhoto {
@@ -45,6 +46,10 @@ export default function EditFanbaseCupidutDududPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<CatPhoto | null>(null);
 
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [bucketFiles, setBucketFiles] = useState<Array<{ name: string; url: string; size: number; createdAt: string; type: "image" | "video" }>>([]);
+  const [loadingBucketFiles, setLoadingBucketFiles] = useState(false);
+
   const [formData, setFormData] = useState({
     catType: "CUPIDUT" as "CUPIDUT" | "DUDUD",
     title: "",
@@ -52,6 +57,26 @@ export default function EditFanbaseCupidutDududPage() {
     imageUrl: "",
     orderIndex: 0,
   });
+
+  const fetchBucketFiles = async () => {
+    setLoadingBucketFiles(true);
+    try {
+      const res = await fetch("/api/upload?type=image");
+      if (res.ok) {
+        const data = await res.json();
+        setBucketFiles(data.files || []);
+      }
+    } catch (e) {
+      console.error("Failed to load bucket files:", e);
+    } finally {
+      setLoadingBucketFiles(false);
+    }
+  };
+
+  const openBucketPicker = () => {
+    setShowMediaPicker(true);
+    fetchBucketFiles();
+  };
 
   // Guard for admin session
   useEffect(() => {
@@ -367,6 +392,83 @@ export default function EditFanbaseCupidutDududPage() {
         </div>
       </main>
 
+      {/* Bucket Media Picker Modal */}
+      {showMediaPicker && (
+        <div className="fixed inset-0 z-[60] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <Folder className="w-5 h-5 text-violet-400" />
+                <h3 className="font-bold text-base text-white">Pilih Foto Dari Bucket Supabase</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-1">
+              {loadingBucketFiles ? (
+                <div className="h-64 flex flex-col items-center justify-center gap-2 text-slate-400">
+                  <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+                  <span className="text-xs">Memuat file dari bucket...</span>
+                </div>
+              ) : bucketFiles.length === 0 ? (
+                <div className="h-64 flex flex-col items-center justify-center gap-2 text-center p-6 border border-dashed border-slate-800 rounded-xl">
+                  <ImageIcon className="w-10 h-10 text-slate-600" />
+                  <p className="text-xs font-semibold text-slate-300">Belum ada file gambar di bucket</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {bucketFiles.map((file) => (
+                    <div
+                      key={file.name}
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, imageUrl: file.url }));
+                        setShowMediaPicker(false);
+                      }}
+                      className="group relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 hover:border-violet-500 transition-all cursor-pointer shadow-md flex flex-col text-left select-none"
+                    >
+                      <div className="relative aspect-video w-full bg-slate-900 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={file.url}
+                          alt={file.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-violet-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="px-2.5 py-1 rounded-full bg-violet-600 text-white font-bold text-[10px] shadow-lg">
+                            Pilih Foto
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-2 flex flex-col gap-0.5 bg-slate-950">
+                        <span className="text-[11px] font-semibold text-slate-200 truncate" title={file.name}>
+                          {file.name}
+                        </span>
+                        <span className="text-[9px] text-slate-500">{(file.size / (1024 * 1024)).toFixed(1)} MB</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Add/Edit */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -450,6 +552,15 @@ export default function EditFanbaseCupidutDududPage() {
                     placeholder="https://..."
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm outline-none text-slate-100 focus:border-violet-500"
                   />
+                  <button
+                    type="button"
+                    onClick={openBucketPicker}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-violet-300 border border-violet-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                    title="Pilih foto dari Bucket Supabase"
+                  >
+                    <Folder className="w-4 h-4 text-violet-400" />
+                    <span>Pilih Dari Bucket</span>
+                  </button>
                   <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
                     {uploading ? (
                       <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
