@@ -148,6 +148,7 @@ interface ProfileData {
   videoAdOffsetX?: number;
   videoAdOffsetY?: number;
   videoAdZIndex?: number;
+  videoAdHideClose?: boolean;
   showSocialHeaderIcons?: boolean;
   socialIconPosition?: string;
   socialIconSize?: string;
@@ -250,6 +251,7 @@ export default function EditLinktreePage() {
     videoAdOffsetX: 20,
     videoAdOffsetY: 20,
     videoAdZIndex: 50,
+    videoAdHideClose: false,
     showSocialHeaderIcons: true,
     socialIconPosition: "under_bio",
     socialIconSize: "md",
@@ -1171,6 +1173,32 @@ export default function EditLinktreePage() {
                           className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 outline-none"
                         />
                       </div>
+                    </div>
+
+                    {/* Opsi Hilangkan Tombol Close */}
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                          <span>Hilangkan Tombol Close (Silang)</span>
+                          {profile.videoAdHideClose && (
+                            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30">
+                              Tombol (X) Disembunyikan
+                            </span>
+                          )}
+                        </span>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Jika diaktifkan, tombol close &apos;X&apos; di pojok video iklan tidak akan muncul sehingga pengunjung tidak bisa menutup video.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer select-none shrink-0 ml-4">
+                        <input
+                          type="checkbox"
+                          checked={profile.videoAdHideClose || false}
+                          onChange={(e) => setProfile({ ...profile, videoAdHideClose: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                      </label>
                     </div>
                   </div>
 

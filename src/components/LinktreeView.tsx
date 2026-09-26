@@ -127,6 +127,7 @@ export interface LinktreeProfileData {
   videoAdOffsetX?: number;
   videoAdOffsetY?: number;
   videoAdZIndex?: number;
+  videoAdHideClose?: boolean;
   showSocialHeaderIcons?: boolean;
   socialIconPosition?: string;
   socialIconSize?: string;
@@ -1348,6 +1349,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
           offsetX={profile.videoAdOffsetX}
           offsetY={profile.videoAdOffsetY}
           zIndex={profile.videoAdZIndex}
+          hideCloseButton={profile.videoAdHideClose}
         />
       )}
     </div>

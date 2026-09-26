@@ -34,6 +34,7 @@ interface ChromaVideoAdProps {
   offsetX?: number;
   offsetY?: number;
   zIndex?: number;
+  hideCloseButton?: boolean;
   previewMode?: boolean;
 }
 
@@ -63,6 +64,7 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
   offsetX = 20,
   offsetY = 20,
   zIndex = 50,
+  hideCloseButton = false,
   previewMode = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -384,7 +386,7 @@ export const ChromaVideoAd: React.FC<ChromaVideoAdProps> = ({
   return (
     <div style={getPositionStyle()} className="transition-all duration-300 relative">
       {/* FIXED POSITION CLOSE BUTTON: Positioned consistently at top-right of wrapper */}
-      {!previewMode && (
+      {!previewMode && !hideCloseButton && (
         <button
           onClick={handleDismiss}
           className="absolute -top-2.5 -right-2.5 bg-black/80 hover:bg-red-600 text-white rounded-full p-1.5 shadow-xl border border-white/20 backdrop-blur-md opacity-90 hover:opacity-100 transition-all z-30 cursor-pointer"

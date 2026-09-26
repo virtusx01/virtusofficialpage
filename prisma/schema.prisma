@@ -83,6 +83,7 @@ model LinktreeProfile {
   videoAdOffsetX         Int            @default(20)
   videoAdOffsetY         Int            @default(20)
   videoAdZIndex          Int            @default(50)
+  videoAdHideClose       Boolean        @default(false)
 
   // Social Media Header Icons Customization
   showSocialHeaderIcons  Boolean        @default(true)
