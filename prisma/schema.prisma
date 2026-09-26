@@ -6,7 +6,7 @@ datasource db {
 
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
 }
 
 model Player {
@@ -39,6 +39,11 @@ model LinktreeProfile {
   bio              String         @default("Streamer & Gaming Content Creator 🔥")
   avatarUrl        String         @default("https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80")
   avatarBorderColor String        @default("from-cyan-400 via-indigo-500 to-purple-500")
+  bannerImageUrl   String         @default("")
+  showBannerImage  Boolean        @default(false)
+  bannerHeight     Int            @default(260)
+  bannerOpacity    Int            @default(50)
+  bannerOffsetTop  Int            @default(0)
   theme            String         @default("ocean") // ocean, dark, neon, sunset, glass
   socialHeaderTitle String        @default("Social Media Handles")
   showLiveBanner   Boolean        @default(true)
@@ -83,6 +88,7 @@ model LinktreeProfile {
   videoAdOffsetX         Int            @default(20)
   videoAdOffsetY         Int            @default(20)
   videoAdZIndex          Int            @default(50)
+  videoAdHideClose       Boolean        @default(false)
 
   // Social Media Header Icons Customization
   showSocialHeaderIcons  Boolean        @default(true)
@@ -126,6 +132,19 @@ model LinktreeLink {
   textShadow      String          @default("none") // "none" | "subtle" | "medium" | "glow" | "heavy"
   iconShadow      String          @default("none") // "none" | "subtle" | "medium" | "glow" | "heavy"
   showInHeaderIcons Boolean       @default(true)
+  itemType        String          @default("link") // "link" | "video_banner"
+  subtitle        String          @default("")
+  mediaType       String          @default("image") // "image" | "video"
+  videoUrl        String          @default("")
+  bannerHeight    Int             @default(185)
+  badgeText       String          @default("")
+  badgeBgColor    String          @default("rgba(6, 182, 212, 0.25)")
+  badgeTextColor  String          @default("#22D3EE")
+  btnText         String          @default("Kunjungi")
+  btnTextColor    String          @default("#22D3EE")
+  overlayDarkness Int             @default(60)
+  borderStyle     String          @default("rounded-3xl")
+  borderColor     String          @default("rgba(255, 255, 255, 0.2)")
   isEnabled       Boolean         @default(true)
   orderIndex      Int             @default(0)
   profileId       String          @default("profile")
@@ -141,6 +160,19 @@ model LinktreeBanner {
   badgeText   String          @default("LIVE / QUEUE")
   targetUrl   String          @default("/mabarvip")
   imageUrl    String          @default("https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80")
+  mediaType   String          @default("image") // "image" | "video"
+  videoUrl    String          @default("")
+  height      Int             @default(180)
+  titleColor  String          @default("#FFFFFF")
+  titleSize   String          @default("lg")
+  subtitleColor String        @default("#CBD5E1")
+  badgeBgColor  String        @default("rgba(6, 182, 212, 0.25)")
+  badgeTextColor String       @default("#22D3EE")
+  btnText     String          @default("Kunjungi")
+  btnTextColor String         @default("#22D3EE")
+  overlayDarkness Int         @default(60)
+  borderStyle String          @default("rounded-3xl")
+  borderColor String          @default("rgba(255, 255, 255, 0.2)")
   isEnabled   Boolean         @default(true)
   orderIndex  Int             @default(0)
   profileId   String          @default("profile")
