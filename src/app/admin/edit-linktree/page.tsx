@@ -362,9 +362,9 @@ export default function EditLinktreePage() {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [mediaPickerType, setMediaPickerType] = useState<"image" | "video">("image");
   const [mediaPickerTarget, setMediaPickerTarget] = useState<{
-    targetType: "link" | "banner";
-    index: number;
-    field: "imageUrl" | "videoUrl" | "bgImageUrl" | "customIconUrl";
+    targetType: "link" | "banner" | "profile" | "videoAd";
+    index?: number;
+    field: string;
   } | null>(null);
   const [bucketFiles, setBucketFiles] = useState<Array<{ name: string; url: string; size: number; createdAt: string; type: "image" | "video" }>>([]);
   const [bucketCounts, setBucketCounts] = useState<{ total: number; image: number; video: number }>({ total: 0, image: 0, video: 0 });
@@ -391,11 +391,21 @@ export default function EditLinktreePage() {
 
   const openMediaPicker = (
     index: number,
-    field: "imageUrl" | "videoUrl" | "bgImageUrl" | "customIconUrl",
+    field: string,
     type: "image" | "video",
-    targetType: "link" | "banner" = "banner"
+    targetType: "link" | "banner" | "profile" | "videoAd" = "banner"
   ) => {
     setMediaPickerTarget({ targetType, index, field });
+    setMediaPickerType(type);
+    setShowMediaPicker(true);
+    fetchBucketFiles(type);
+  };
+
+  const openProfileMediaPicker = (
+    field: "siteLogoUrl" | "faviconUrl" | "avatarUrl" | "bannerImageUrl" | "bgImageUrl" | "liveBannerImage" | "videoAdUrl",
+    type: "image" | "video" = "image"
+  ) => {
+    setMediaPickerTarget({ targetType: "profile", field });
     setMediaPickerType(type);
     setShowMediaPicker(true);
     fetchBucketFiles(type);
@@ -424,7 +434,14 @@ export default function EditLinktreePage() {
   const selectMediaFromBucket = (url: string) => {
     if (mediaPickerTarget) {
       const { targetType, index, field } = mediaPickerTarget;
-      if (targetType === "link") {
+      if (targetType === "profile") {
+        setProfile((prev) => ({ ...prev, [field]: url }));
+        if (field === "siteLogoUrl" || field === "faviconUrl") {
+          setCachedBranding({ [field]: url });
+        }
+      } else if (targetType === "videoAd" && typeof index === "number") {
+        updateVideoAd(index, "videoUrl", url);
+      } else if (targetType === "link" && typeof index === "number") {
         if (field === "videoUrl") {
           updateMultipleLinkFields(index, { videoUrl: url, mediaType: "video" });
         } else if (field === "bgImageUrl") {
@@ -434,7 +451,7 @@ export default function EditLinktreePage() {
         } else {
           updateMultipleLinkFields(index, { [field]: url } as any);
         }
-      } else {
+      } else if (targetType === "banner" && typeof index === "number") {
         if (field === "videoUrl") {
           updateMultipleBannerFields(index, { videoUrl: url, mediaType: "video" });
         } else {
@@ -1460,6 +1477,15 @@ export default function EditLinktreePage() {
                         className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-xs outline-none text-slate-100"
                         placeholder="Default: /logo.png (atau paste URL custom)"
                       />
+                      <button
+                        type="button"
+                        onClick={() => openProfileMediaPicker("siteLogoUrl", "image")}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-violet-300 border border-violet-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                        title="Pilih logo dari Bucket Supabase"
+                      >
+                        <Folder className="w-3.5 h-3.5 text-violet-400" />
+                        <span>Pilih Dari Bucket</span>
+                      </button>
                       <label className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold cursor-pointer shrink-0 transition-colors">
                         {uploadingField === "siteLogoUrl" ? "Mengunggah..." : "Upload Logo"}
                         <input
@@ -1517,6 +1543,15 @@ export default function EditLinktreePage() {
                         className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-xs outline-none text-slate-100"
                         placeholder="Default: /favicon.ico (atau paste URL custom)"
                       />
+                      <button
+                        type="button"
+                        onClick={() => openProfileMediaPicker("faviconUrl", "image")}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-violet-300 border border-violet-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                        title="Pilih favicon dari Bucket Supabase"
+                      >
+                        <Folder className="w-3.5 h-3.5 text-violet-400" />
+                        <span>Pilih Dari Bucket</span>
+                      </button>
                       <label className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold cursor-pointer shrink-0 transition-colors">
                         {uploadingField === "faviconUrl" ? "Mengunggah..." : "Upload Favicon"}
                         <input
@@ -1769,6 +1804,15 @@ export default function EditLinktreePage() {
                                 className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl focus:border-purple-500 text-xs font-mono text-slate-100"
                                 placeholder="https://domain.com/video-iklan.mp4"
                               />
+                              <button
+                                type="button"
+                                onClick={() => openProfileMediaPicker("videoAdUrl", "video")}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                title="Pilih video dari Bucket Supabase"
+                              >
+                                <Folder className="w-3.5 h-3.5 text-purple-400" />
+                                <span>Pilih Dari Bucket</span>
+                              </button>
                               <label className="flex items-center justify-center px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors cursor-pointer shrink-0 gap-1">
                                 {uploadingVideo ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1900,6 +1944,15 @@ export default function EditLinktreePage() {
                                 className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-100 outline-none focus:border-purple-500"
                                 placeholder="https://domain.com/video.mp4"
                               />
+                              <button
+                                type="button"
+                                onClick={() => openMediaPicker(idx, "videoUrl", "video", "videoAd")}
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                title="Pilih video dari Bucket Supabase"
+                              >
+                                <Folder className="w-3.5 h-3.5 text-purple-400" />
+                                <span>Pilih Dari Bucket</span>
+                              </button>
                               <label className="flex items-center justify-center px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors cursor-pointer shrink-0 gap-1">
                                 {uploadingField === `videoAd-${idx}` ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2049,6 +2102,15 @@ export default function EditLinktreePage() {
                       className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-violet-500 text-sm outline-none text-slate-100"
                       placeholder="https://..."
                     />
+                    <button
+                      type="button"
+                      onClick={() => openProfileMediaPicker("avatarUrl", "image")}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-violet-300 border border-violet-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                      title="Pilih avatar dari Bucket Supabase"
+                    >
+                      <Folder className="w-3.5 h-3.5 text-violet-400" />
+                      <span>Pilih Dari Bucket</span>
+                    </button>
                     <label className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
                       {uploadingField === "avatarUrl" ? (
                         <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
@@ -2121,6 +2183,15 @@ export default function EditLinktreePage() {
                             className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs outline-none text-slate-100 focus:border-indigo-500 font-mono"
                             placeholder="https://images.unsplash.com/..."
                           />
+                          <button
+                            type="button"
+                            onClick={() => openProfileMediaPicker("bannerImageUrl", "image")}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                            title="Pilih banner dari Bucket Supabase"
+                          >
+                            <Folder className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Pilih Dari Bucket</span>
+                          </button>
                           <label className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-md">
                             {uploadingField === "bannerImageUrl" ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2544,6 +2615,15 @@ export default function EditLinktreePage() {
                       className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:border-purple-500 text-sm outline-none text-slate-100 font-mono"
                       placeholder="https://images.unsplash.com/... atau kosongkan untuk warna tema"
                     />
+                    <button
+                      type="button"
+                      onClick={() => openProfileMediaPicker("bgImageUrl", "image")}
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                      title="Pilih background dari Bucket Supabase"
+                    >
+                      <Folder className="w-4 h-4 text-purple-400" />
+                      <span>Pilih Dari Bucket</span>
+                    </button>
                     <label className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors">
                       {uploadingField === "bgImageUrl" ? (
                         <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
