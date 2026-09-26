@@ -115,6 +115,8 @@ interface ProfileData {
   bannerImageUrl?: string;
   showBannerImage?: boolean;
   bannerHeight?: number;
+  bannerOpacity?: number;
+  bannerOffsetTop?: number;
   theme: string;
   socialHeaderTitle: string;
   categoryBgColor?: string;
@@ -220,7 +222,9 @@ export default function EditLinktreePage() {
     avatarBorderColor: "from-cyan-400 via-indigo-500 to-purple-500",
     bannerImageUrl: "",
     showBannerImage: false,
-    bannerHeight: 180,
+    bannerHeight: 260,
+    bannerOpacity: 50,
+    bannerOffsetTop: 0,
     theme: "ocean",
     socialHeaderTitle: "Social Media Handles",
     categoryBgColor: "",
@@ -1659,43 +1663,95 @@ export default function EditLinktreePage() {
                           )}
                         </div>
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* Slider Tinggi Banner */}
                       <div>
                         <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
                           <span>Tinggi Banner</span>
-                          <span className="text-indigo-400 font-mono">{profile.bannerHeight || 180}px</span>
+                          <span className="text-indigo-400 font-mono">{profile.bannerHeight || 260}px</span>
                         </div>
                         <input
                           type="range"
-                          min="120"
-                          max="300"
+                          min="140"
+                          max="450"
                           step="10"
-                          value={profile.bannerHeight || 180}
-                          onChange={(e) => setProfile({ ...profile, bannerHeight: parseInt(e.target.value) || 180 })}
-                          className="w-full accent-indigo-500 mt-2"
+                          value={profile.bannerHeight || 260}
+                          onChange={(e) => setProfile({ ...profile, bannerHeight: parseInt(e.target.value) || 260 })}
+                          className="w-full accent-indigo-500"
                         />
+                        <p className="text-[10px] text-slate-500 mt-1">Mengatur tinggi area foto cover banner.</p>
+                      </div>
+
+                      {/* Slider Persentase Transparan Gradasi */}
+                      <div>
+                        <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                          <span>Gradasi Transparan Bawah</span>
+                          <span className="text-indigo-400 font-mono">{profile.bannerOpacity ?? 50}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="5"
+                          value={profile.bannerOpacity ?? 50}
+                          onChange={(e) => setProfile({ ...profile, bannerOpacity: parseInt(e.target.value) || 0 })}
+                          className="w-full accent-indigo-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">Tingkat transparansi memudar pada bagian bawah banner.</p>
+                      </div>
+
+                      {/* Slider Jarak / Posisi dari Atas */}
+                      <div>
+                        <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
+                          <span>Jarak Posisi Atas (Offset)</span>
+                          <span className="text-indigo-400 font-mono">{profile.bannerOffsetTop ?? 0}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-50"
+                          max="100"
+                          step="5"
+                          value={profile.bannerOffsetTop ?? 0}
+                          onChange={(e) => setProfile({ ...profile, bannerOffsetTop: parseInt(e.target.value) || 0 })}
+                          className="w-full accent-indigo-500"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">0px = mulai dari paling atas di belakang tombol Mabar VIP.</p>
                       </div>
                     </div>
 
                     {/* Preview Mini Banner Profil */}
                     {profile.bannerImageUrl && (
                       <div className="space-y-1.5 pt-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Preview Gradasi Transparan Banner:
-                        </span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Preview Gradasi Transparan ({profile.bannerOpacity ?? 50}% Transparan):
+                          </span>
+                          <span className="text-[10px] text-indigo-400 font-mono">
+                            Tinggi: {profile.bannerHeight || 260}px | Offset: {profile.bannerOffsetTop ?? 0}px
+                          </span>
+                        </div>
                         <div
                           className="relative w-full rounded-2xl overflow-hidden border border-slate-800 shadow-md group"
-                          style={{ height: `${Math.min(profile.bannerHeight || 180, 160)}px` }}
+                          style={{ height: `${Math.min(profile.bannerHeight || 260, 200)}px` }}
                         >
                           <img
                             src={profile.bannerImageUrl}
                             alt="Banner Preview"
                             className="w-full h-full object-cover"
                           />
-                          {/* Gradasi dari atas transparan tipis menuju ke bawah transparan 50% hingga solid hitam */}
-                          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 via-60% to-black/90 pointer-events-none flex items-end justify-center pb-2">
-                            <span className="text-[10px] text-white/80 bg-black/60 px-2 py-0.5 rounded-full border border-white/20 backdrop-blur-sm">
-                              Gradasi Transparan Bawah (Menyatu ke Card Avatar)
+                          {/* Gradasi sesuai pengaturan persentase transparansi */}
+                          <div 
+                            className="absolute inset-0 pointer-events-none flex items-end justify-center pb-2"
+                            style={{
+                              background: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 40%, rgba(15,23,42,${((profile.bannerOpacity ?? 50) / 100).toFixed(2)}) 70%, rgba(15,23,42,1) 100%)`,
+                              WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${(1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`,
+                              maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${(1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`
+                            }}
+                          >
+                            <span className="text-[10px] text-white/90 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/20 backdrop-blur-sm shadow">
+                              Gradasi Transparan {profile.bannerOpacity ?? 50}% (Menyatu Lembut ke Avatar)
                             </span>
                           </div>
                         </div>

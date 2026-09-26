@@ -41,7 +41,9 @@ model LinktreeProfile {
   avatarBorderColor String        @default("from-cyan-400 via-indigo-500 to-purple-500")
   bannerImageUrl   String         @default("") // Profile header banner image
   showBannerImage  Boolean        @default(false) // Toggle banner profile
-  bannerHeight     Int            @default(180) // Height in px (e.g. 140 to 280)
+  bannerHeight     Int            @default(260) // Height in px
+  bannerOpacity    Int            @default(50) // Gradient transparent percentage at bottom (0 to 100%)
+  bannerOffsetTop  Int            @default(0) // Top offset distance in px (posisi jarak dari atas)
   theme            String         @default("ocean") // ocean, dark, neon, sunset, glass
   socialHeaderTitle String        @default("Social Media Handles")
   showLiveBanner   Boolean        @default(true)

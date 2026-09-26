@@ -94,6 +94,8 @@ export interface LinktreeProfileData {
   bannerImageUrl?: string;
   showBannerImage?: boolean;
   bannerHeight?: number;
+  bannerOpacity?: number;
+  bannerOffsetTop?: number;
   theme: string;
   socialHeaderTitle: string;
   categoryBgColor?: string;
@@ -757,39 +759,42 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
 
         {/* Main Container Card */}
         <div className="w-full max-w-md my-auto relative z-10 py-6">
+          {/* Profile Header Banner (Posisi dari paling atas di belakang tombol aksi atas & avatar) */}
+          {profile.showBannerImage && profile.bannerImageUrl && (
+            <div
+              className="absolute left-0 right-0 w-full overflow-hidden pointer-events-none rounded-3xl select-none -z-10 transition-all duration-300"
+              style={{
+                top: `${profile.bannerOffsetTop ?? 0}px`,
+                height: `${profile.bannerHeight || 260}px`,
+              }}
+            >
+              {/* Banner Image */}
+              <img
+                src={profile.bannerImageUrl}
+                alt="Profile Banner"
+                className="w-full h-full object-cover object-center"
+              />
+
+              {/* Seamless Dynamic Gradient Mask:
+                  Atas: jernih / tidak transparan (100% visible)
+                  Bawah: memudar sesuai persentase transparansi yang dikustom (default 50%) hingga menyatu ke background */}
+              <div 
+                className="absolute inset-0 pointer-events-none" 
+                style={{
+                  background: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 40%, rgba(15,23,42,${((profile.bannerOpacity ?? 50) / 100).toFixed(2)}) 70%, rgba(15,23,42,1) 100%)`,
+                  WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${(1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`,
+                  maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,${(1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`
+                }}
+              />
+            </div>
+          )}
+
           <motion.div
             initial="hidden"
             animate="visible"
             variants={containerVariants}
             className="flex flex-col items-center text-center space-y-6 relative"
           >
-            {/* Profile Header Banner (Dibelakang Foto Profil / Avatar) */}
-            {profile.showBannerImage && profile.bannerImageUrl && (
-              <div
-                className="absolute top-8 left-0 right-0 w-full overflow-hidden pointer-events-none rounded-3xl select-none -z-10"
-                style={{ height: `${profile.bannerHeight || 200}px` }}
-              >
-                {/* Banner Image */}
-                <img
-                  src={profile.bannerImageUrl}
-                  alt="Profile Banner"
-                  className="w-full h-full object-cover object-center"
-                />
-
-                {/* Seamless Gradient:
-                    Atas: jernih / tidak transparan
-                    Bawah: transparan 50% dan fading menyatu ke background */}
-                <div 
-                  className="absolute inset-0 pointer-events-none" 
-                  style={{
-                    background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 35%, rgba(15,23,42,0.5) 70%, rgba(15,23,42,0.95) 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.5) 75%, rgba(0,0,0,0) 100%)',
-                    maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.5) 75%, rgba(0,0,0,0) 100%)'
-                  }}
-                />
-              </div>
-            )}
-
             {/* Top Bar / Actions */}
             <motion.div variants={itemVariants} className="w-full flex items-center justify-between px-2 pt-2 z-10">
               {profile.topButtons && profile.topButtons.length > 0 ? (
