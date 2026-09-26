@@ -97,14 +97,57 @@ export async function DELETE(request: Request) {
       .from('assets')
       .remove([filename]);
 
-    if (error) {
-      console.error('Supabase storage delete error:', error);
-      throw error;
-    }
-
     return NextResponse.json({ success: true, message: `File ${filename} berhasil dihapus dari bucket Supabase` });
   } catch (error: any) {
     console.error('Error deleting file from Supabase:', error);
     return NextResponse.json({ error: error?.message || 'Gagal menghapus file' }, { status: 500 });
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const filterType = searchParams.get('type'); // 'image' | 'video' | null
+
+    const { data, error } = await supabase.storage
+      .from('assets')
+      .list('', {
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' },
+      });
+
+    if (error) {
+      console.error('Supabase list files error:', error);
+      throw error;
+    }
+
+    const files = (data || [])
+      .filter((file) => file.name !== '.emptyFolderPlaceholder')
+      .map((file) => {
+        const { data: publicUrlData } = supabase.storage
+          .from('assets')
+          .getPublicUrl(file.name);
+
+        const ext = path.extname(file.name).toLowerCase();
+        const isVideo = ['.mp4', '.webm', '.ogg', '.mov'].includes(ext);
+
+        return {
+          name: file.name,
+          url: publicUrlData.publicUrl,
+          size: file.metadata?.size || 0,
+          createdAt: file.created_at,
+          type: isVideo ? 'video' : 'image',
+        };
+      })
+      .filter((file) => {
+        if (!filterType) return true;
+        return file.type === filterType;
+      });
+
+    return NextResponse.json({ files });
+  } catch (error: any) {
+    console.error('Error listing files from Supabase:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to list bucket files' }, { status: 500 });
   }
 }

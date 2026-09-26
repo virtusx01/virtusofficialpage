@@ -41,6 +41,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Menu,
+  Folder,
+  X,
+  Play,
+  RefreshCw,
 } from "lucide-react";
 
 interface LinkItem {
@@ -337,6 +341,47 @@ export default function EditLinktreePage() {
   const [bioLinkUnderline, setBioLinkUnderline] = useState(true);
   const [bioLinkColor, setBioLinkColor] = useState("#38bdf8");
   const [showBioLinkModal, setShowBioLinkModal] = useState(false);
+  // Bucket Media Picker Modal States
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [mediaPickerType, setMediaPickerType] = useState<"image" | "video">("image");
+  const [mediaPickerTarget, setMediaPickerTarget] = useState<{ index: number; field: "imageUrl" | "videoUrl" } | null>(null);
+  const [bucketFiles, setBucketFiles] = useState<Array<{ name: string; url: string; size: number; createdAt: string; type: "image" | "video" }>>([]);
+  const [loadingBucketFiles, setLoadingBucketFiles] = useState(false);
+
+  const fetchBucketFiles = async (type: "image" | "video") => {
+    setLoadingBucketFiles(true);
+    try {
+      const res = await fetch(`/api/upload?type=${type}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBucketFiles(data.files || []);
+      }
+    } catch (e) {
+      console.error("Failed to load bucket files:", e);
+    } finally {
+      setLoadingBucketFiles(false);
+    }
+  };
+
+  const openMediaPicker = (index: number, field: "imageUrl" | "videoUrl", type: "image" | "video") => {
+    setMediaPickerTarget({ index, field });
+    setMediaPickerType(type);
+    setShowMediaPicker(true);
+    fetchBucketFiles(type);
+  };
+
+  const selectMediaFromBucket = (url: string) => {
+    if (mediaPickerTarget) {
+      updateBanner(mediaPickerTarget.index, mediaPickerTarget.field, url);
+      if (mediaPickerTarget.field === "videoUrl") {
+        updateBanner(mediaPickerTarget.index, "mediaType", "video");
+      } else {
+        updateBanner(mediaPickerTarget.index, "mediaType", "image");
+      }
+      setSaveSuccess(false);
+    }
+    setShowMediaPicker(false);
+  };
 
   const insertBioLink = () => {
     if (!bioLinkText.trim() || !bioLinkUrl.trim()) return;
@@ -4148,19 +4193,28 @@ export default function EditLinktreePage() {
                         {(banner.mediaType || "image") === "image" ? (
                           <div>
                             <label className="block text-[11px] text-slate-400 mb-1">Gambar Background URL</label>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <input
                                 type="text"
                                 value={banner.imageUrl}
                                 onChange={(e) => updateBanner(idx, "imageUrl", e.target.value)}
-                                className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
+                                className="flex-1 min-w-[200px] px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs outline-none text-slate-200 focus:border-amber-500"
                                 placeholder="https://..."
                               />
-                              <label className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors">
+                              <button
+                                type="button"
+                                onClick={() => openMediaPicker(idx, "imageUrl", "image")}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                title="Pilih foto yang sudah ada di Bucket Storage"
+                              >
+                                <Folder className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Pilih Dari Bucket</span>
+                              </button>
+                              <label className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm">
                                 {uploadingField === `banner-${idx}` ? (
-                                  <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                 ) : (
-                                  <Upload className="w-3.5 h-3.5 text-amber-400" />
+                                  <Upload className="w-3.5 h-3.5" />
                                 )}
                                 <span>Upload Gambar</span>
                                 <input
@@ -4195,14 +4249,23 @@ export default function EditLinktreePage() {
                               <label className="block text-[11px] text-slate-400 mb-1">
                                 Video Promo URL (MP4 / WebM / Supabase Upload)
                               </label>
-                              <div className="flex gap-2">
+                              <div className="flex flex-wrap gap-2">
                                 <input
                                   type="text"
                                   value={banner.videoUrl || ""}
                                   onChange={(e) => updateBanner(idx, "videoUrl", e.target.value)}
-                                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono outline-none text-slate-200 focus:border-purple-500"
+                                  className="flex-1 min-w-[200px] px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono outline-none text-slate-200 focus:border-purple-500"
                                   placeholder="https://.../promo-video.mp4"
                                 />
+                                <button
+                                  type="button"
+                                  onClick={() => openMediaPicker(idx, "videoUrl", "video")}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-sm"
+                                  title="Pilih video yang sudah ada di Bucket Storage"
+                                >
+                                  <Folder className="w-3.5 h-3.5 text-purple-400" />
+                                  <span>Pilih Dari Bucket</span>
+                                </button>
                                 <label className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition-colors shadow-md">
                                   {uploadingField === `banner-video-${idx}` ? (
                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -4537,6 +4600,167 @@ export default function EditLinktreePage() {
           </div>
         </div>
       </main>
+
+      {/* Bucket Media Picker Modal (Pilih Foto / Video yang Sudah Ada di Bucket) */}
+      {showMediaPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 select-none">
+          <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            {/* Header Modal */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/60">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl border ${mediaPickerType === 'video' ? 'bg-purple-600/20 border-purple-500/30 text-purple-400' : 'bg-amber-600/20 border-amber-500/30 text-amber-400'}`}>
+                  {mediaPickerType === 'video' ? <Video className="w-5 h-5" /> : <ImageIcon className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">
+                    Pilih {mediaPickerType === 'video' ? 'Video Promo' : 'Foto / Poster'} dari Bucket Storage
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Gunakan file yang sudah pernah diupload untuk menghemat kuota & mencegah duplikasi
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fetchBucketFiles(mediaPickerType)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                  title="Refresh Daftar File"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loadingBucketFiles ? 'animate-spin text-cyan-400' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMediaPicker(false)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Tabs & Counter */}
+            <div className="flex items-center justify-between px-5 py-2.5 bg-slate-950/40 border-b border-slate-800 text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaPickerType('image');
+                    fetchBucketFiles('image');
+                  }}
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+                    mediaPickerType === 'image'
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  Gambar ({bucketFiles.filter(f => f.type === 'image').length || (mediaPickerType === 'image' ? bucketFiles.length : 0)})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaPickerType('video');
+                    fetchBucketFiles('video');
+                  }}
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+                    mediaPickerType === 'video'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  Video ({bucketFiles.filter(f => f.type === 'video').length || (mediaPickerType === 'video' ? bucketFiles.length : 0)})
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-400">
+                Total {bucketFiles.length} file ditemukan
+              </span>
+            </div>
+
+            {/* Content List / Grid */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar min-h-[300px]">
+              {loadingBucketFiles ? (
+                <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <Loader2 className="w-7 h-7 text-cyan-400 animate-spin" />
+                  <span className="text-xs">Memuat file dari Supabase Storage...</span>
+                </div>
+              ) : bucketFiles.length === 0 ? (
+                <div className="h-64 flex flex-col items-center justify-center gap-2 text-center p-6 border border-dashed border-slate-800 rounded-xl">
+                  <Folder className="w-10 h-10 text-slate-600" />
+                  <p className="text-xs font-semibold text-slate-300">Belum ada file {mediaPickerType === 'video' ? 'video' : 'gambar'} di bucket</p>
+                  <p className="text-[11px] text-slate-500 max-w-xs">
+                    Silakan upload file baru lewat tombol "Upload" pada form banner promo.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {bucketFiles.map((file) => (
+                    <div
+                      key={file.name}
+                      onClick={() => selectMediaFromBucket(file.url)}
+                      className="group relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 hover:border-cyan-500/80 transition-all cursor-pointer shadow-md flex flex-col"
+                    >
+                      <div className="relative aspect-video w-full bg-slate-900 overflow-hidden flex items-center justify-center">
+                        {file.type === 'video' ? (
+                          <>
+                            <video
+                              src={file.url}
+                              muted
+                              playsInline
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition-colors">
+                              <div className="w-8 h-8 rounded-full bg-purple-600/90 text-white flex items-center justify-center shadow-lg">
+                                <Play className="w-4 h-4 ml-0.5 fill-current" />
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <img
+                            src={file.url}
+                            alt={file.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        )}
+
+                        <div className="absolute inset-0 bg-cyan-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="px-2.5 py-1 rounded-full bg-cyan-500 text-slate-950 font-bold text-[10px] shadow-lg">
+                            Pilih File Ini
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-2 flex flex-col gap-0.5 bg-slate-950">
+                        <span className="text-[11px] font-semibold text-slate-200 truncate" title={file.name}>
+                          {file.name}
+                        </span>
+                        <div className="flex items-center justify-between text-[9px] text-slate-500">
+                          <span>{(file.size / (1024 * 1024)).toFixed(1)} MB</span>
+                          <span className="uppercase font-mono text-cyan-400/80">{file.type}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Modal */}
+            <div className="px-5 py-3 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">
+                Klik salah satu file untuk langsung menerapkannya pada banner promo.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(false)}
+                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
