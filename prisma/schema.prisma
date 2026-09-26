@@ -35,29 +35,24 @@ model SystemSetting {
 
 model LinktreeProfile {
   id               String         @id @default("profile")
-  name             String         @default("Jessica Jones")
-  bio              String         @default("Seasoned Senior Marketing Manager, excels in strategic marketing.")
+  name             String         @default("Microboy")
+  bio              String         @default("Streamer & Gaming Content Creator 🔥")
   avatarUrl        String         @default("https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80")
   avatarBorderColor String        @default("from-cyan-400 via-indigo-500 to-purple-500")
-  bannerImageUrl   String         @default("") // Profile header banner image
-  showBannerImage  Boolean        @default(false) // Toggle banner profile
-  bannerHeight     Int            @default(260) // Height in px
-  bannerOpacity    Int            @default(50) // Gradient transparent percentage at bottom (0 to 100%)
-  bannerOffsetTop  Int            @default(0) // Top offset distance in px (posisi jarak dari atas)
   theme            String         @default("ocean") // ocean, dark, neon, sunset, glass
   socialHeaderTitle String        @default("Social Media Handles")
   showLiveBanner   Boolean        @default(true)
   liveBannerTitle  String         @default("Contact Me / Join Mabar VIP")
-  liveBannerSub    String         @default("Join our exclusive gaming stream & VIP queue")
+  liveBannerSub    String         @default("Galeri album foto eksklusif Microboy")
   liveBannerUrl    String         @default("/mabarvip")
   liveBannerImage  String         @default("https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80")
   categoryBgColor  String         @default("")
   categoryTextColor String        @default("")
-  siteTitle        String         @default("Virtus Official")
-  siteSubtitle     String         @default("Streamer TIDAK KIKIR")
+  siteTitle        String         @default("Microboy")
+  siteSubtitle     String         @default("Official Streamer")
   siteLogoUrl      String         @default("")
   faviconUrl       String         @default("")
-  footerDesc       String         @default("Platform resmi Virtus Official. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.")
+  footerDesc       String         @default("Platform resmi Microboy. Dapatkan akses ke game streaming eksklusif, antrean VIP real-time, dan tautan sosial media resmi kami.")
   showLeaderboard        Boolean        @default(true)
   leaderboardTitle       String         @default("TOP SUPPORTERS BULAN INI")
   sociabuzzTribeId       String         @default("8913094574")
@@ -88,7 +83,6 @@ model LinktreeProfile {
   videoAdOffsetX         Int            @default(20)
   videoAdOffsetY         Int            @default(20)
   videoAdZIndex          Int            @default(50)
-  videoAdHideClose       Boolean        @default(false)
 
   // Social Media Header Icons Customization
   showSocialHeaderIcons  Boolean        @default(true)
@@ -132,19 +126,6 @@ model LinktreeLink {
   textShadow      String          @default("none") // "none" | "subtle" | "medium" | "glow" | "heavy"
   iconShadow      String          @default("none") // "none" | "subtle" | "medium" | "glow" | "heavy"
   showInHeaderIcons Boolean       @default(true)
-  itemType        String          @default("link") // "link" | "video_banner"
-  subtitle        String          @default("") // Deskripsi / sub-judul banner
-  mediaType       String          @default("image") // "image" | "video"
-  videoUrl        String          @default("") // Video promo URL (mp4 / webm)
-  bannerHeight    Int             @default(185) // Height in pixels for banner card (130 to 380)
-  badgeText       String          @default("PROMO / LIVE")
-  badgeBgColor    String          @default("rgba(6, 182, 212, 0.25)")
-  badgeTextColor  String          @default("#22D3EE")
-  btnText         String          @default("Kunjungi")
-  btnTextColor    String          @default("#22D3EE")
-  overlayDarkness Int             @default(60) // 0 to 95 %
-  borderStyle     String          @default("rounded-3xl") // "rounded-xl" | "rounded-2xl" | "rounded-3xl" | "rounded-none"
-  borderColor     String          @default("rgba(255, 255, 255, 0.2)")
   isEnabled       Boolean         @default(true)
   orderIndex      Int             @default(0)
   profileId       String          @default("profile")
@@ -154,31 +135,18 @@ model LinktreeLink {
 }
 
 model LinktreeBanner {
-  id              String          @id @default(uuid())
-  title           String          @default("Judul Banner")
-  subtitle        String          @default("Deskripsi singkat banner")
-  badgeText       String          @default("LIVE / QUEUE")
-  targetUrl       String          @default("/mabarvip")
-  imageUrl        String          @default("https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80")
-  mediaType       String          @default("image") // "image" | "video"
-  videoUrl        String          @default("") // Video promo URL (mp4 / webm)
-  height          Int             @default(180) // Height in pixels (140 to 360)
-  titleColor      String          @default("#FFFFFF")
-  titleSize       String          @default("lg") // "sm" | "base" | "lg" | "xl"
-  subtitleColor   String          @default("#CBD5E1")
-  badgeBgColor    String          @default("rgba(6, 182, 212, 0.25)")
-  badgeTextColor  String          @default("#22D3EE")
-  btnText         String          @default("Kunjungi")
-  btnTextColor    String          @default("#22D3EE")
-  overlayDarkness Int             @default(60) // 0 to 90 %
-  borderStyle     String          @default("rounded-3xl") // "rounded-xl" | "rounded-2xl" | "rounded-3xl" | "rounded-none"
-  borderColor     String          @default("rgba(255, 255, 255, 0.2)")
-  isEnabled       Boolean         @default(true)
-  orderIndex      Int             @default(0)
-  profileId       String          @default("profile")
-  profile         LinktreeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id          String          @id @default(uuid())
+  title       String          @default("Judul Banner")
+  subtitle    String          @default("Deskripsi singkat banner")
+  badgeText   String          @default("LIVE / QUEUE")
+  targetUrl   String          @default("/mabarvip")
+  imageUrl    String          @default("https://images.unsplash.com/photo-1616588589676-63b3bd49651c?w=600&auto=format&fit=crop&q=80")
+  isEnabled   Boolean         @default(true)
+  orderIndex  Int             @default(0)
+  profileId   String          @default("profile")
+  profile     LinktreeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model LinktreeTopButton {
