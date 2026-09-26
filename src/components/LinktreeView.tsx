@@ -759,50 +759,107 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
 
         {/* Main Container Card */}
         <div className="w-full max-w-md my-auto relative z-10 py-6">
-          {/* Profile Header Banner (Posisi dari paling atas di belakang tombol aksi atas & avatar) */}
-          {profile.showBannerImage && profile.bannerImageUrl && (
-            <div
-              className="absolute left-0 right-0 w-full overflow-hidden pointer-events-none select-none -z-10 transition-all duration-300"
-              style={{
-                top: `${profile.bannerOffsetTop ?? 0}px`,
-                height: `${profile.bannerHeight || 260}px`,
-                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 70%, rgba(0,0,0,0) 100%)`,
-                maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 70%, rgba(0,0,0,0) 100%)`,
-              }}
-            >
-              {/* Banner Image */}
-              <img
-                src={profile.bannerImageUrl}
-                alt="Profile Banner"
-                className="w-full h-full object-cover object-center rounded-3xl"
-              />
-
-              {/* Smooth Bottom Shadow Overlay */}
-              <div 
-                className="absolute inset-0 pointer-events-none rounded-3xl" 
-                style={{
-                  background: `linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(0,0,0,${((profile.bannerOpacity ?? 50) / 100).toFixed(2)}) 100%)`,
-                }}
-              />
-            </div>
-          )}
-
           <motion.div
             initial="hidden"
             animate="visible"
             variants={containerVariants}
-            className="flex flex-col items-center text-center space-y-6 relative"
+            className="flex flex-col items-center text-center space-y-4 relative"
           >
-            {/* Top Bar / Actions */}
-            <motion.div variants={itemVariants} className="w-full flex items-center justify-between px-2 pt-2 z-10">
-              {profile.topButtons && profile.topButtons.length > 0 ? (
-                profile.topButtons
-                  .filter((btn) => btn.isEnabled)
-                  .map((btn) => {
-                    if (btn.isShareAction || btn.url === '#share') {
-                      return (
+            {/* Profile Header Cover Banner (Gaya Twitter/X & TikTok) */}
+            {profile.showBannerImage && profile.bannerImageUrl ? (
+              <div className="w-full relative select-none">
+                {/* Banner Image Container */}
+                <div
+                  className="w-full overflow-hidden rounded-3xl relative shadow-xl border border-white/10"
+                  style={{
+                    height: `${profile.bannerHeight || 180}px`,
+                  }}
+                >
+                  <img
+                    src={profile.bannerImageUrl}
+                    alt="Profile Banner"
+                    className="w-full h-full object-cover object-center"
+                  />
+
+                  {/* Gradasi Transparan Bawah (Menyatu Lembut ke Belakang Avatar) */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.05) 30%, rgba(15,23,42,${((profile.bannerOpacity ?? 50) / 100).toFixed(2)}) 75%, rgba(15,23,42,1) 100%)`,
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`,
+                      maskImage: `linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,${Math.max(0, 1 - ((profile.bannerOpacity ?? 50) / 100)).toFixed(2)}) 75%, rgba(0,0,0,0) 100%)`,
+                    }}
+                  />
+
+                  {/* Top Bar / Actions (di dalam area banner bagian atas) */}
+                  <div className="absolute top-3 inset-x-3 flex items-center justify-between z-20">
+                    {profile.topButtons && profile.topButtons.length > 0 ? (
+                      profile.topButtons
+                        .filter((btn) => btn.isEnabled)
+                        .map((btn) => {
+                          if (btn.isShareAction || btn.url === '#share') {
+                            return (
+                              <button
+                                key={btn.id}
+                                onClick={() => {
+                                  if (navigator.share) {
+                                    navigator.share({ title: profile.name, url: window.location.href });
+                                  } else {
+                                    navigator.clipboard.writeText(window.location.href);
+                                    alert('Link copied to clipboard!');
+                                  }
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white text-xs font-semibold backdrop-blur-md border border-white/20 transition-all duration-200 cursor-pointer shadow-lg"
+                                title={btn.title}
+                              >
+                                <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                                <span>{btn.title}</span>
+                              </button>
+                            );
+                          }
+                          const isInternal = btn.url.startsWith('/');
+                          if (isInternal) {
+                            return (
+                              <Link
+                                key={btn.id}
+                                href={btn.url}
+                                prefetch={true}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white text-xs font-semibold backdrop-blur-md border border-white/20 transition-all duration-200 shadow-lg"
+                              >
+                                <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                                <span>{btn.title}</span>
+                              </Link>
+                            );
+                          }
+                          return (
+                            <a
+                              key={btn.id}
+                              href={btn.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white text-xs font-semibold backdrop-blur-md border border-white/20 transition-all duration-200 shadow-lg"
+                            >
+                              <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                              <span>{btn.title}</span>
+                            </a>
+                          );
+                        })
+                    ) : (
+                      <>
+                        <Link
+                          href="/mabarvip"
+                          prefetch={true}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white text-xs font-medium backdrop-blur-md border border-white/20 transition-all duration-200 shadow-lg"
+                        >
+                          <Gamepad2 className="w-4 h-4 text-emerald-400" />
+                          <span>Mabar VIP</span>
+                        </Link>
                         <button
-                          key={btn.id}
                           onClick={() => {
                             if (navigator.share) {
                               navigator.share({ title: profile.name, url: window.location.href });
@@ -811,95 +868,148 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                               alert('Link copied to clipboard!');
                             }
                           }}
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200 cursor-pointer"
-                          title={btn.title}
+                          className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition-all duration-200 shadow-lg"
+                          title="Share Profile"
                         >
-                          <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
-                          <span>{btn.title}</span>
+                          <Share2 className="w-3.5 h-3.5" />
                         </button>
-                      );
-                    }
-                    const isInternal = btn.url.startsWith('/');
-                    if (isInternal) {
-                      return (
-                        <Link
-                          key={btn.id}
-                          href={btn.url}
-                          prefetch={true}
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
-                        >
-                          <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
-                          <span>{btn.title}</span>
-                        </Link>
-                      );
-                    }
-                    return (
-                      <a
-                        key={btn.id}
-                        href={btn.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
-                      >
-                        <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
-                        <span>{btn.title}</span>
-                      </a>
-                    );
-                  })
-              ) : (
-                <>
-                  <Link
-                    href="/mabarvip"
-                    prefetch={true}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-md border border-white/15 transition-all duration-200"
-                  >
-                    <Gamepad2 className="w-4 h-4 text-emerald-400" />
-                    <span>Mabar VIP</span>
-                  </Link>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        if (navigator.share) {
-                          navigator.share({ title: profile.name, url: window.location.href });
-                        } else {
-                          navigator.clipboard.writeText(window.location.href);
-                          alert('Link copied to clipboard!');
-                        }
-                      }}
-                      className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md border border-white/15 transition-all duration-200"
-                      title="Share Profile"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
+                      </>
+                    )}
                   </div>
-                </>
-              )}
-            </motion.div>
+                </div>
 
-            {/* Profile Avatar */}
-            <motion.div variants={itemVariants} className="relative group">
-              <motion.div
-                whileHover={{ scale: 1.05, rotate: 2 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 ${
-                  profile.avatarBorderColor?.startsWith('bg-') || profile.avatarBorderColor?.startsWith('from-')
-                    ? `bg-gradient-to-tr ${profile.avatarBorderColor}`
-                    : profile.avatarBorderColor
-                    ? profile.avatarBorderColor
-                    : 'bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500'
-                } shadow-2xl`}
-              >
-                <img
-                  src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
-                  alt={profile.name}
-                  className="w-full h-full object-cover rounded-full bg-slate-800"
-                />
-              </motion.div>
-              <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-md">
-                <span className="w-2 h-2 bg-white rounded-full animate-ping" />
-              </span>
-            </motion.div>
+                {/* Profile Avatar Overlapping halfway across bottom of the banner */}
+                <div className="flex justify-center -mt-14 sm:-mt-16 relative z-30">
+                  <motion.div
+                    whileHover={{ scale: 1.05, rotate: 2 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                    className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 ${
+                      profile.avatarBorderColor?.startsWith('bg-') || profile.avatarBorderColor?.startsWith('from-')
+                        ? `bg-gradient-to-tr ${profile.avatarBorderColor}`
+                        : profile.avatarBorderColor
+                        ? profile.avatarBorderColor
+                        : 'bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500'
+                    } shadow-2xl ring-4 ring-slate-950/80`}
+                  >
+                    <img
+                      src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
+                      alt={profile.name}
+                      className="w-full h-full object-cover rounded-full bg-slate-800"
+                    />
+                  </motion.div>
+                  <span className="absolute bottom-1 translate-x-10 sm:translate-x-12 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-md z-40">
+                    <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* Fallback Layout: Tanpa Banner (Standard Layout) */
+              <>
+                <motion.div variants={itemVariants} className="w-full flex items-center justify-between px-2 pt-2">
+                  {profile.topButtons && profile.topButtons.length > 0 ? (
+                    profile.topButtons
+                      .filter((btn) => btn.isEnabled)
+                      .map((btn) => {
+                        if (btn.isShareAction || btn.url === '#share') {
+                          return (
+                            <button
+                              key={btn.id}
+                              onClick={() => {
+                                if (navigator.share) {
+                                  navigator.share({ title: profile.name, url: window.location.href });
+                                } else {
+                                  navigator.clipboard.writeText(window.location.href);
+                                  alert('Link copied to clipboard!');
+                                }
+                              }}
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200 cursor-pointer"
+                              title={btn.title}
+                            >
+                              <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                              <span>{btn.title}</span>
+                            </button>
+                          );
+                        }
+                        const isInternal = btn.url.startsWith('/');
+                        if (isInternal) {
+                          return (
+                            <Link
+                              key={btn.id}
+                              href={btn.url}
+                              prefetch={true}
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
+                            >
+                              <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                              <span>{btn.title}</span>
+                            </Link>
+                          );
+                        }
+                        return (
+                          <a
+                            key={btn.id}
+                            href={btn.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all duration-200"
+                          >
+                            <div className="w-4 h-4 flex items-center justify-center">{getIconComponent(btn.icon, btn.url)}</div>
+                            <span>{btn.title}</span>
+                          </a>
+                        );
+                      })
+                  ) : (
+                    <>
+                      <Link
+                        href="/mabarvip"
+                        prefetch={true}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-md border border-white/15 transition-all duration-200"
+                      >
+                        <Gamepad2 className="w-4 h-4 text-emerald-400" />
+                        <span>Mabar VIP</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          if (navigator.share) {
+                            navigator.share({ title: profile.name, url: window.location.href });
+                          } else {
+                            navigator.clipboard.writeText(window.location.href);
+                            alert('Link copied to clipboard!');
+                          }
+                        }}
+                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md border border-white/15 transition-all duration-200"
+                        title="Share Profile"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </motion.div>
+
+                {/* Profile Avatar */}
+                <motion.div variants={itemVariants} className="relative group">
+                  <motion.div
+                    whileHover={{ scale: 1.05, rotate: 2 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                    className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden p-1 ${
+                      profile.avatarBorderColor?.startsWith('bg-') || profile.avatarBorderColor?.startsWith('from-')
+                        ? `bg-gradient-to-tr ${profile.avatarBorderColor}`
+                        : profile.avatarBorderColor
+                        ? profile.avatarBorderColor
+                        : 'bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500'
+                    } shadow-2xl`}
+                  >
+                    <img
+                      src={profile.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'}
+                      alt={profile.name}
+                      className="w-full h-full object-cover rounded-full bg-slate-800"
+                    />
+                  </motion.div>
+                  <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-md">
+                    <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+                  </span>
+                </motion.div>
+              </>
+            )}
 
             {/* Title & Bio */}
             <motion.div variants={itemVariants} className="space-y-2 px-4 w-full">
