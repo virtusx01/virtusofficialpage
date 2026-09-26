@@ -692,29 +692,10 @@ function MotionShakeLink({
   className: string;
 }) {
   const isShake = Boolean(link.shakeEnable);
-  const direction = link.shakeDirection || 'vertical'; // default 'vertical' (naik-turun)
+  const direction = link.shakeDirection || 'vertical'; // 'vertical' | 'horizontal' | 'both'
   const dist = typeof link.shakeDistance === 'number' && !isNaN(link.shakeDistance) ? link.shakeDistance : 8;
   const intensity = (link.shakeIntensity as 'gentle' | 'medium' | 'strong') || 'medium';
   const frequency = (link.shakeFrequency as 'rare' | 'normal' | 'frequent' | 'constant') || 'normal';
-
-  // Keyframes for Microboy-style linktree shake:
-  // Quick energetic bounce/wiggle upwards & tilt angle, returning smoothly to 0
-  const vertMultipliers =
-    intensity === 'gentle'
-      ? [0, -0.7, 0.4, -0.3, 0.2, -0.1, 0]
-      : intensity === 'strong'
-      ? [0, -1.4, 1.0, -0.7, 0.5, -0.3, 0.1, 0]
-      : [0, -1.0, 0.7, -0.5, 0.3, -0.2, 0];
-
-  const rotateMultipliers =
-    intensity === 'gentle'
-      ? [0, -1.5, 1.5, -1, 1, 0]
-      : intensity === 'strong'
-      ? [0, -4, 4, -3, 3, -1.5, 1.5, 0]
-      : [0, -2.5, 2.5, -1.8, 1.8, -0.8, 0.8, 0];
-
-  const yKeyframes = vertMultipliers.map((m) => Math.round(m * dist * 10) / 10);
-  const rotKeyframes = rotateMultipliers;
 
   const shakeDur = SHAKE_DURATIONS[intensity] || 0.6;
   const pauseDur = SHAKE_PAUSES[frequency] ?? 4;
@@ -722,34 +703,60 @@ function MotionShakeLink({
   const animationObject: any = {};
   const transitionObject: any = {};
 
-  if (direction === 'vertical' || direction === 'both') {
-    animationObject.y = yKeyframes;
-    transitionObject.y = {
-      duration: shakeDur,
-      repeat: Infinity,
-      repeatDelay: pauseDur,
-      ease: 'easeInOut' as const,
-    };
+  if (isShake) {
+    if (direction === 'vertical') {
+      // ↕️ Microboy Naik-Turun (Vertical Bounce)
+      const vertMultipliers =
+        intensity === 'gentle'
+          ? [0, -0.7, 0.4, -0.3, 0.2, 0]
+          : intensity === 'strong'
+          ? [0, -1.5, 1.1, -0.8, 0.5, -0.3, 0]
+          : [0, -1.0, 0.7, -0.5, 0.3, 0];
 
-    // Add subtle rotational wobble for Microboy linktree effect
-    animationObject.rotate = rotKeyframes;
-    transitionObject.rotate = {
-      duration: shakeDur,
-      repeat: Infinity,
-      repeatDelay: pauseDur,
-      ease: 'easeInOut' as const,
-    };
-  }
+      animationObject.y = vertMultipliers.map((m) => Math.round(m * dist * 10) / 10);
+      transitionObject.y = {
+        duration: shakeDur,
+        repeat: Infinity,
+        repeatDelay: pauseDur,
+        ease: 'easeInOut' as const,
+      };
+    } else if (direction === 'horizontal') {
+      // ↔️ Buzz / Vibrate Kiri-Kanan (Horizontal Shake)
+      const horizMultipliers =
+        intensity === 'gentle'
+          ? [0, -0.5, 0.5, -0.3, 0.3, -0.1, 0.1, 0]
+          : intensity === 'strong'
+          ? [0, -1.2, 1.2, -0.9, 0.9, -0.6, 0.6, -0.3, 0.3, 0]
+          : [0, -0.8, 0.8, -0.6, 0.6, -0.4, 0.4, -0.2, 0.2, 0];
 
-  if (direction === 'horizontal' || direction === 'both') {
-    const horizMultipliers = intensity === 'gentle' ? [0, -0.5, 0.5, -0.3, 0.3, 0] : [0, -1, 1, -0.7, 0.7, 0];
-    animationObject.x = horizMultipliers.map((m) => Math.round(m * dist * 10) / 10);
-    transitionObject.x = {
-      duration: shakeDur,
-      repeat: Infinity,
-      repeatDelay: pauseDur,
-      ease: 'easeInOut' as const,
-    };
+      animationObject.x = horizMultipliers.map((m) => Math.round(m * dist * 10) / 10);
+      transitionObject.x = {
+        duration: shakeDur,
+        repeat: Infinity,
+        repeatDelay: pauseDur,
+        ease: 'easeInOut' as const,
+      };
+    } else {
+      // 🔀 Kombinasi (Vertical + Horizontal + Rotation Wobble)
+      const vertMultipliers = intensity === 'strong' ? [0, -1.3, 0.9, -0.6, 0.4, 0] : [0, -0.9, 0.6, -0.4, 0.2, 0];
+      const horizMultipliers = intensity === 'strong' ? [0, 0.8, -0.8, 0.5, -0.5, 0] : [0, 0.5, -0.5, 0.3, -0.3, 0];
+      const rotMultipliers = intensity === 'strong' ? [0, -3.5, 3.5, -2, 2, 0] : [0, -2, 2, -1, 1, 0];
+
+      animationObject.y = vertMultipliers.map((m) => Math.round(m * dist * 10) / 10);
+      animationObject.x = horizMultipliers.map((m) => Math.round(m * dist * 10) / 10);
+      animationObject.rotate = rotMultipliers;
+
+      const transSpec = {
+        duration: shakeDur,
+        repeat: Infinity,
+        repeatDelay: pauseDur,
+        ease: 'easeInOut' as const,
+      };
+
+      transitionObject.y = transSpec;
+      transitionObject.x = transSpec;
+      transitionObject.rotate = transSpec;
+    }
   }
 
   const animateProp = isShake
@@ -768,8 +775,8 @@ function MotionShakeLink({
       animate={animateProp}
       whileHover={{ scale: 1.025, y: -2 }}
       whileTap={{ scale: 0.98 }}
-      className={`${className} relative z-10`}
-      style={{ isolation: 'isolate' }}
+      className={`${className} block w-full relative z-10`}
+      style={{ isolation: 'isolate', transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}
     >
       {children}
     </motion.a>
@@ -1087,7 +1094,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                 }
 
                 return (
-                  <div key={link.id} className="w-full space-y-3.5">
+                  <div key={link.id} className="w-full relative z-10" style={{ isolation: 'isolate' }}>
                     {showHeader && headerText && (
                       <motion.div variants={itemVariants} className="pt-3 pb-1 text-center">
                         <span
