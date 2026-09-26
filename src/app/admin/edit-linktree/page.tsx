@@ -51,9 +51,13 @@ interface LinkItem {
   sectionBgColor?: string;
   sectionTextColor?: string;
   waCustomMessage?: string;
-  animation?: "none" | "shake" | "bounce" | "pulse" | "glow" | "shake-bounce" | string;
+  animation?: "none" | "shake" | "bounce" | "pulse" | "glow" | "shake-bounce" | "bell-shake" | string;
   animationSpeed?: "slow" | "normal" | "fast" | string;
   animationStrength?: number;
+  bgImageUrl?: string;
+  bgOpacity?: number;
+  textShadow?: "none" | "subtle" | "medium" | "glow" | "heavy" | string;
+  iconShadow?: "none" | "subtle" | "medium" | "glow" | "heavy" | string;
   showInHeaderIcons?: boolean;
   isEnabled: boolean;
   orderIndex: number;
@@ -642,6 +646,42 @@ export default function EditLinktreePage() {
     } catch (err: any) {
       console.error("Upload error:", err);
       alert(`Terjadi kesalahan saat mengunggah icon: ${err?.message || err}`);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  const handleLinkCardBgUpload = async (file: File, index: number) => {
+    setUploadingField(`link-cardbg-${index}`);
+    try {
+      const compressedBlob = await compressImage(file, 1200, 400, 0.85);
+      const formData = new FormData();
+      formData.append("file", compressedBlob, file.name.replace(/\.[^/.]+$/, "") + ".jpg");
+      if (profile.links?.[index]?.bgImageUrl) {
+        formData.append("oldUrl", profile.links[index].bgImageUrl);
+      }
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        const updatedLinks = [...profile.links];
+        updatedLinks[index] = {
+          ...updatedLinks[index],
+          bgImageUrl: data.url,
+        };
+        setProfile({ ...profile, links: updatedLinks });
+        setSaveSuccess(false);
+      } else {
+        alert(`Gagal mengunggah background banner: ${data.error || "Server error"}`);
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      alert(`Terjadi kesalahan saat mengunggah background banner: ${err?.message || err}`);
     } finally {
       setUploadingField(null);
     }
@@ -3107,7 +3147,8 @@ export default function EditLinktreePage() {
                               className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:border-fuchsia-500"
                             >
                               <option value="none">🚫 Tanpa Animasi</option>
-                              <option value="shake-bounce">🔥 Shake + Bounce (Mirip Microboy Linktree)</option>
+                              <option value="bell-shake">🔔 Shake Lonceng (100% Mirip Microboy Linktree)</option>
+                              <option value="shake-bounce">🔥 Shake + Bounce Combo</option>
                               <option value="shake">🫨 Shake (Getar Horisontal)</option>
                               <option value="bounce">🏀 Bounce (Membal Vertikal)</option>
                               <option value="pulse">💓 Pulse (Denyut Scale)</option>
@@ -3152,6 +3193,152 @@ export default function EditLinktreePage() {
                               onChange={(e) => updateLink(idx, "animationStrength", parseInt(e.target.value))}
                               className="w-full accent-fuchsia-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer disabled:opacity-30"
                             />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 5. Custom Background Banner Kartu Link & Transparansi */}
+                      <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                        <div className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 text-cyan-400" />
+                            <span>Background Banner Kartu Link & Transparansi</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-cyan-400 font-bold px-2 py-0.5 rounded bg-cyan-950/50 border border-cyan-800/40">
+                            REKOMENDASI: 1200 x 400 PX (3:1)
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                          {/* Upload / URL Input */}
+                          <div className="sm:col-span-2 space-y-2">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={link.bgImageUrl || ""}
+                                onChange={(e) => updateLink(idx, "bgImageUrl", e.target.value)}
+                                className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 outline-none focus:border-cyan-500 placeholder-slate-600 font-mono"
+                                placeholder="Paste URL gambar banner (https://...)"
+                              />
+                              <label
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-sm ${
+                                  uploadingField === `link-cardbg-${idx}`
+                                    ? "bg-cyan-800 text-cyan-200 cursor-not-allowed"
+                                    : "bg-cyan-600 hover:bg-cyan-500 text-white"
+                                }`}
+                              >
+                                {uploadingField === `link-cardbg-${idx}` ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Upload...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>Upload Banner</span>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  disabled={uploadingField === `link-cardbg-${idx}`}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleLinkCardBgUpload(file, idx);
+                                  }}
+                                />
+                              </label>
+                              {link.bgImageUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    deleteUploadedFile(link.bgImageUrl);
+                                    updateLink(idx, "bgImageUrl", "");
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 font-bold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                                  title="Hapus Gambar Banner dari Bucket"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                  <span>Hapus</span>
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-slate-400">
+                              ℹ️ <strong>Rekomendasi Ukuran Gambar Banner: 1200 x 400 pixel</strong> (Rasio 3:1 atau 4:1 mendatar). Gambar akan tampil secara penuh menutup area kartu link.
+                            </p>
+                          </div>
+
+                          {/* Slider Transparansi Kartu */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[11px] font-semibold text-slate-300">
+                                Transparansi Kartu (Opacity)
+                              </label>
+                              <span className="text-xs font-mono font-bold text-cyan-400">
+                                {link.bgOpacity ?? 100}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={10}
+                              max={100}
+                              step={5}
+                              value={link.bgOpacity ?? 100}
+                              onChange={(e) => updateLink(idx, "bgOpacity", parseInt(e.target.value))}
+                              className="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                            />
+                            <p className="text-[10px] text-slate-500 mt-1">
+                              {link.bgOpacity !== undefined && link.bgOpacity < 100
+                                ? "Kartu agak transparan (Background halaman terlihat)"
+                                : "Kartu padat (100% Opacity)"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 6. Efek Shadow Teks & Icon */}
+                      <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                        <div className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-amber-400" />
+                          <span>Kustomisasi Efek Shadow Teks & Ikon</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Shadow Teks */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              Efek Bayangan Teks (Text Shadow)
+                            </label>
+                            <select
+                              value={link.textShadow || "none"}
+                              onChange={(e) => updateLink(idx, "textShadow", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:border-amber-500"
+                            >
+                              <option value="none">🚫 Tanpa Shadow Teks</option>
+                              <option value="subtle">☁️ Subtle (Bayangan Tipis)</option>
+                              <option value="medium">🌒 Medium (Bayangan Kontras Jelit)</option>
+                              <option value="heavy">🌑 Heavy (Bayangan Tebal Hitam / Legap)</option>
+                              <option value="glow">✨ Glowing Neon (Efek Cahaya Neon Sinar)</option>
+                            </select>
+                          </div>
+
+                          {/* Shadow Icon */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              Efek Bayangan Ikon (Icon Shadow)
+                            </label>
+                            <select
+                              value={link.iconShadow || "none"}
+                              onChange={(e) => updateLink(idx, "iconShadow", e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:border-amber-500"
+                            >
+                              <option value="none">🚫 Tanpa Shadow Ikon</option>
+                              <option value="subtle">☁️ Subtle (Bayangan Tipis)</option>
+                              <option value="medium">🌒 Medium (Bayangan 3D Timpa)</option>
+                              <option value="heavy">🌑 Heavy (Bayangan Tebal Timbul)</option>
+                              <option value="glow">✨ Glowing Neon (Cahaya Glow Warna)</option>
+                            </select>
                           </div>
                         </div>
                       </div>

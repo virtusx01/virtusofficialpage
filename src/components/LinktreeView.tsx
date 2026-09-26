@@ -43,9 +43,13 @@ export interface LinktreeItem {
   sectionBgColor?: string;
   sectionTextColor?: string;
   waCustomMessage?: string;
-  animation?: 'none' | 'shake' | 'bounce' | 'pulse' | 'glow' | 'shake-bounce' | string;
+  animation?: 'none' | 'shake' | 'bounce' | 'pulse' | 'glow' | 'shake-bounce' | 'bell-shake' | string;
   animationSpeed?: 'slow' | 'normal' | 'fast' | string;
   animationStrength?: number;
+  bgImageUrl?: string;
+  bgOpacity?: number;
+  textShadow?: 'none' | 'subtle' | 'medium' | 'glow' | 'heavy' | string;
+  iconShadow?: 'none' | 'subtle' | 'medium' | 'glow' | 'heavy' | string;
   showInHeaderIcons?: boolean;
   isEnabled: boolean;
   orderIndex: number;
@@ -973,51 +977,49 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                 const animStrength = typeof link.animationStrength === 'number' ? link.animationStrength : 5;
                 const factor = animStrength / 5; // 1 is default (factor=1)
 
-                // Cycle duration (burst + idle pause)
-                let cycleDuration = 3.2;
-                if (animSpeed === 'fast') cycleDuration = 2.0;
+                // Base duration in seconds for loop cycle
+                let cycleDuration = 3;
+                if (animSpeed === 'fast') cycleDuration = 1.8;
                 if (animSpeed === 'slow') cycleDuration = 4.5;
 
                 let linkAnimateProps: any = undefined;
                 let linkTransitionProps: any = undefined;
 
-                if (animType === 'shake-bounce') {
-                  // Authentic Linktree Impulse Burst Wobble: 0-18% active movement, 18-100% idle pause
-                  const xDist = Math.round(4 * factor);
-                  const yDist = Math.round(7 * factor);
-                  const rotDeg = Math.round(2 * factor);
-                  linkAnimateProps = {
-                    x: [0, -xDist, xDist, -xDist, Math.round(xDist * 0.75), -Math.round(xDist * 0.25), 0, 0],
-                    y: [0, -Math.round(yDist * 0.8), -yDist, -Math.round(yDist * 0.5), -Math.round(yDist * 0.25), 0, 0, 0],
-                    rotate: [0, -rotDeg, rotDeg, -Math.round(rotDeg * 0.75), Math.round(rotDeg * 0.5), -Math.round(rotDeg * 0.25), 0, 0],
-                    scale: [1, 1.02, 1.02, 1.01, 1.01, 1, 1, 1],
-                  };
-                  linkTransitionProps = {
-                    duration: cycleDuration,
-                    times: [0, 0.03, 0.06, 0.09, 0.12, 0.15, 0.18, 1],
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  };
-                } else if (animType === 'shake') {
+                if (animType === 'shake') {
                   const xDist = Math.round(5 * factor);
                   linkAnimateProps = {
-                    x: [0, -xDist, xDist, -xDist, Math.round(xDist * 0.6), 0, 0],
+                    x: [0, -xDist, xDist, -xDist, xDist, 0, 0],
                   };
                   linkTransitionProps = {
                     duration: cycleDuration,
-                    times: [0, 0.03, 0.06, 0.09, 0.12, 0.15, 1],
+                    times: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 1],
                     repeat: Infinity,
                     ease: 'easeInOut',
                   };
                 } else if (animType === 'bounce') {
                   const yDist = Math.round(8 * factor);
                   linkAnimateProps = {
-                    y: [0, -yDist, 0, -Math.round(yDist * 0.4), 0, 0],
-                    scale: [1, 1.02, 1, 1.01, 1, 1],
+                    y: [0, -yDist, 0, Math.round(-yDist * 0.4), 0, 0],
                   };
                   linkTransitionProps = {
                     duration: cycleDuration,
-                    times: [0, 0.04, 0.08, 0.12, 0.16, 1],
+                    times: [0, 0.15, 0.3, 0.45, 0.6, 1],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  };
+                } else if (animType === 'shake-bounce' || animType === 'bell-shake') {
+                  // Bell Shake (Shake Lonceng) 100% mirip Linktree Microboy
+                  const rotDeg = Math.round(4.5 * factor);
+                  const xDist = Math.round(3 * factor);
+                  const yDist = Math.round(4 * factor);
+                  linkAnimateProps = {
+                    rotate: [0, -rotDeg, rotDeg, -rotDeg, Math.round(rotDeg * 0.7), Math.round(-rotDeg * 0.4), 0, 0],
+                    x: [0, -xDist, xDist, -xDist, Math.round(xDist * 0.5), 0, 0],
+                    y: [0, -yDist, Math.round(-yDist * 0.5), Math.round(-yDist * 0.2), 0, 0],
+                  };
+                  linkTransitionProps = {
+                    duration: cycleDuration,
+                    times: [0, 0.08, 0.16, 0.24, 0.32, 0.4, 0.48, 1],
                     repeat: Infinity,
                     ease: 'easeInOut',
                   };
@@ -1028,7 +1030,7 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                   };
                   linkTransitionProps = {
                     duration: cycleDuration,
-                    times: [0, 0.08, 0.16, 0.24, 0.32, 1],
+                    times: [0, 0.15, 0.3, 0.45, 0.6, 1],
                     repeat: Infinity,
                     ease: 'easeInOut',
                   };
@@ -1046,6 +1048,28 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                     ease: 'easeInOut',
                   };
                 }
+
+                // Shadow CSS generator
+                const getTextShadowStyle = (shadowType?: string) => {
+                  if (shadowType === 'subtle') return 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))';
+                  if (shadowType === 'medium') return 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.85)) drop-shadow(0 1px 2px rgba(0,0,0,0.5))';
+                  if (shadowType === 'heavy') return 'drop-shadow(0 3px 6px rgba(0, 0, 0, 1)) drop-shadow(0 0 8px rgba(0, 0, 0, 0.9))';
+                  if (shadowType === 'glow') return 'drop-shadow(0 0 8px rgba(56, 189, 248, 0.9)) drop-shadow(0 0 12px rgba(168, 85, 247, 0.6))';
+                  return undefined;
+                };
+
+                const getIconShadowStyle = (shadowType?: string) => {
+                  if (shadowType === 'subtle') return 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))';
+                  if (shadowType === 'medium') return 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8))';
+                  if (shadowType === 'heavy') return 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 6px rgba(0,0,0,0.8))';
+                  if (shadowType === 'glow') return 'drop-shadow(0 0 10px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 15px rgba(236, 72, 153, 0.7))';
+                  return undefined;
+                };
+
+                const textShadowCss = getTextShadowStyle(link.textShadow);
+                const iconShadowCss = getIconShadowStyle(link.iconShadow);
+
+                const cardOpacity = typeof link.bgOpacity === 'number' ? link.bgOpacity / 100 : 1;
 
                 return (
                   <div key={link.id} className="w-full space-y-3.5">
@@ -1075,14 +1099,38 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         transition={linkTransitionProps}
                         whileHover={{ scale: 1.025, y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        className={`w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md ${currentTheme.cardBg}`}
+                        style={{
+                          opacity: cardOpacity,
+                        }}
+                        className={`w-full py-4 px-5 rounded-3xl flex flex-col items-center justify-center text-center transition-all duration-300 font-semibold gap-2.5 relative group shadow-md overflow-hidden ${
+                          link.bgImageUrl ? 'bg-slate-900 border border-white/20' : currentTheme.cardBg
+                        }`}
                       >
-                        {renderLinkIcon(link)}
-                        <AutoScrollText
-                          text={link.title}
-                          className="tracking-wide text-base font-bold text-center"
-                        />
-                        <div className="absolute top-3.5 right-4 opacity-30 group-hover:opacity-90 transition-opacity">
+                        {/* Background Banner Image for Link Card */}
+                        {link.bgImageUrl && (
+                          <div className="absolute inset-0 z-0">
+                            <img
+                              src={link.bgImageUrl}
+                              alt=""
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                            <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/25 transition-colors duration-300" />
+                          </div>
+                        )}
+
+                        <div className="relative z-10 flex flex-col items-center justify-center w-full gap-2.5">
+                          <div style={{ filter: iconShadowCss }}>
+                            {renderLinkIcon(link)}
+                          </div>
+                          <div style={{ filter: textShadowCss }} className="w-full">
+                            <AutoScrollText
+                              text={link.title}
+                              className="tracking-wide text-base font-bold text-center"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="absolute top-3.5 right-4 opacity-30 group-hover:opacity-90 transition-opacity z-10">
                           <MoreHorizontal className="w-4 h-4" />
                         </div>
                       </motion.a>
@@ -1096,35 +1144,58 @@ export default function LinktreeView({ profile: initialProfile }: { profile: Lin
                         transition={linkTransitionProps}
                         whileHover={{ scale: 1.025, y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        className={`w-full py-4 px-6 rounded-full flex items-center transition-all duration-300 font-semibold text-base relative group shadow-md ${
+                        style={{
+                          opacity: cardOpacity,
+                        }}
+                        className={`w-full py-4 px-6 rounded-full flex items-center transition-all duration-300 font-semibold text-base relative group shadow-md overflow-hidden ${
                           link.itemAlign === 'center' ? 'justify-center' : 'justify-between'
-                        } ${currentTheme.cardBg}`}
+                        } ${link.bgImageUrl ? 'bg-slate-900 border border-white/20' : currentTheme.cardBg}`}
                       >
+                        {/* Background Banner Image for Link Card */}
+                        {link.bgImageUrl && (
+                          <div className="absolute inset-0 z-0">
+                            <img
+                              src={link.bgImageUrl}
+                              alt=""
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                            <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/25 transition-colors duration-300" />
+                          </div>
+                        )}
+
                         {link.itemAlign === 'center' ? (
                           <>
-                            <div className="flex items-center gap-3.5 max-w-[85%] min-w-0 flex-1">
-                              {renderLinkIcon(link)}
-                              <AutoScrollText
-                                text={link.title}
-                                className={`tracking-wide font-medium ${
-                                  link.textAlign === 'center' ? 'text-center' : 'text-left'
-                                }`}
-                              />
+                            <div className="relative z-10 flex items-center gap-3.5 max-w-[85%] min-w-0 flex-1">
+                              <div style={{ filter: iconShadowCss }}>
+                                {renderLinkIcon(link)}
+                              </div>
+                              <div style={{ filter: textShadowCss }} className="min-w-0 flex-1">
+                                <AutoScrollText
+                                  text={link.title}
+                                  className={`tracking-wide font-medium ${
+                                    link.textAlign === 'center' ? 'text-center' : 'text-left'
+                                  }`}
+                                />
+                              </div>
                             </div>
-                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity absolute right-6 shrink-0" />
+                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity absolute right-6 shrink-0 z-10" />
                           </>
                         ) : (
                           <>
-                            <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
-                              {renderLinkIcon(link)}
-                              <AutoScrollText
-                                text={link.title}
-                                className={`tracking-wide font-medium ${
-                                  link.textAlign === 'center' ? 'text-center flex-1' : 'text-left'
-                                }`}
-                              />
+                            <div className="relative z-10 flex items-center gap-3.5 flex-1 min-w-0 pr-2">
+                              <div style={{ filter: iconShadowCss }}>
+                                {renderLinkIcon(link)}
+                              </div>
+                              <div style={{ filter: textShadowCss }} className="min-w-0 flex-1">
+                                <AutoScrollText
+                                  text={link.title}
+                                  className={`tracking-wide font-medium ${
+                                    link.textAlign === 'center' ? 'text-center flex-1' : 'text-left'
+                                  }`}
+                                />
+                              </div>
                             </div>
-                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
+                            <MoreHorizontal className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity shrink-0 z-10" />
                           </>
                         )}
                       </motion.a>

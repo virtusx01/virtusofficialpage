@@ -117,9 +117,13 @@ model LinktreeLink {
   sectionBgColor  String          @default("")
   sectionTextColor String         @default("")
   waCustomMessage String          @default("")
-  animation       String          @default("none") // "none" | "shake" | "bounce" | "pulse" | "glow" | "shake-bounce"
+  animation       String          @default("none") // "none" | "shake" | "bounce" | "pulse" | "glow" | "shake-bounce" | "bell-shake"
   animationSpeed  String          @default("normal") // "slow" | "normal" | "fast"
   animationStrength Int           @default(5) // Rentang 1 (halus) s/d 10 (kuat)
+  bgImageUrl      String          @default("") // Background image khusus untuk kartu link (Banner Link)
+  bgOpacity       Int             @default(100) // 0 s/d 100 opacity background image / container
+  textShadow      String          @default("none") // "none" | "subtle" | "medium" | "glow" | "heavy"
+  iconShadow      String          @default("none") // "none" | "subtle" | "medium" | "glow" | "heavy"
   showInHeaderIcons Boolean       @default(true)
   isEnabled       Boolean         @default(true)
   orderIndex      Int             @default(0)
